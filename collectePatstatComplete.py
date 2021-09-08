@@ -1,9 +1,3 @@
-"""
-Patstat met à disposition une API pour charger les données.
-Son utilisation doit faciliter la collecte sur Patstat.
-Ce fichier collecte les URLs de tous les jeux de données PATSTAT Global après l'ouverture d'une session.
-"""
-
 from bs4 import BeautifulSoup
 import requests
 import config
@@ -20,3 +14,10 @@ r = s.get("https://publication.epo.org/raw-data/products/86/editions/6891/files"
 # "parse" le XML pour extraire la liste des URLs
 soup = BeautifulSoup(r.text, "lxml")
 listUrl = [elt.text for elt in soup.findAll("url")]
+
+
+def appel_patstat(n):
+    return s.get(n)
+
+for i in range(len(listUrl)):
+    x = appel_patstat(listUrl[i])

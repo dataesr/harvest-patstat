@@ -5,16 +5,13 @@ Ce fichier teste la collecte d'un seul fichier zippé après l'ouverture d'une s
 """
 
 import requests
-import os
-from dotenv import load_dotenv
-
-load_dotenv("id.env")
+import config
 
 # ouverture de la session
 s = requests.session()
 
 # identification sur Patstat
-s.get(f'https://publication.epo.org/raw-data/authentication?login={os.getenv("USER")}&pwd={os.getenv("PWD")}&action=1&format=1')
+s.get(f'https://publication.epo.org/raw-data/authentication?login={config.USER }&pwd={config.PWD}&action=1&format=1')
 
 # requête pour accéder au fichier zippé contenant le 1er paquet de des données Patstat
 r = s.get("https://publication.epo.org/raw-data/products/86/editions/6891/files/data_PATSTAT_Global_2021_Spring_01.zip")
