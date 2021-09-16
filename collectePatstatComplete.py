@@ -5,21 +5,33 @@
 
 from bs4 import BeautifulSoup
 import requests
-import config
+import config_emmanuel as config
 import re
 
 
 # fonction pour faire les requêtes GET sur l'API Patstat
-def appel_patstat(n):
-    return s.get(n)
+def appel_patstat(url, _session):
+    response = _session.get(url)
+    status = response.status_code
+    if status != 200:
+        raise ConnectionError("Failed while trying to access the URL")
+    else:
+        print("URL successfully accessed")
+    return _session.get(url)
 
 
 # fonction pour s'authentifier sur l'API Patstat
 def connexion_api(adresse):
-    session = requests.session()  # ouverture de la session de requête
+    _session = requests.session()  # ouverture de la session de requête
+    _session.get(adresse)
     # identification sur Patstat
-    session.get(adresse)
-    return session
+    response = _session.get(adresse)
+    status = response.status_code
+    if status != 200:
+        raise ConnectionError("Failed while trying to authenticate")
+    else:
+        print("Authenticated")
+    return _session
 
 
 # fonction pour extraire les URLs du résultat de la requête GET sur l'API Patstat
@@ -39,27 +51,36 @@ def liste_noms(listurl):
 
 
 # fonction pour télécharger les fichiers zip et les enregistrer en local
-def telechargement_ecriture(listurl, listnoms):
+def telechargement_ecriture(listurl, _session, listnoms):
     for i in range(len(listurl)):
-        req = appel_patstat(listurl[i])
+        req = appel_patstat(listurl[i], _session)
         with open(listnoms[i], "wb") as code:
             code.write(req.content)
+            print(f"File {listnoms[i]} successfully loaded")
 
 
-# adresse authentifiction
-urlId = f"https://publication.epo.org/raw-data/authentication?login={config.USER}&pwd={config.PWD}&action=1&format=1"
 
-# authentification
-s = connexion_api(urlId)
 
-# requête API Patstat pour accéder à liste de tous les URLs des fichiers zip à télécharger
-r = appel_patstat("https://publication.epo.org/raw-data/products/86/editions/6891/files")
+def main():
+    # adresse authentifiction
+    urlId = f"https://publication.epo.org/raw-data/authentication?login={config.USER}&pwd={config.PWD}&action=1&format=1"
 
-# extraction des URLs
-listUrl = extraction_url(r)
+    # authentification
+    session = connexion_api(urlId)
 
-# extraction des noms de fichier
-listNoms = liste_noms(listUrl)
+    # requête API Patstat pour accéder à liste de tous les URLs des fichiers zip à télécharger
+    requete = appel_patstat("https://publication.epo.org/raw-data/products/86/editions/6891/files", session)
 
-# téléchargement et écriture des fichiers zip
-telechargement_ecriture(listUrl, listNoms)
+    # extraction des URLs
+    listUrl = extraction_url(requete)
+
+    # extraction des noms de fichier
+    listNoms = liste_noms(listUrl)
+    listNoms = listNoms
+
+    # # téléchargement et écriture des fichiers zip
+    telechargement_ecriture(listUrl, session, listNoms)
+
+
+if __name__ == '__main__':
+    main()

@@ -1,4 +1,4 @@
 .idea/
 *.zip
-*.env
 config.py
+config_emmanuel.py
