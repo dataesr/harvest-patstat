@@ -5,6 +5,7 @@ import glob
 import os
 import pandas as pd
 import re
+from retry import retry
 import shutil
 import zipfile
 
@@ -16,13 +17,23 @@ def dezippage_dossier(dossier):
         zipfile.ZipFile(dos).extractall()
 
 
+def select_files(pattern):
+    zip_folds = glob.glob(r"*.zip")
+    list_folds = [_zip for _zip in zip_folds if re.match(pattern, _zip)]
+    if len(list_folds) < 1:
+        raise ValueError("There are no zipped files in the folder")
+    else:
+        pass
+    return list_folds
+
+
 def main():
     os.chdir(DATA_PATH)
-    dossiers_zip = glob.glob(r"*.zip")
-    dezippage_dossier(dossiers_zip)
-    sous_dos = glob.glob("*.zip")
-    noms_tables = [_zip for _zip in sous_dos if re.match(r"tls\d{3}_part\d{2}\.zip", _zip)]
 
+    dossiers_zip = select_files(r"data_PATSTAT_Global_\d+_.+\.zip")
+    dezippage_dossier(dossiers_zip)
+
+    noms_tables = select_files(r"tls\d{3}_part\d{2}\.zip")
     dezippage_dossier(noms_tables)
 
     noms_dossiers = list(map(lambda a: re.sub(r"_part\d+.zip", "", a), noms_tables))
