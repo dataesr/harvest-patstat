@@ -21,13 +21,13 @@ DATA_PATH = "/run/media/julia/DATA/test/"
 
 
 # function to unzip the folders
-def unzip_folders(folder):
-    for fold in folder:
-        zipfile.ZipFile(fold).extractall()
+def unzip_folders(folders: list):
+    for folder in folders:
+        zipfile.ZipFile(folder).extractall()
 
 
 # function to select the files to unzip based on their names
-def select_files(pattern):
+def select_files(pattern) -> list:
     zip_folds = glob.glob(r"*.zip")
     list_folds = [_zip for _zip in zip_folds if re.match(pattern, _zip)]
     if len(list_folds) < 1:
