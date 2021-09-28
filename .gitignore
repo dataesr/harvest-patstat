@@ -2,3 +2,5 @@
 *.zip
 config.py
 config_emmanuel.py
+*.lock
+*.dirlock
