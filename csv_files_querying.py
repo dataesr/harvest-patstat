@@ -1,6 +1,6 @@
 from datetime import datetime as dt
 import glob
-
+import pandas as pd
 
 # Chargement des données multi-CSV et requêtes
 def multi_csv_files_querying(files_directory, chunk_query, dict_param_load_csv):

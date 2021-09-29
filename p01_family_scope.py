@@ -163,7 +163,9 @@ def main():
     french_person_id = get_french_person_id("tls206")
     scope_applications = get_scope_applications("tls207", patent_appln_id, french_person_id)
     family_scope = get_families_from_set_patent("tls201", scope_applications['appln_id'])
+    family_scope.to_csv("docdb_family_scope.csv", sep='|', index=False)
     patent_scope = get_patent_from_set_family("tls201", family_scope["docdb_family_id"])
+    patent_scope.to_csv("patent_scope.csv", sep='|', index=False)
 
 
 if __name__ == "__main__":
