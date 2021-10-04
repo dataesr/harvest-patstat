@@ -29,7 +29,7 @@ os.chdir(DATA_PATH)
 
 
 # tls 201 : get ID from only patent post 2010 (9999 is for missing date)
-def get_patent_post2010_appln_id(t201directory):
+def get_patent_post2010_appln_id(t201directory: str) -> pd.DataFrame:
     """
     :param t201directory: takes directory where tls201 files are
     :return: filtered dataframe with only one column "appln_id"
@@ -37,7 +37,7 @@ def get_patent_post2010_appln_id(t201directory):
     print("Start get ID patent post 2010")
     dict_param_load = DICT.get("tls201_post2010")
 
-    def query_patent_applications_t201(chunk_t201):
+    def query_patent_applications_t201(chunk_t201: pd.DataFrame) -> pd.DataFrame:
         """
         :param chunk_t201: a chunk from CSV
         :return: dataframe with filtered "appln_id"
@@ -55,7 +55,7 @@ def get_patent_post2010_appln_id(t201directory):
 
 
 # tls 206 : ne garde que les ID des personnes "françaises"
-def get_french_person_id(t206directory):
+def get_french_person_id(t206directory: str) -> pd.DataFrame:
     """
     :param t206directory: directory where tls206 files are
     :return: a dataframe with only one column "person_id"
@@ -63,7 +63,7 @@ def get_french_person_id(t206directory):
     print("Start get French person ID")
     dict_param_load = DICT.get("tls206_french_person_id")
 
-    def query_french_persons_t206(chunk_t206):
+    def query_french_persons_t206(chunk_t206: pd.DataFrame) -> pd.DataFrame:
         """
         :param chunk_t206: a chunk of read_csv and list of codes fro France in Patstat
         :return: only the rows of the dataframe with French codes
@@ -82,7 +82,7 @@ def get_french_person_id(t206directory):
 
 # tls 207 : charge les applications et ne garde que celles dont l'application des personnes qui demandent le brevet
 
-def get_scope_applications(t207directory, patent_app_id, french_id):
+def get_scope_applications(t207directory: str, patent_app_id: pd.DataFrame, french_id: pd.DataFrame) -> pd.DataFrame:
     """
     :param t207directory: directory where tls 207 files are
     :param patent_app_id: result from get_patent_post2010_appln_id - only patent post 2010
@@ -91,7 +91,7 @@ def get_scope_applications(t207directory, patent_app_id, french_id):
     """
     print("Start get scope applications")
 
-    def chunk_query(chunk):
+    def chunk_query(chunk: pd.DataFrame) -> pd.DataFrame:
         """
         :param chunk: a chunk from CSV
         :return: a dataframe with only applicants, not inventors or others...
@@ -99,7 +99,7 @@ def get_scope_applications(t207directory, patent_app_id, french_id):
         chunk_trie = chunk[(chunk['applt_seq_nr'] > 0)]
         return chunk_trie
 
-    dict_param_load = {'sep': ',', 'chunksize': 20000000, 'dtype': types.tls207_types}
+    dict_param_load = DICT.get("tls207_get_scope_applications")
     _scope_app = cfq.multi_csv_files_querying(t207directory, chunk_query, dict_param_load)
     _scope_app = _scope_app[["person_id", "appln_id"]]
     scope_patent = pd.merge(patent_app_id, _scope_app, how="inner", on="appln_id", sort=False,
@@ -111,7 +111,7 @@ def get_scope_applications(t207directory, patent_app_id, french_id):
 
 
 # tls 201
-def get_families_from_set_patent(t201directory, _set_application):
+def get_families_from_set_patent(t201directory: str, _set_application: list) -> pd.DataFrame:
     """
     :param t201directory: directory where tls 201 files are
     :param _set_application: application ID from get_scope_applications
@@ -119,7 +119,7 @@ def get_families_from_set_patent(t201directory, _set_application):
     """
     print("Start get families from set patent")
 
-    def chunk_query(chunk):
+    def chunk_query(chunk: pd.DataFrame) -> pd.DataFrame:
         """
         :param chunk: a chunk from CSV
         :return: a dataframe with only one column docdb family ID which correspond to application ID
@@ -134,7 +134,7 @@ def get_families_from_set_patent(t201directory, _set_application):
     return _family_scope
 
 
-def get_patent_from_set_family(t201directory, _set_family):
+def get_patent_from_set_family(t201directory: str, _set_family: list) -> pd.DataFrame:
     """
 
     :param t201directory: directory where tls 201 files are
@@ -144,7 +144,7 @@ def get_patent_from_set_family(t201directory, _set_family):
     """
     print("Start get patent from set family")
 
-    def chunk_query(chunk):
+    def chunk_query(chunk: pd.DataFrame) -> pd.DataFrame:
         """
         :param chunk: a chunk from CSV
         :return: rows with the corresponding docdb family ID
@@ -165,6 +165,9 @@ def main():
     family_scope = get_families_from_set_patent("tls201", scope_applications['appln_id'])
     family_scope.to_csv("docdb_family_scope.csv", sep='|', index=False)
     patent_scope = get_patent_from_set_family("tls201", family_scope["docdb_family_id"])
+    patent_scope[""]
+    patent_scope["key_appln_nr"] = patent_scope["appln_auth"] + patent_scope["appln_nr"] + \
+        patent_scope["appln_kind"] + patent_scope["receiving_office"]
     patent_scope.to_csv("patent_scope.csv", sep='|', index=False)
 
 

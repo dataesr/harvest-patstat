@@ -21,7 +21,7 @@ patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types
 
 
 # function to get titles or abstracts from application ID
-def query_tit_res_from_set_appln_id(chunk):
+def query_tit_res_from_set_appln_id(chunk: pd.DataFrame) -> pd.DataFrame:
     """
     :param chunk: a chunk from multi_csv_querying on which the function is applied
     :return: a subset of dataframe with filtered data
@@ -30,24 +30,25 @@ def query_tit_res_from_set_appln_id(chunk):
     return tit_res_chunk
 
 
-def get_titles_abstracts_from_appln_id(directory):
+def get_titles_abstracts_from_appln_id(directory: str, action: str) -> pd.DataFrame:
     """
     :param directory: directory where table files are
+    :param action: collect titles or abstracts
     :return: a dataframe with all the data corresponding to the query
     """
-    print("Start get titles from application ID")
+    print(f"Start get {action} from application ID")
     _titles = cfq.multi_csv_files_querying(directory,
                                            lambda chunk: query_tit_res_from_set_appln_id(chunk),
                                            DICT)
-    print("End get titles from application ID")
+    print(f"End get {action} from application ID")
 
     return _titles
 
 
 def main():
-    titles = get_titles_abstracts_from_appln_id("tls202", )
+    titles = get_titles_abstracts_from_appln_id("tls202", "titles")
     titles.to_csv("titles.csv", sep="|", index=False)
-    abstracts = get_titles_abstracts_from_appln_id("tls203")
+    abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts")
     abstracts.to_csv("abstracts.csv", sep="|", index=False)
 
 

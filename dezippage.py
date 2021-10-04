@@ -27,7 +27,7 @@ def unzip_folders(folders: list):
 
 
 # function to select the files to unzip based on their names
-def select_files(pattern) -> list:
+def select_files(pattern: str) -> list:
     zip_folds = glob.glob(r"*.zip")
     list_folds = [_zip for _zip in zip_folds if re.match(pattern, _zip)]
     if len(list_folds) < 1:
