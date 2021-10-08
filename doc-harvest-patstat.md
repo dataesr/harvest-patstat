@@ -36,31 +36,52 @@ Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publicat
 
 ### Dans patent_scope :
 
-<ul>
-<li>table qui donne les informations sur les demandes de brevet (application - appln)
-<ul>
-<li>appln_id : ID de la demande (valeur unique, normalement stable dans le temps depuis 2011 mais il peut arriver que cet ID soit changé)</li>
-<li>appln_auth : autorité nationale, régionale ou internationale en charge du traitement de la demande</li>
-<li>appln_nr : numéro de demande pour les brevets européens le cas échéan</li>
-<li>appln_kind : type de demande (brevet, modèle et certificat d'utilité)</li>
-<li>appln_filing_date et appln_filing_year : date de la demande</li>
-<li>appln_nr_epodoc : numéro de demande EPODOC de l'Office européen des brevets - &laquo; deprecated &raquo; - sera supprimé dans une des prochaines éditions de PATSTAT</li>
-<li>appln_nr_original : numéro de demande originel</li>
-<li>ipr_type : domaine de propriété intellectuelle couvert par la demande (brevet, modèle </li>
-<li>receiving_office : organisation internationale où la demande a été enregistrée le cas échéant</li>
-<li></li>
-</ul></li>
-<li>valeurs de appln_kind = "A", "C", "D", "F", "K", "L", "T", "U", "W".</li>
-<li>"D" est pour les demandes &laquo; artifielles &raquo;, càd dont PATSTAT n'a pas la trace en tant que telles mais pour lesqeulles il existe une priorité</li>
-<li>Application kind-codes D and Q : Application kind-codes 'D' and 'Q' identify "dummy" applications. Distinction between 'D' and 'Q' is made to help identify the corrective action required : Issues involving application kind-code 'D' can be resolved by an automated back-file correction exercise. Issues involving application kind-code 'Q' need intellectual effort and are being tackled manually, one by one.</li>
-<li>Application kind-codes K, L, M, N, O. A limited number of countries, e.g. MC PH RU SU, supply identical application-identifications for separate publications. In order to resolve that issue, kind-code 'K' is allocated to the first duplicate encountered for a given application-identification, 'L' to the second etc.</li>
-<li>French applications with kind-codes E, F, M : The kind-code of these French applications should be 'A'.Applications with kind-code E, F or M have been loaded with an incorrect kind-code at the time.</li>
-<li>appln_nr_original vide si demande artificielle ou si pas trouvée dans DOCDB</li>
-<li>receiving_office : bureau où la demande internationale a été effectuée - vide si demande nationale ou régionale</li>
-<li>int, nat, reg_phase disent est-ce que la demande est ou a été dans cette phase - vide pour les demandes pour lesquelles l'info n'est pas connue
+Table qui donne les informations sur les demandes de brevet (application - appln). Correspond à la table 201 de PATSTAT mais filtrée (ne conserve que les demandes françaises).
+
+#### appln_id : 
+ID de la demande (valeur unique, normalement stable dans le temps depuis 2011 mais il peut arriver que cet ID soit changé)
+
+#### appln_auth : 
+autorité nationale, régionale ou internationale en charge du traitement de la demande
+
+#### appln_nr : 
+numéro de demande pour les brevets européens le cas échéant. vide si demande artificielle ou si pas trouvée dans DOCDB
+
+#### appln_kind : 
+type de demande (brevet, modèle et certificat d'utilité). 
+
+Dans patent_scope, les valeurs de appln_kind = "A", "C", "D", "F", "K", "L", "T", "U", "W".
+
+"D" est pour les demandes &laquo; artifielles &raquo;, càd dont PATSTAT n'a pas la trace en tant que telles mais pour lesqeulles il existe une priorité.
+
+Application kind-codes D and Q : Application kind-codes 'D' and 'Q' identify "dummy" applications. Distinction between 'D' and 'Q' is made to help identify the corrective action required : Issues involving application kind-code 'D' can be resolved by an automated back-file correction exercise. Issues involving application kind-code 'Q' need intellectual effort and are being tackled manually, one by one.
+
+Application kind-codes K, L, M, N, O. A limited number of countries, e.g. MC PH RU SU, supply identical application-identifications for separate publications. In order to resolve that issue, kind-code 'K' is allocated to the first duplicate encountered for a given application-identification, 'L' to the second etc.
+
+French applications with kind-codes E, F, M : The kind-code of these French applications should be 'A'.Applications with kind-code E, F or M have been loaded with an incorrect kind-code at the time.
+
+#### appln_filing_date et appln_filing_year : 
+date de la demande
+
+#### appln_nr_epodoc : 
+numéro de demande EPODOC de l'Office européen des brevets - &laquo; deprecated &raquo; - sera supprimé dans une des prochaines éditions de PATSTAT. Je propose d'utiliser la clef alternative indiquée par le manuel PATSTAT pour avoir un identifiant unique et stable key_appln_nr : la concaténation de appln_auth, appln_nr, appln_kind et receiving_office
+
+#### appln_nr_original : 
+numéro de demande originel
+
+#### ipr_type : 
+domaine de propriété intellectuelle couvert par la demande (brevet, modèle 
+
+#### receiving_office : 
+bureau où la demande internationale a été effectuée - vide si demande nationale ou régionale
+
+#### internat_appln_id : 
+numéro d'identification de la demande de brevet de la procédure Patent Cooperation Treaty (PCT). Si le numéro est égal à zéro, pas de demande PCT préalable.
+
+#### int, nat, reg_phase 
+disent est-ce que la demande est ou a été dans cette phase - vide pour les demandes pour lesquelles l'info n'est pas connue
 Routes possibles d'une demande : <br>
 
-------------------------------------------------------
 
 |International phase | Regional phase| National phase|
 |--------------------|---------------|---------------|
@@ -68,12 +89,10 @@ Routes possibles d'une demande : <br>
 |                    |               | Y/N/Y         |
 |                    | N/Y/N         | N/Y/Y         |
 |                    |               | N/N/Y         |
-
-------------------------------------------------------
 <br>
-Les combinaisons disponibles dans patent_scope sont : <br>
 
--------------------------------------------------------------
+Les combinaisons disponibles de int, nat, reg_phase dans patent_scope sont : <br>
+
 
 |International phase | Regional phase| National phase|Nombre |
 |--------------------|---------------|---------------|-------|
@@ -87,11 +106,47 @@ Les combinaisons disponibles dans patent_scope sont : <br>
 | Y                  | Y             | N             | 54650 |
 | Y                  | Y             | Y             | 14534 |
 
---------------------------------------------------------------
-</li>
-</ul>
 
-###  
+<br>
+
+#### earliest_filing_date
+
+
+#### earliest_filing_year
+
+
+#### earliest_filing_id
+
+
+#### earliest_publn_date
+
+
+#### earliest_publn_year
+
+
+#### earliest_pat_publn_id
+
+
+#### granted
+
+
+#### docdb_family_id
+
+
+#### inpadoc_family_id
+
+
+#### docdb_family_size
+
+
+#### nb_citing_docdb_fam
+
+
+#### nb_applicants
+
+
+#### nb_inventors
+
 
 ### Dans titles :
 
@@ -126,7 +181,6 @@ titres dans les autres langues ne sont considérés que s'il n'existe pas de tit
 </ul>
 <br>
 
---------------------------------
 
 |langues|occurences|pourcentage|
 |-------|----------|-----------|
@@ -155,7 +209,6 @@ titres dans les autres langues ne sont considérés que s'il n'existe pas de tit
 |hr     |1         |0,00       |
 |he     |1         |0,00       |
 
--------------------------------
 
 ### Dans abstracts :
 
@@ -169,7 +222,6 @@ n'apparaissent que si un résumé en anglais n'est pas disponible. langues des t
 <li>me : monténégrin</li>
 </ul>
 
---------------------------------
 
 |langues|occurences|pourcentage|
 |-------|----------|-----------|
