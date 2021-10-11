@@ -1,5 +1,7 @@
 # Ce fichier utilisé tout au long du traitement, permet de déclarer le type des variables présentes dans les tables
 # csv  à la lecture. !! évite les erreurs de format
+import datetime
+
 import numpy as np
 
 tls206_types = {"person_id": np.int64,
@@ -107,3 +109,32 @@ tls214_types = {"npl_publn_id": object,
                 "online_availability": object,
                 "online_classification": object,
                 "online_search_date": object}
+
+patent_types = {"appln_id": np.int64, "appln_auth": object, "appln_nr": object, "appln_kind": object,
+                "appln_filing_date": object,
+                "appln_filing_year": np.int64, "appln_nr_epodoc": object, "appln_nr_original": object, "ipr_type": object,
+                "receiving_office": object, "internat_appln_id": np.int64, "int_phase": object,
+                "reg_phase": bool,
+                "nat_phase": bool, "earliest_filing_date": object, "earliest_filing_year": np.int64,
+                "earliest_filing_id": np.int64, "earliest_publn_date": object, "earliest_publn_year": np.int64,
+                "earliest_pat_publn_id": np.int64, "granted": object, "docdb_family_id": np.int64,
+                "inpadoc_family_id": np.int64, "docdb_family_size": np.int64, "nb_citing_docdb_fam": np.int64,
+                "nb_applicants": np.int64, "nb_inventors": np.int64, "key_appln_nr": object,"oeb": bool, "international": bool,
+                "appln_publn_id": np.int64,
+                "appln_publn_number": object, "appln_publn_date": object, "publn_kind": object, "grant_publn_id": object,
+                "grant_publn_number": object,
+                "grant_publn_date": object, "ispriority": bool}
+
+partfin_types = {"inpadoc_family_id": str, "docdb_family_id": str, "person_id": str, "type": str, "name_source": str,
+                 "address_source": str,
+                 "country_source": str, "name_corrected": str, "country_corrected": str, "siren": str, "siret": str,
+                 "id_paysage": str,
+                 "rnsr": str, "grid": str, "id_personne": str}
+
+part_init_types = {"id_patent": str, "person_id": str, "docdb_family_id": str, "inpadoc_family_id": str,
+                   "appln_auth": str, "earliest_filing_date": str,
+                   "publication_number": str, "type": str, "name_source": str, "address_source": str,
+                   "country_source": str, "psn_sector": str,
+                   "psn_id": str, "psn_name": str, "old_name": str, "country_corrected": str, "siren": str,
+                   "siret": str, "id_paysage": str,
+                   "rnsr": str, "grid": str, "sexe": str, "id_personne": str}

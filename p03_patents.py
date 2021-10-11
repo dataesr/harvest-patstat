@@ -29,10 +29,10 @@ def add_application_phases(patent_table: pd.DataFrame) -> pd.DataFrame:
     are created : oeb (in or have been in EP phase) international (in or have been in international phase)
     """
     pat_phase = patent_table.copy()
-    pat_phase["reg_phase"] = np.where(pat_phase["reg_phase"] == "N", 0, 1)
-    pat_phase["nat_phase"] = np.where(pat_phase["nat_phase"] == "N", 0, 1)
+    pat_phase["reg_phase"] = pat_phase["reg_phase"].apply(lambda x: 0 if x == "N" else 1)
+    pat_phase["nat_phase"] = pat_phase["nat_phase"].apply(lambda x: 0 if x == "N" else 1)
     pat_phase["oeb"] = np.where((pat_phase["reg_phase"] == 1) & (pat_phase["appln_auth"] == "EP"), 1, 0)
-    pat_phase["international"] = np.where(pat_phase["int_phase"] == "Y", 1, 0)
+    pat_phase["international"] = pat_phase["int_phase"].apply(lambda x: 1 if x == "Y" else 0)
 
     return pat_phase
 
@@ -118,7 +118,7 @@ def get_priorities(t204directory: str, patent_table: pd.DataFrame) -> pd.DataFra
 
     t204 = cfq.multi_csv_files_querying(t204directory, lect_patstat_table_from_appln_id, DICT.get(t204directory))
 
-    print("Start get priorities from application ID")
+    print("End get priorities from application ID")
 
     return t204
 
