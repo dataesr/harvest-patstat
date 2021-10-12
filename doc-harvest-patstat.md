@@ -9,7 +9,7 @@
 <li>dtypes_patstat_declaration : type des données des fichiers CSV issus de PATSTAT - facilite la création des dataframes</li>
 <li>p01_family_scope : limite la sélection aux demandes françaises. Inputs = tls 201, 206 et 207. Outputs = docdb_family_scope et patent_scope</li>
 <li>p02_titles_abstracts : extrait les titres et les résumés des demandes. Inputs = patent_scope, tls 202 et 203. Outputs = titles et abstracts</li>
-<li>p03_patents : extrait l'information sur les publications et consolide le jeu de données = aux demandes françaises sont ajoutés :
+<li>p03_patents : extrait l'information sur les publications et consolide le jeu de données &mdash; aux demandes françaises sont ajoutés :
 <ul>
 <li>phase européeen en cours ou qui a eu lieu</li>
 <li>phase internationale en cours ou qui a eu lieu</li>
@@ -19,7 +19,8 @@
 </ul>
 Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publications et patent.
 </li>
-<li>p04_families</li>
+<li>p04_families : extrait les informations sur les familles de brevets (1ère publication, 1er octroi,...). Inputs = patent, tls 209, tls 224, tls 225 et lib_cpc.csv (fichier extrait du XML de classification coopérative des brevets &mdash; programme commun OEB et USPTO &mdash; reste à voir comment récupérer et traiter ces données). Outputs : families et families_technologies.</li>
+<li></li>
 </ol>
 
 ## Notes
@@ -42,17 +43,17 @@ Table qui donne les informations sur les demandes de brevet (application - appln
 ID de la demande (valeur unique, normalement stable dans le temps depuis 2011 mais il peut arriver que cet ID soit changé)
 
 #### appln_auth : 
-autorité nationale, régionale ou internationale en charge du traitement de la demande
+Autorité nationale, régionale ou internationale en charge du traitement de la demande
 
 #### appln_nr : 
-numéro de demande pour les brevets européens le cas échéant. vide si demande artificielle ou si pas trouvée dans DOCDB
+Numéro de demande pour les brevets européens le cas échéant. Vide si demande artificielle ou si pas trouvée dans DOCDB
 
 #### appln_kind : 
-type de demande (brevet, modèle et certificat d'utilité). 
+Type de demande (brevet, modèle et certificat d'utilité). 
 
 Dans patent_scope, les valeurs de appln_kind = "A", "C", "D", "F", "K", "L", "T", "U", "W".
 
-"D" est pour les demandes &laquo; artifielles &raquo;, càd dont PATSTAT n'a pas la trace en tant que telles mais pour lesqeulles il existe une priorité.
+"D" est pour les demandes &raquo;&nbsp;artifielles&nbsp;&raquo;, càd dont PATSTAT n'a pas la trace en tant que telles mais pour lesqeulles il existe une priorité.
 
 Application kind-codes D and Q : Application kind-codes 'D' and 'Q' identify "dummy" applications. Distinction between 'D' and 'Q' is made to help identify the corrective action required : Issues involving application kind-code 'D' can be resolved by an automated back-file correction exercise. Issues involving application kind-code 'Q' need intellectual effort and are being tackled manually, one by one.
 
@@ -61,25 +62,25 @@ Application kind-codes K, L, M, N, O. A limited number of countries, e.g. MC PH 
 French applications with kind-codes E, F, M : The kind-code of these French applications should be 'A'.Applications with kind-code E, F or M have been loaded with an incorrect kind-code at the time.
 
 #### appln_filing_date et appln_filing_year : 
-date de la demande
+Date de la demande
 
 #### appln_nr_epodoc : 
-numéro de demande EPODOC de l'Office européen des brevets - &laquo; deprecated &raquo; - sera supprimé dans une des prochaines éditions de PATSTAT. Je propose d'utiliser la clef alternative indiquée par le manuel PATSTAT pour avoir un identifiant unique et stable key_appln_nr : la concaténation de appln_auth, appln_nr, appln_kind et receiving_office
+Numéro de demande EPODOC de l'Office européen des brevets &mdash; &laquo;&nbsp;deprecated&nbsp;&raquo; &mdash; sera supprimé dans une des prochaines éditions de PATSTAT. Je propose d'utiliser la clef alternative indiquée par le manuel PATSTAT pour avoir un identifiant unique et stable key_appln_nr : la concaténation de appln_auth, appln_nr, appln_kind et receiving_office
 
 #### appln_nr_original : 
-numéro de demande originel
+Numéro de demande originel
 
 #### ipr_type : 
-domaine de propriété intellectuelle couvert par la demande (brevet, modèle 
+Domaine de propriété intellectuelle couvert par la demande (brevet, modèle ou certificat d'utilité).
 
 #### receiving_office : 
-bureau où la demande internationale a été effectuée - vide si demande nationale ou régionale
+Bureau où la demande internationale a été effectuée - vide si demande nationale ou régionale.
 
 #### internat_appln_id : 
-numéro d'identification de la demande de brevet de la procédure Patent Cooperation Treaty (PCT). Si le numéro est égal à zéro, pas de demande PCT préalable.
+Numéro d'identification de la demande de brevet de la procédure Patent Cooperation Treaty (PCT). Si le numéro est égal à zéro, pas de demande PCT préalable.
 
 #### int, nat, reg_phase 
-disent est-ce que la demande est ou a été dans cette phase - vide pour les demandes pour lesquelles l'info n'est pas connue
+Ces variables disent est-ce que la demande est ou a été dans cette phase - vide pour les demandes pour lesquelles l'info n'est pas connue
 Routes possibles d'une demande : <br>
 
 
@@ -91,7 +92,7 @@ Routes possibles d'une demande : <br>
 |                    |               | N/N/Y         |
 <br>
 
-Les combinaisons disponibles de int, nat, reg_phase dans patent_scope sont : <br>
+Les combinaisons disponibles de int, nat, reg_phase dans patent_scope printemps 2021 sont : <br>
 
 
 |International phase | Regional phase| National phase|Nombre |
@@ -110,34 +111,48 @@ Les combinaisons disponibles de int, nat, reg_phase dans patent_scope sont : <br
 <br>
 
 #### earliest_filing_date
+1ère date de demande : date la plus ancienne parmi toutes les possibilités possibles (demande nationale, internationale, priorité convention de Paris,...)
 
+Pour patent_scope printemps 2021, les dates vont du 22 janvier 1999 au 18 décembre 2020.
 
 #### earliest_filing_year
-
+Année de la 1ère demande (mêmes conditions que earliest_filing_date)
 
 #### earliest_filing_id
+ID de la 1ère demande : ID la plus ancienne parmi toutes les possibilités possibles (demande nationale, internationale, priorité convention de Paris,...)
 
+Il y 170 647 ID uniques pour la table patent_scope printemps 2021.
 
 #### earliest_publn_date
+1ère date de publication de la demande &mdash; les demandes de la famille antérieures ne sont pas prises en compte dans ce cas
 
+POur patent_scope printemps 2021, les dates vont du 17 février 2010 au 28 janvier 2021.
 
 #### earliest_publn_year
-
+Année de la 1ère publication (mêmes conditions que earliest_publn_date)
 
 #### earliest_pat_publn_id
-
+ID de la 1ère publication (mêmes conditions que earliest_publn_date)
 
 #### granted
+Y si la demande a été octroyée et N si elle ne l'a pas été. N signifie exactement qu'il n'y a <U>AUCUNE</U> indication dans les données disponibles que la demande a été octroyée.
 
+Dans patent_scope, il y a 273 237 Y (environ 47 %) et 308 496 N (53 %).
 
 #### docdb_family_id
+ID de la famille DOCDB qui est une variable créée automatiquement par l'OEB : une famille DOCDB signifie que les différentes demandes partagenet exactement les mêmes priorités
 
+Pour patent_scope printemps 2021, il y a 173 410 ID uniques.
 
 #### inpadoc_family_id
+ID de la famille INPADOC : variable qui indique que la demande partage une priorité directe ou via une demande tiers. Chaque application appartient à une et une seule famille INPADOC.
 
+Pour patent_scope printemps 2021, il y a 167 708 ID uniques.
 
 #### docdb_family_size
+Nombre de demandes au sein de chaque famille DOCDB.
 
+La taille des familles va de 1 à 242. La taille médiane est de 5, la moyenne de 7 et le mode de 2. Plus de 85 % des enregistrements ont une taille de famille compris entre 1 et 10 inclus.
 
 #### nb_citing_docdb_fam
 

@@ -180,8 +180,8 @@ def get_family_tit_abstract(patent_table):
         # L'allemand est une langue officielle de l'office européen des brevets,
         # donc on la garde en priorité - ensuite les langues proches du français puis
         # enfin on classe en dernier celles non latines
-        patent[description_order] = patent[description_lg].apply(
-            lambda x: 0 if x == "de" else 1 if x in ["es", "it", "pt", "ro"] else 99 if x == "ja" else 2)
+        _patent[description_order] = _patent[description_lg].apply(
+            lambda x: 0 if x == "de" else 1 if x in ["es", "it", "pt", "ro"] else 2 if x in ["en", "fr"] else 99)
 
         # on crée un dictionnaire qui pour chaque clé "en", "fr" ou "other" (type de langue des titres ou résumés)
         # attribuera un tableau avec par famille la

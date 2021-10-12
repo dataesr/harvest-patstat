@@ -59,9 +59,8 @@ def get_family_tit_abstract(patent_table):
     # pour une même date de dépôt, on prendra en priorité les dossiers déposés à l"international, puis les européens et
     # *enfin les français.
     # on entre cette information dans une variable "tri_type_office" qui nous servira à trier par famille
-    _patent["tri_type_office"] = np.where(_patent["appln_auth"] == "WO", 0,
-                                          np.where(_patent["appln_auth"] == "EP", 1,
-                                                   np.where(_patent["appln_auth"] == "FR", 2, 3)))
+    _patent["tri_type_office"] = _patent["appln_auth"].apply(
+        lambda x: 0 if x == "WO" else 1 if x == "EP" else 2 if x == "FR" else 3)
     # on initialise une liste vide pour ensuite mettre 2 tableaux résultats, un pour les titres et un pour les abstracts
     desc_col_list = []
 
@@ -76,9 +75,8 @@ def get_family_tit_abstract(patent_table):
         # L"allemand est une langue officielle de l"office européen des brevets,
         # donc on la garde en priorité - ensuite les langues proches du français puis
         # enfin on classe en dernier celles non latines
-        _patent[description_order] = np.where(_patent[description_lg].isin(["de"]), 0,
-                                              np.where(_patent[description_lg].isin(["es", "it", "pt"]), 1,
-                                                       np.where(_patent[description_lg].isin(["ja"]), 99, 2)))
+        patent[description_order] = patent[description_lg].apply(
+            lambda x: 0 if x == "de" else 1 if x in ["es", "it", "pt", "ro"] else 99 if x == "ja" else 2)
 
         # on crée un dictionnaire qui pour chaque clé "en", "fr" ou "other" (type de langue des titres ou résumés)
         # attribuera un tableau avec par famille la
@@ -352,7 +350,7 @@ family_appln = patent.groupby("docdb_family_id", as_index=False)[
 family_publn = patent.groupby("docdb_family_id", as_index=False)[["earliest_publn_date"]].min().rename(
     columns={"earliest_publn_date": "earliest_publication_date"})
 
-patent["granted"] = np.where(patent["granted"] == "N", 0, 1)
+patent["granted"] = patent["granted"].apply(lambda x: 0 if x == "N" else 1)
 
 family_grant = patent.groupby(["docdb_family_id"]).agg({"granted": max, "grant_publn_date": min}) \
     .rename(columns={"granted": "is_granted", "grant_publn_date": "date_first_granted"})
