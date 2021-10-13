@@ -20,7 +20,12 @@
 Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publications et patent.
 </li>
 <li>p04_families : extrait les informations sur les familles de brevets (1ère publication, 1er octroi,...). Inputs = patent, tls 209, tls 224, tls 225 et lib_cpc.csv (fichier extrait du XML de classification coopérative des brevets &mdash; programme commun OEB et USPTO &mdash; reste à voir comment récupérer et traiter ces données). Outputs : families et families_technologies.</li>
-<li></li>
+<li>p05_creat_participants</li>
+<li>p06_clean_participants_individuals</li>
+<li>p07a_get_siren_inpi</li>
+<li>p07b_clean_participants_entp</li>
+<li>p08_participants_final</li>
+<li>p09_geoloc</li>
 </ol>
 
 ## Notes
@@ -155,15 +160,28 @@ Nombre de demandes au sein de chaque famille DOCDB.
 La taille des familles va de 1 à 242. La taille médiane est de 5, la moyenne de 7 et le mode de 2. Plus de 85 % des enregistrements ont une taille de famille compris entre 1 et 10 inclus.
 
 #### nb_citing_docdb_fam
+Nombre de citations par une famille DOCDB d'au moins une publication ou demande de la famille DOCDB de la demande actuelle.
 
+Le nombre de citations va de 0 à 768. La médiane est de 1, la moyenne de 4,876 et le mode de 0. Plus de 90 % des demandes ont moins de 11 citations.
 
 #### nb_applicants
+Nombre de demandeurs pour chaque demande selon la publication la plus récente qui contient des noms de personnes en caractères latins (si pas de caractères, le nombre de demandeurs est fixé à zéro &mdash; ça ne veut pas dire qu'il n'y a pas de demandeurs).
 
+Le nombre de demandeurs va de 0 à 30. La médiane est de 1, la moyenne de 1,391 et le mode de 1. Plus de 98 % des demandes ont moins de 6 demandeurs et 3,54 % ont &laquo;&nbsp;zéro&nbsp;&raquo; demandeur.
 
 #### nb_inventors
+Nombre d'inventeurs pour chaque demande selon la publication la plus récente qui contient des noms de personnes en caractères latins (si pas de caractères, le nombre d'inventeurs est fixé à zéro &mdash; ça ne veut pas dire qu'il n'y a pas d'inventeurs).
 
+Le nombre d'inventeurs va de 0 à 40. La médiane est de 2, la moyenne de 2,617 et le mode de 2. Plus de 93 % des demandes ont moins de 6 inventeurs et 4,43 % ont &laquo;&nbsp;zéro&nbsp;&raquo; inventeur.
 
 ### Dans titles :
+Ce fichier est issu de la table 202 et contient 3 variables :
+<ul>
+<li>appln_id</li>
+<li>appln_title_lg</li>
+<li>appln_title</li>
+</ul>
+
 
 Aucune valeur manquante. 69,24 % des titres en anglais et 19,19 % en français. Anglais comme langue par défaut : les
 titres dans les autres langues ne sont considérés que s'il n'existe pas de titre en anglais. Langues des titres :
@@ -226,6 +244,12 @@ titres dans les autres langues ne sont considérés que s'il n'existe pas de tit
 
 
 ### Dans abstracts :
+Ce fichier est issu de la table 203 et contient 3 variables :
+<ul>
+<li>appln_id</li>
+<li>appln_title_lg</li>
+<li>appln_title</li>
+</ul>
 
 Il y a des valeurs manquantes dans appln_abstract - 3 dans le cas du jeu de données PATSTAT Spring 2021 (appln_id :
 446022198, 503487228 et 503602912). Comme pour les titres, l'anglais est la langue par défaut : les autres langues
@@ -266,3 +290,8 @@ n'apparaissent que si un résumé en anglais n'est pas disponible. langues des t
 |fi|1|0,00|
 |it|1|0,00|
 |lv|1|0,00|
+
+### Dans publications
+
+
+### Dans patent
