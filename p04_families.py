@@ -117,123 +117,73 @@ def get_family_pi_types(patent_table):
     return _family_pi_types
 
 
-def fam_desc_language(patent_table, var_order, var_to_select):
-    """   This function groups on families and gets the firsts values of the variables in list "var_to_select" after
-    ordering by the variables in "var_order" list
-
-    param patent_table:  Table with application informations - T201 or part of -
-    must have family identifier "docdb_family_id"
-    type patent_table: dataframe
-    param var_order:  List of variables in patent_table on wich the sorting must be done to select uniques "desc_lg"
-    and "desc_wd" values by family
-    type var_order: list of strings
-    param var_to_select:  List of other variables in patent_table to keep
-    type var_to_select: list of strings
-
-    :return: a dataframe with families identifiers and the variables in list "var_to_select" filtered
-
+def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
     """
-
-    fam_desc = patent_table[["docdb_family_id"] + var_to_select + var_order] \
-        .sort_values(["docdb_family_id"] + var_order) \
-        .groupby(["docdb_family_id"], as_index=False).first() \
-        .drop(columns=var_order)
-
-    return fam_desc
-
-
-def get_family_tit_abstract(patent_table):
-    """   This function gets from one table ("patent_table") with multiple titles and abstracts by family
-    (one for each patent) uniques titles and abstracts by family
-    (with a french one, an english one and eventually another one with default language)
-
-    param patent_table:  Table with application informations - T201 or part of - must have "family identifier
-    "docdb_family_id", titles and abstracts variables
-    "appln_title_lg", "appln_abstract_lg", "appln_title", "appln_abstract" and also "appln_filing_date" and
-    "appln_auth" for order manipulations
-    type patent_table: dataframe
-
-    return: a list of 2 dataframes : one with titles, the other one with abstracts - These tables retain only one french
-    description, one english descripion and one another with default language by family
-
+    Select the title and abstract attached to each DOCDB family ID. Transform authorities and languages into ordered
+    categorical values : WO (0) > EP (1) > FR (2) > rest (3) and German (0) > other Romance languages* (1) >
+    English and French (2) > rest (3). Pick which language gets first position for each application and
+    create a dataframe with 5 variables : DOCDB family ID, title/abstract in English, title/abstract in French,
+    default language and title/abstract in default language
+    * Romance languages that have been found in PATSTAT Global since 2010.
+    :param type_publn: string ("title" or "abstract")
+    :param pat: dataframe (patent df)
+    :return: dataframe
     """
-
-    _patent = patent_table.copy()
-    # pour choisir le titre et le résumé qui sera affiché pour la famille, on va utiliser la date de dépôt
-    # et l"office de dépôt
-    # pour une même date de dépôt, on prendra en priorité les dossiers déposés à l"international, puis les européens et
-    # *enfin les français.
-    # on entre cette information dans une variable "tri_type_office" qui nous servira à trier par famille
-    _patent["tri_type_office"] = _patent["appln_auth"].apply(
+    pat["tri_type_office"] = pat["appln_auth"].apply(
         lambda x: 0 if x == "WO" else 1 if x == "EP" else 2 if x == "FR" else 3)
-    # on initialise une liste vide pour ensuite mettre 2 tableaux résultats, un pour les titres et un pour les abstracts
-    desc_col_list = []
 
-    for desc in ("title", "abstract"):
+    description_lg = "appln_{}_lg".format(type_publn)
+    description_wd = "appln_{}".format(type_publn)
+    description_order = "tri_{}_lg".format(type_publn)
+    var_order = ["appln_filing_date", "tri_type_office"]
+    var_to_select = [description_lg, description_wd]
 
-        description_lg = "appln_{}_lg".format(desc)
-        description_wd = "appln_{}".format(desc)
-        description_order = "tri_{}_lg".format(desc)
+    pat[description_order] = pat[description_lg].apply(
+        lambda x: 0 if x == "de" else 1 if x in ["es", "it", "pt", "ro"] else 2 if x in ["en", "fr"] else 99)
 
-        # Enfin on va créer une variable permettant le tri en fonction de la langue :
-        # ci-dessous les langues prioritaires en dehors du français et de l"anglais
-        # L'allemand est une langue officielle de l'office européen des brevets,
-        # donc on la garde en priorité - ensuite les langues proches du français puis
-        # enfin on classe en dernier celles non latines
-        _patent[description_order] = _patent[description_lg].apply(
-            lambda x: 0 if x == "de" else 1 if x in ["es", "it", "pt", "ro"] else 2 if x in ["en", "fr"] else 99)
+    def fam_desc_language(tmp: pd.DataFrame, vorder: list) -> pd.DataFrame:
+        """
+        This function groups on families and gets the first values of the variables in list "var_to_select" after
+        ordering by the variables in "var_order" list
+        :param tmp: subset of patent dataframe - must have family identifier "docdb_family_id"
+        :param vorder: variables which will serve to order data
+        :return: ordered dataframe
+        """
 
-        # on crée un dictionnaire qui pour chaque clé "en", "fr" ou "other" (type de langue des titres ou résumés)
-        # attribuera un tableau avec par famille la
-        # description (titre ou résumé) et sa langue correspondante retenus après tri.
-        dict_desc = {}
+        fam_desc = tmp[["docdb_family_id"] + vorder + var_to_select] \
+            .sort_values(["docdb_family_id"] + vorder) \
+            .groupby(["docdb_family_id"], as_index=False).first() \
+            .drop(columns=vorder)
 
-        # pour les descriptions en français ou anglais, on doit en retenir au moins une
-        # (site scanr avec traduction en anglais)
-        # on fait donc une sélection par date de dépôt tout d"abord
-        # (on va retenir celui correspondant au premier dépôt),
-        # puis si la date est la même,
-        # en triant par office
-        # (on sélectionne en premier lieu ceux ayant été déposé dans des procédures internationales ou européennes)
-        for lg in ("fr", "en"):
-            tmp = patent[patent[description_lg] == lg]
-            var_order = ["appln_filing_date", "tri_type_office"]
-            var_to_select = [description_lg, description_wd]
-            dict_desc[lg] = fam_desc_language(tmp, var_order, var_to_select)
+        return fam_desc
 
-        # pour les descriptions qui ne sont ni en anglais ni en français,
-        # la sélection se fait d"abord par la langue, avec la variable de tri de langue "description_order"
-        # puis par date de dépôt
-        tmp = patent[(~patent[description_lg].isin(["en", "fr"])) & (~pd.isna(patent[description_lg]))]
-        var_order_other = [description_order, "appln_filing_date"]
-        dict_desc["other"] = fam_desc_language(tmp, var_order_other, var_to_select)
+    # order data for title/abstract in English then French
+    desc_en = fam_desc_language(pat[pat[description_lg] == "en"], var_order)
+    desc_fr = fam_desc_language(pat[pat[description_lg] == "fr"], var_order)
 
-        # on ne prend les descriptions dans les autres langues que s"ils n"existent ni en français, ni en anglais
-        # on vérifie donc dans le dictionnaire que pour la clé "other",
-        # on n"a que les familles pour lesquelles il n"y a pas de description retenue ni en anglais
-        # ni en français
+    # remove English, French and NA and use "language" order for other languages
+    tmpother = pat[(~pat[description_lg].isin(["en", "fr"])) & (~pd.isna(pat[description_lg]))]
+    var_order_other = [description_order, "appln_filing_date"]
 
-        dict_desc["other"] = dict_desc["other"].loc[(dict_desc["other"]["docdb_family_id"].
-                                                     isin(dict_desc["en"]["docdb_family_id"]) == False) &
-                                                    (dict_desc["other"]["docdb_family_id"].isin(
-                                                        dict_desc["fr"]["docdb_family_id"]) == False)].dropna()
+    # order data for title/abstract in other languages
+    desc_other = fam_desc_language(tmpother, var_order_other)
 
-        # pour chaque famille, on récupère les descriptions en anglais, français et autre si elles existent
-        desc_col = patent[["docdb_family_id"]] \
-            .merge(dict_desc["en"], how="left", on="docdb_family_id").drop(columns=description_lg) \
-            .rename(columns={description_wd: "{}_en".format(desc)}) \
-            .merge(dict_desc["fr"], how="left", on="docdb_family_id").drop(columns=description_lg) \
-            .rename(columns={description_wd: "{}_fr".format(desc)}) \
-            .merge(dict_desc["other"], how="left", on="docdb_family_id") \
-            .rename(columns={description_wd: "{}_default".format(desc),
-                             description_lg: "{}_default_language".format(desc)}) \
-            .drop_duplicates()
+    # keep only DOCDB family IDs in the other languages df if the ID is not found in English AND French df
+    desc_other = desc_other[(~desc_other["docdb_family_id"].isin(desc_en["docdb_family_id"])) & (
+        ~desc_other["docdb_family_id"].isin(desc_fr["docdb_family_id"]))].dropna()
 
-        # enfin on remplit la liste "desc_col_list"
-        # avec les tableaux résultats générés dans la boucle for pour chaque élément "desc"
-        desc_col_list.append(desc_col.copy())
+    # merge all the dataframes to get the title/abstract and main languages attached to each DOCDB family
+    desc_col = pat[["docdb_family_id"]]\
+        .merge(desc_en, how="left", on="docdb_family_id").drop(columns=description_lg) \
+        .rename(columns={description_wd: "{}_en".format(type_publn)}) \
+        .merge(desc_fr, how="left", on="docdb_family_id").drop(columns=description_lg) \
+        .rename(columns={description_wd: "{}_fr".format(type_publn)}) \
+        .merge(desc_other, how="left", on="docdb_family_id") \
+        .rename(columns={description_wd: "{}_default".format(type_publn),
+                         description_lg: "{}_default_language".format(type_publn)}) \
+        .drop_duplicates()
 
-    return desc_col_list
+    return desc_col
 
 
 # Récupération des codes CPC, à partir du printemps 2020, on les a par famille table 225
@@ -465,7 +415,9 @@ family_phases = get_family_phases(patent)
 
 family_pi_types = get_family_pi_types(patent)
 
-(family_titles, family_abstracts) = get_family_tit_abstract(patent)
+family_titles = get_family_tit_abstract("title", patent)
+
+family_abstracts = get_family_tit_abstract("abstract", patent)
 
 families = pd.merge(patent[["docdb_family_id", "inpadoc_family_id"]].drop_duplicates(),
                     family_publn, how="left",
@@ -477,7 +429,7 @@ families = pd.merge(patent[["docdb_family_id", "inpadoc_family_id"]].drop_duplic
     family_titles, how="left", on="docdb_family_id").merge(family_abstracts, how="left",
                                                            on="docdb_family_id").sort_values("docdb_family_id")
 
-families = families.fillna("", inplace=True)
+families = families.fillna("")
 
 families.to_csv("families.csv", sep="|", index=False)
 
