@@ -129,16 +129,17 @@ def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
     :param pat: dataframe (patent df)
     :return: dataframe
     """
-    pat["tri_type_office"] = pat["appln_auth"].apply(
+    _pat = pat.copy()
+    _pat["tri_type_office"] = _pat["appln_auth"].apply(
         lambda x: 0 if x == "WO" else 1 if x == "EP" else 2 if x == "FR" else 3)
 
-    description_lg = "appln_{}_lg".format(type_publn)
-    description_wd = "appln_{}".format(type_publn)
-    description_order = "tri_{}_lg".format(type_publn)
+    description_lg = f"appln_{type_publn}_lg"
+    description_wd = f"appln_{type_publn}"
+    description_order = f"tri_{type_publn}_lg"
     var_order = ["appln_filing_date", "tri_type_office"]
     var_to_select = [description_lg, description_wd]
 
-    pat[description_order] = pat[description_lg].apply(
+    _pat[description_order] = _pat[description_lg].apply(
         lambda x: 0 if x == "de" else 1 if x in ["es", "it", "pt", "ro"] else 2 if x in ["en", "fr"] else 99)
 
     def fam_desc_language(tmp: pd.DataFrame, vorder: list) -> pd.DataFrame:
@@ -158,11 +159,11 @@ def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
         return fam_desc
 
     # order data for title/abstract in English then French
-    desc_en = fam_desc_language(pat[pat[description_lg] == "en"], var_order)
-    desc_fr = fam_desc_language(pat[pat[description_lg] == "fr"], var_order)
+    desc_en = fam_desc_language(_pat[_pat[description_lg] == "en"], var_order)
+    desc_fr = fam_desc_language(_pat[_pat[description_lg] == "fr"], var_order)
 
     # remove English, French and NA and use "language" order for other languages
-    tmpother = pat[(~pat[description_lg].isin(["en", "fr"])) & (~pd.isna(pat[description_lg]))]
+    tmpother = _pat[(~_pat[description_lg].isin(["en", "fr"])) & (~pd.isna(_pat[description_lg]))]
     var_order_other = [description_order, "appln_filing_date"]
 
     # order data for title/abstract in other languages
@@ -173,7 +174,7 @@ def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
         ~desc_other["docdb_family_id"].isin(desc_fr["docdb_family_id"]))].dropna()
 
     # merge all the dataframes to get the title/abstract and main languages attached to each DOCDB family
-    desc_col = pat[["docdb_family_id"]]\
+    desc_col = _pat[["docdb_family_id"]] \
         .merge(desc_en, how="left", on="docdb_family_id").drop(columns=description_lg) \
         .rename(columns={description_wd: "{}_en".format(type_publn)}) \
         .merge(desc_fr, how="left", on="docdb_family_id").drop(columns=description_lg) \

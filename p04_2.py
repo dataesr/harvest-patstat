@@ -335,8 +335,8 @@ families.fillna("", inplace=True)
 cpc_category_names = pd.read_csv("/run/media/julia/DATA/DONNEES/PATENTS/NOMENCLATURES/TECHNOS/lib_cpc.csv",
                                  sep=",").rename(columns={"symbol": "code"}).drop(columns=["level", "ref"])
 
-families.to_csv("families.csv", sep="|", index=False)
+# families.to_csv("families.csv", sep="|", index=False)
 
 family_technos_codes = unify_technos_family_codes(patent)
 
-family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
+# family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
