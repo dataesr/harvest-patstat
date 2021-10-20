@@ -20,53 +20,32 @@ os.chdir(DATA_PATH)
 
 # On reprend la table patent générale
 
-
-def get_family_first_application(patent_table):
-    """   This function groups on families and gets the earliest filling date for one family
-
-    param patent_table: Table with application informations - T201 or part of -
-    must have family identifier "docdb_family_id"
-    and "earliest_filing_date"
-    type patent_table: dataframe
-
-    :return: a dataframe with families identifiers and their earliest application date
-
+def get_earliest_in_family(patent_table: pd.DataFrame, col: str) -> pd.DataFrame:
     """
+    This function gets the earliest date for an event in a family
 
-    family_first_application = patent_table.groupby("docdb_family_id", as_index=False)[
-        ["earliest_filing_date"]].min().rename(columns={"earliest_filing_date": "earliest_application_date"})
-
-    return family_first_application
-
-
-def get_family_publi(patent_table):
-    """   This function groups on families and gets the earliest publication date for one family
-
-    param patent_table:  Table with application informations - T201 or part of -
-    must have family identifier "docdb_family_id"
-    and "earliest_publn_date"
-    type patent_table: dataframe
-
-    :return: a dataframe with families identifierss and their earliest publication date
-
+    :param patent_table: df with patents data
+    :param col: column of patent_table with date - must have family identifier "docdb_family_id"
+    :return: df with 2 columns docdb_family_id and the earliest date of the event in each family
     """
+    if col == "earliest_filing_date":
+        text = "earliest_application_date"
+    elif col == "earliest_publn_date":
+        text = "earliest_publication_date"
+    else:
+        text = col
 
-    family_publi = patent_table.groupby("docdb_family_id", as_index=False)[["earliest_publn_date"]].min().rename(
-        columns={"earliest_publn_date": "earliest_publication_date"})
+    family_first = patent_table.groupby("docdb_family_id", as_index=False)[
+        [col]].min().rename(columns={"earliest_filing_date": text})
 
-    return family_publi
+    return family_first
 
 
-def get_family_grant(patent_table):
-    """   This function groups on families and gets informations on the first grant for one family
-
-    param patent_table:  Table with application informations - T201 or part of -
-    must have family identifier "docdb_family_id",
-    "grant_publn_date" and "granted"
-    type patent_table: dataframe
-
-    :return: a dataframe with families identifiers and grant informations
-
+def get_family_grant(patent_table: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function gets the first date where an application in the family has been granted
+    :param patent_table: df with patents data - must have family identifier "docdb_family_id"
+    :return: df with 3 columns docdb_family_id, granted (boolean) and date first granted (NA if not granted)
     """
 
     patent_table["granted"] = patent_table["granted"].apply(lambda x: 0 if x == "N" else 1)
@@ -77,16 +56,12 @@ def get_family_grant(patent_table):
     return _family_grant
 
 
-def get_family_phases(patent_table):
-    """   This function groups on families and gets informations on the procedures types
+def get_family_phases(patent_table: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function says if the family is in an European and/or international phase
 
-    param patent_table:  Table with application informations - T201 or part of -
-    must have "family identifier "docdb_family_id",
-    "oeb" and "international"
-    type patent_table: dataframe
-
-    :return: a dataframe with families identifiers and procedures informations
-
+    :param patent_table: df with patents data - must have family identifier "docdb_family_id"
+    :return: df with 3 columns docdb_family_id, is_oeb (boolean) and is_international (boolean)
     """
 
     _family_phases = patent_table.groupby("docdb_family_id", as_index=False)[["oeb", "international"]].max().rename(
@@ -95,16 +70,14 @@ def get_family_phases(patent_table):
     return _family_phases
 
 
-def get_family_pi_types(patent_table):
-    """  This function groups on families and industrial property types
+def get_family_pi_types(patent_table: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function groups on families and industrial property types
     to get the number of each type of industrial property
 
-    param patent_table:  Table with application informations - T201 or part of -
-    must have "family identifier "docdb_family_id",
-    application identifier "appln_nr_epodoc" and "ipr_type"
-    type patent_table: dataframe
+    param patent_table: df with patents data - must have family identifier "docdb_family_id"
 
-    :return: a dataframe with families identifiers and 3 variables each representing the number of applications in one
+    :return: df with 4 columns: docdb_family_id and 3 variables each representing the number of applications in one
     industrial property type
 
     """
@@ -188,10 +161,18 @@ def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
     return desc_col
 
 
-def fam(pat):
-    family_appln = get_family_first_application(pat)
+def fam(pat: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function gets all the info on docdb families
+    :param pat: df with patents data -  must have family identifier "docdb_family_id"
+    :return: df with 19 columns: docdb_family_id, earliest publication date, earliest application date
+    is_oeb, is_international, design patents count, patent counts, utility models counts, is_granted,
+    date first granted, title en, title fr, title default language, title default, abstract en, abstract fr,
+    abstract default language and abstract default
+    """
+    family_appln = get_earliest_in_family(pat, "earliest_filing_date")
 
-    family_publn = get_family_publi(pat)
+    family_publn = get_earliest_in_family(pat, "earliest_publn_date")
 
     family_grant = get_family_grant(pat)
 
@@ -218,43 +199,24 @@ def fam(pat):
 
 
 def fam_ipc_cpc(pat: pd.DataFrame, colfilter: str, tls: str, dicttype: dict) -> pd.DataFrame:
-    """   This function gets the technologies in the table "name_table_techno" related to the patents in "set_patent"
+    """
 
-        param set_patent:  set of application identifiers "appln_id"
-        type set_patent: set
-        param name_table_techno:  Table with technology informations - must have application identifier "appln_id"
-        type name_table_techno: dataframe
+    :param pat: df with patents data
+    :param colfilter: column that serves as a filter (appln_id or docdb_family_id)
+    :param tls: table directory
+    :param dicttype: dictionary with data types (DICT["patstat"] or ["get_cpc_family_codes"]
+    :return: a df with 3 or 4 columns : filtering column (appln_id or docdb_family_id), level, code
+    (and classif for tables 224 and 209)
+    """
 
-        :return: a dataframe with one line for each group : patent/level of technology/technology code
+    # load filtered data from PATSTAT tables
+    table_techno = cfq.filtering(tls, pat, colfilter, dicttype)
 
-        """
-
-    # cette partie permet de lire des tables de technologies de patstat et en extraire seulement les technos des brevets
-    # de notre périmètre (set_patent)
-    def lect_patstat_table_from_appln_id(chunk):
-        """   This query extracts from any patstat table the informations related to the patent applications in
-        "set_patent"
-
-        param chunk:   any dataframe containing the application identifier "appln_id"
-        type chunk: dataframe
-        param set_patent:  set containing the applications identifiers "appln_id" to keep
-        type set_patent: set
-
-        :return: a dataframe, an extract of T204 table for the application identifiers present in patent_table loaded
-
-        """
-
-        query = chunk[chunk[colfilter].isin(pat[colfilter])]
-
-        return query
-
-    table_techno = cfq.multi_csv_files_querying(tls, lect_patstat_table_from_appln_id, dicttype)
-
-    # on identifie la variable qui contient les codes et contient "class_symbol"
-    # ( ça peut être cpc_class_symbol ou ipc_class_symbol)
+    # identify variable info on codes and whose name contains "_class_symbol"
+    # either cpc_class_symbol or ipc_class_symbol
     col_class_symbol = [item for item in list(table_techno.columns) if re.findall(r".+_class_symbol", item)][0]
-    # on démultiplie l"information sur les codes technos pour l"avoir à tous les niveaux
 
+    # extracts all levels of info on techno
     table_techno["groupe"] = table_techno[col_class_symbol].str.replace(" ", "")
     table_techno["ss_classe"] = table_techno["groupe"].str[0:4]
     table_techno["classe"] = table_techno["groupe"].str[0:3]
@@ -272,6 +234,13 @@ def fam_ipc_cpc(pat: pd.DataFrame, colfilter: str, tls: str, dicttype: dict) -> 
 
 
 def table_cpc_ipc(pat, tls: list) -> pd.DataFrame:
+    """
+    This function applies function fam_ipc_cpc to a list of tables
+    :param pat: df with patents data
+    :param tls: list of directories (as strings)
+    :return: a df with 3 or 4 columns : filtering column (appln_id or docdb_family_id), level, code
+    (and classif for tables 224 and 209)
+    """
     table = list(map(lambda a: fam_ipc_cpc(pat, "appln_id", a, DICT["patstat"]), tls))
     df_table = pd.concat(table)
     return df_table
@@ -279,15 +248,12 @@ def table_cpc_ipc(pat, tls: list) -> pd.DataFrame:
 
 def unify_technos_family_codes(tech_pat_codes: pd.DataFrame, cpc_fam_codes: pd.DataFrame,
                                cpc_cat_names: pd.DataFrame) -> pd.DataFrame:
-    """   This function gets from one table with application and family identifiers the technology codes related.
-
-    param patent_table:  Table with application informations - T201 or part of - must have family identifier
-    "docdb_family_id"
-    type patent_table: dataframe
-
-    :return: a dataframe with families identifiers and : the type of classification, the level,
-    the code and the label of technologies related
-
+    """
+    This function gets from application and family identifiers the technology codes associated.
+    :param tech_pat_codes: df with techno codes by application
+    :param cpc_fam_codes: df with techno codes by family
+    :param cpc_cat_names: df with techno codes names
+    :return:
     """
 
     # Tout d"abord on récupère les codes technos provenant des table 224 et 209 (qui sont par patent)
@@ -306,7 +272,13 @@ def unify_technos_family_codes(tech_pat_codes: pd.DataFrame, cpc_fam_codes: pd.D
     return fam_technos_with_names
 
 
-def unify(pat, cpc_cat_names):
+def unify(pat: pd.DataFrame, cpc_cat_names: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function applies unify_technos_family_codes to tables 224, 209 and 225
+    :param pat:
+    :param cpc_cat_names: df with CPC codes and names
+    :return:
+    """
     cpc_ipc_table = table_cpc_ipc(pat, ["tls224", "tls209"])
 
     technos_patent_codes = pd.merge(pat[["docdb_family_id", "appln_id"]], cpc_ipc_table,
@@ -329,11 +301,11 @@ def main():
 
     families = fam(patent)
 
-    families.to_csv("families.csv", sep="|", index=False)
+    # families.to_csv("families.csv", sep="|", index=False)
 
     family_technos_codes = unify(patent, cpc_category_names)
 
-    family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
+    # family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
 
 
 if __name__ == "__main__":

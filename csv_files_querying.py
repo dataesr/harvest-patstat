@@ -21,3 +21,14 @@ def csv_file_querying(csv_file: str, chunk_query, dict_param_load_csv: dict) -> 
     dataframe_result = pd.concat(chunk_result_list)
 
     return dataframe_result
+
+
+def filtering(files_directory: str, pat: pd.DataFrame, colfilter: str, dict_param_load_csv: dict) -> pd.DataFrame:
+    def lect_patstat_table_from_appln_id(chunk):
+        query = chunk[chunk[colfilter].isin(pat[colfilter])]
+
+        return query
+
+    table = multi_csv_files_querying(files_directory, lect_patstat_table_from_appln_id, dict_param_load_csv)
+
+    return table
