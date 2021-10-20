@@ -6,10 +6,11 @@ import dtypes_patstat_declaration as types
 import numpy as np
 import os
 import pandas as pd
+import re
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"
-DICT = {"patstat": {"sep": ",", "chunksize": 5000000, "dtype": {"appln_id": str}},
+DICT = {"patstat": {"sep": ",", "chunksize": 5000000},
         "get_cpc_family_codes": {"sep": ",", "chunksize": 5000000, "dtype": types.tls225_types}
         }
 
@@ -187,20 +188,46 @@ def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
     return desc_col
 
 
-# Récupération des codes CPC, à partir du printemps 2020, on les a par famille table 225
+def fam(pat):
+    family_appln = get_family_first_application(pat)
+
+    family_publn = get_family_publi(pat)
+
+    family_grant = get_family_grant(pat)
+
+    family_phases = get_family_phases(pat)
+
+    family_pi_types = get_family_pi_types(pat)
+
+    family_titles = get_family_tit_abstract("title", pat)
+
+    family_abstracts = get_family_tit_abstract("abstract", pat)
+
+    _fam = pd.merge(pat[["docdb_family_id", "inpadoc_family_id"]].drop_duplicates(),
+                    family_publn, how="left",
+                    on="docdb_family_id").merge(family_appln, how="left",
+                                                on="docdb_family_id").merge(family_phases,
+                                                                            how="left",
+                                                                            on="docdb_family_id").merge(
+        family_pi_types, how="left", on="docdb_family_id").merge(family_grant, how="left", on="docdb_family_id").merge(
+        family_titles, how="left", on="docdb_family_id").merge(family_abstracts, how="left",
+                                                               on="docdb_family_id").sort_values("docdb_family_id")
+
+    _fam = _fam.fillna("")
+    return _fam
 
 
-def get_cpc_ipc_patent_codes(set_patent, name_table_techno):
+def fam_ipc_cpc(pat: pd.DataFrame, colfilter: str, tls: str, dicttype: dict) -> pd.DataFrame:
     """   This function gets the technologies in the table "name_table_techno" related to the patents in "set_patent"
 
-    param set_patent:  set of application identifiers "appln_id"
-    type set_patent: set
-    param name_table_techno:  Table with technology informations - must have application identifier "appln_id"
-    type name_table_techno: dataframe
+        param set_patent:  set of application identifiers "appln_id"
+        type set_patent: set
+        param name_table_techno:  Table with technology informations - must have application identifier "appln_id"
+        type name_table_techno: dataframe
 
-    :return: a dataframe with one line for each group : patent/level of technology/technology code
+        :return: a dataframe with one line for each group : patent/level of technology/technology code
 
-    """
+        """
 
     # cette partie permet de lire des tables de technologies de patstat et en extraire seulement les technos des brevets
     # de notre périmètre (set_patent)
@@ -217,18 +244,15 @@ def get_cpc_ipc_patent_codes(set_patent, name_table_techno):
 
         """
 
-        query = chunk[chunk["appln_id"].isin(set_patent)]
+        query = chunk[chunk[colfilter].isin(pat[colfilter])]
 
         return query
 
-    table_techno = cfq.multi_csv_files_querying(name_table_techno, lect_patstat_table_from_appln_id, DICT["patstat"])
+    table_techno = cfq.multi_csv_files_querying(tls, lect_patstat_table_from_appln_id, dicttype)
 
     # on identifie la variable qui contient les codes et contient "class_symbol"
     # ( ça peut être cpc_class_symbol ou ipc_class_symbol)
-    for col in table_techno.columns:
-        if "class_symbol" in col:
-            col_class_symbol = col
-
+    col_class_symbol = [item for item in list(table_techno.columns) if re.findall(r".+_class_symbol", item)][0]
     # on démultiplie l"information sur les codes technos pour l"avoir à tous les niveaux
 
     table_techno["groupe"] = table_techno[col_class_symbol].str.replace(" ", "")
@@ -236,144 +260,25 @@ def get_cpc_ipc_patent_codes(set_patent, name_table_techno):
     table_techno["classe"] = table_techno["groupe"].str[0:3]
     table_techno["section"] = table_techno["groupe"].str[0:1]
 
-    list_level_data_frames = []
-    for level in ["groupe", "ss_classe", "classe", "section"]:
-        level_data_frame = table_techno.melt(id_vars=["appln_id"], value_vars=[level], var_name="level",
-                                             value_name="code") \
-            .drop_duplicates()
-        list_level_data_frames.append(level_data_frame.copy())
-    cpc_patent_codes = pd.concat(list_level_data_frames)
+    df_level = list(map(lambda a: table_techno.melt(id_vars=[colfilter], value_vars=[a], var_name="level",
+                                                    value_name="code")
+                        .drop_duplicates(), ["groupe", "ss_classe", "classe", "section"]))
+    df_cpc_patent_codes = pd.concat(df_level)
 
-    return cpc_patent_codes
+    if tls in ("tls224", "tls209"):
+        df_cpc_patent_codes["classif"] = col_class_symbol[0:3]
 
-
-def unify_cpc_ipc_patent_codes(set_patent):
-    """  This function gets the cpc and ipc technology codes in the tables 224 and 209 from a set of patent ("appln_id")
-
-    param set_patent:  Set of application identifiers "appln_id"
-    type set_patent: set
-
-    :return: a dataframe with one line for each group :
-    patent/ type of classification/ level of technology/ technology code
-
-    """
-
-    # on prend les codes cpc de la table t224 liés aux dépôts de "set_patent"
-    print("Start unify IPC patent codes")
-    cpc_patent_codes = get_cpc_ipc_patent_codes(set_patent, "tls224")
-    # puis les codes IPC de la talbe 209
-    ipc_patent_codes = get_cpc_ipc_patent_codes(set_patent, "tls209")
-    # On ajoute la variable "classif", pour le type de classification,
-    # permettant de mettre les codes des 2 classifications dans la même table, qu"on retourne
-    cpc_patent_codes["classif"] = "cpc"
-    ipc_patent_codes["classif"] = "ipc"
-    technos_patent_codes = pd.concat([cpc_patent_codes, ipc_patent_codes])
-
-    return technos_patent_codes
+    return df_cpc_patent_codes
 
 
-def get_cpc_ipc_from_patent_to_family(patent_table):
-    """   This function takes from patents table the technologies by patent and then gets it by family
-
-    param patent_table:  Table with application informations - T201 or part of -
-    must have family identifier "docdb_family_id" and application identifier "appln_id"
-    type patent_table: dataframe
-
-    :return: a dataframe with technologies by family
-
-    """
-
-    # this first function gets the ipc and cpc codes by application
-    cpc_ipc_table = unify_cpc_ipc_patent_codes(set(patent_table["appln_id"]))
-    # this function gets these codes by family
-    fam_ipc_cpc = pd.merge(patent_table[["docdb_family_id", "appln_id"]], cpc_ipc_table,
-                           on="appln_id", how="inner")[["docdb_family_id", "level", "code", "classif"]] \
-        .drop_duplicates()
-    # à la fin on obtient une table avec le type de classification "classif" (ipc ou cpc),
-    # le code et le niveau ("classe", "sous-classe" ...)  pour chaque famille
-    # Chaque brevet appartient à une multitude de codes technos, et encore plus la famille
-    return fam_ipc_cpc
+def table_cpc_ipc(pat, tls: list) -> pd.DataFrame:
+    table = list(map(lambda a: fam_ipc_cpc(pat, "appln_id", a, DICT["patstat"]), tls))
+    df_table = pd.concat(table)
+    return df_table
 
 
-def get_cpc_family_codes(patent_table):
-    """   This function gets the technologies in the table 225 by family from a patent table
-
-    param patent_table:  Table with application informations - T201 or part of - must have family identifier
-    "docdb_family_id"
-    type patent_table: dataframe
-
-    :return: a dataframe grouped by : family/level of technology/technology code
-
-    """
-
-    _patent = patent_table.copy()
-
-    # A partir de 2020, une nouvelle table enregistre les codes cpc par famille,
-    # et non plus par dépôt de brevet : la 225
-    # On prend les codes dans cette table pour chaque famille
-
-    def lect_patstat_table_from_docdb_family_id(chunk):
-        """   This function creates a query to extract from any patstat table the informations related to the families
-         in "set_family"
-
-        param chunk:   any dataframe containing the family identifier "docdb_family_id"
-        type chunk: dataframe
-        param set_family:  set containing the family identifiers "docdb_family_id" to keep
-        type set_family: set
-
-        :return: a query that extracts from the dataframe "chunk" only the values for wich "docdb_family_id"
-        belongs to "set_family"
-
-        """
-
-        query = chunk.loc[chunk["docdb_family_id"].isin(_patent["docdb_family_id"])]
-
-        return query
-
-    t225 = cfq.multi_csv_files_querying("tls225", lect_patstat_table_from_docdb_family_id, DICT["get_cpc_family_codes"])
-
-    # on démultiplie les codes par niveau
-    t225["groupe"] = t225["cpc_class_symbol"].str.replace(" ", "")
-    t225["ss_classe"] = t225["groupe"].str[0:4]
-    t225["classe"] = t225["groupe"].str[0:3]
-    t225["section"] = t225["groupe"].str[0:1]
-
-    list_level_data_frames = []
-
-    for level in ["groupe", "ss_classe", "classe", "section"]:
-        level_data_frame = t225.melt(id_vars=["docdb_family_id"], value_vars=[level], var_name="level",
-                                     value_name="code") \
-            .drop_duplicates()
-        list_level_data_frames.append(level_data_frame.copy())
-
-    cpc_family_codes = pd.concat(list_level_data_frames)
-    print("End unify IPC patent codes")
-
-    return cpc_family_codes
-
-
-def get_cpc_names(cpc_codes_table):
-    # This function gets the labels corresponding to the cpc technology codes
-    #
-    # param cpc_codes_table  A table with a variable "code" wich correspond to a cpc technology code
-    # type cpc_codes_table dataframe
-    #
-    # return the same dataframe with the label corresponding to the varaible "code" added
-
-    cpc = cpc_codes_table.copy()
-
-    # on récupère les libellés présents dans une table csv dans le répertoire identifié par path_techno
-    # dans la fonction set_path au tout début
-
-    cpc_category_names = pd.read_csv("/run/media/julia/DATA/DONNEES/PATENTS/NOMENCLATURES/TECHNOS/lib_cpc.csv",
-                                     sep=",").rename(columns={"symbol": "code"}).drop(
-        columns=["level", "ref"])
-
-    cpc_libelles = cpc.merge(cpc_category_names, how="left", on="code")
-    return cpc_libelles
-
-
-def unify_technos_family_codes(patent_table):
+def unify_technos_family_codes(tech_pat_codes: pd.DataFrame, cpc_fam_codes: pd.DataFrame,
+                               cpc_cat_names: pd.DataFrame) -> pd.DataFrame:
     """   This function gets from one table with application and family identifiers the technology codes related.
 
     param patent_table:  Table with application informations - T201 or part of - must have family identifier
@@ -387,53 +292,49 @@ def unify_technos_family_codes(patent_table):
 
     # Tout d"abord on récupère les codes technos provenant des table 224 et 209 (qui sont par patent)
     # et on les groupe par famille
-    fam_ipc_cpc_from_patents = get_cpc_ipc_from_patent_to_family(patent_table).drop(columns=["classif"]) \
-        .drop_duplicates()
-    # On récupère ensuite les codes technos déjà par famille dans la table 225
-    fam_cpc_from_families = get_cpc_family_codes(patent_table)
+    fam_ipc_cpc_from_patents = tech_pat_codes.drop(columns=["classif"]).drop_duplicates()
+
     # On fusionne en une table avec tous les codes technos par famille
-    fam_technos = pd.concat([fam_ipc_cpc_from_patents, fam_cpc_from_families]).drop_duplicates()
+    fam_technos = pd.concat([fam_ipc_cpc_from_patents, cpc_fam_codes]).drop_duplicates()
 
     # Enfin on récupère les libellés liés à ces codes
     # (les libellés IPC sont les mêmes que cpc car la classification est une étendue (beaucoup plus volumineuse)
     # de la classification IPC : elle reprend la même classification de base
-    fam_technos_with_names = get_cpc_names(fam_technos)
+
+    fam_technos_with_names = fam_technos.merge(cpc_cat_names, how="left", on="code")
 
     return fam_technos_with_names
 
 
-patent = pd.read_csv("patent.csv", sep="|",
-                     parse_dates=["appln_filing_date", "earliest_filing_date", "earliest_publn_date",
-                                  "appln_publn_date", "grant_publn_date"], dtype=types.patent_types)
+def unify(pat, cpc_cat_names):
+    cpc_ipc_table = table_cpc_ipc(pat, ["tls224", "tls209"])
 
-family_appln = get_family_first_application(patent)
+    technos_patent_codes = pd.merge(pat[["docdb_family_id", "appln_id"]], cpc_ipc_table,
+                                    on="appln_id", how="inner")[["docdb_family_id", "level", "code", "classif"]] \
+        .drop_duplicates()
 
-family_publn = get_family_publi(patent)
+    cpc_family_codes = fam_ipc_cpc(pat, "docdb_family_id", "tls225", DICT["get_cpc_family_codes"])
 
-family_grant = get_family_grant(patent)
+    fam_tech_codes = unify_technos_family_codes(technos_patent_codes, cpc_family_codes, cpc_cat_names)
+    return fam_tech_codes
 
-family_phases = get_family_phases(patent)
 
-family_pi_types = get_family_pi_types(patent)
+def main():
+    patent = pd.read_csv("patent.csv", sep="|",
+                         parse_dates=["appln_filing_date", "earliest_filing_date", "earliest_publn_date",
+                                      "appln_publn_date", "grant_publn_date"], dtype=types.patent_types)
 
-family_titles = get_family_tit_abstract("title", patent)
+    cpc_category_names = pd.read_csv("lib_cpc.csv",
+                                     sep=",").rename(columns={"symbol": "code"}).drop(columns=["level", "ref"])
 
-family_abstracts = get_family_tit_abstract("abstract", patent)
+    families = fam(patent)
 
-families = pd.merge(patent[["docdb_family_id", "inpadoc_family_id"]].drop_duplicates(),
-                    family_publn, how="left",
-                    on="docdb_family_id").merge(family_appln, how="left",
-                                                on="docdb_family_id").merge(family_phases,
-                                                                            how="left",
-                                                                            on="docdb_family_id").merge(
-    family_pi_types, how="left", on="docdb_family_id").merge(family_grant, how="left", on="docdb_family_id").merge(
-    family_titles, how="left", on="docdb_family_id").merge(family_abstracts, how="left",
-                                                           on="docdb_family_id").sort_values("docdb_family_id")
+    families.to_csv("families.csv", sep="|", index=False)
 
-families = families.fillna("")
+    family_technos_codes = unify(patent, cpc_category_names)
 
-families.to_csv("families.csv", sep="|", index=False)
+    family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
 
-family_technos_codes = unify_technos_family_codes(patent)
 
-family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
+if __name__ == "__main__":
+    main()
