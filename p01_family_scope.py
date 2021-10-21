@@ -134,26 +134,21 @@ def get_families_from_set_patent(t201directory: str, _set_application: list) -> 
     return _family_scope
 
 
-def get_patent_from_set_family(t201directory: str, _set_family: list) -> pd.DataFrame:
+def get_patent_from_set_family(t201directory: str, fam_sc: pd.DataFrame, colfilter: str,
+                               dict_param_load: dict) -> pd.DataFrame:
     """
 
     :param t201directory: directory where tls 201 files are
-    :param _set_family: docdb family ID corresponding to application ID
-    :return: a dataframe with all the columns from tls 201
-    with patent and other types of applications from French persons
+    :param fam_sc: df where filtering info are
+    :param colfilter: column which serves as a filter
+    :param dict_param_load: dictionary with loading parameters
+    :return: load table with filtered values
     """
+
     print("Start get patent from set family")
 
-    def chunk_query(chunk: pd.DataFrame) -> pd.DataFrame:
-        """
-        :param chunk: a chunk from CSV
-        :return: rows with the corresponding docdb family ID
-        """
-        chunk_trie = chunk[chunk['docdb_family_id'].isin(_set_family)]
-        return chunk_trie
+    _patent_scope = cfq.filtering(t201directory, fam_sc, colfilter, dict_param_load)
 
-    dict_param_load = DICT.get("tls201_patent_from_set_family")
-    _patent_scope = cfq.multi_csv_files_querying(t201directory, chunk_query, dict_param_load)
     print("End get patent from set family")
     return _patent_scope
 
@@ -164,10 +159,10 @@ def main():
     scope_applications = get_scope_applications("tls207", patent_appln_id, french_person_id)
     family_scope = get_families_from_set_patent("tls201", scope_applications['appln_id'])
     family_scope.to_csv("docdb_family_scope.csv", sep='|', index=False)
-    patent_scope = get_patent_from_set_family("tls201", family_scope["docdb_family_id"])
-    patent_scope[""]
-    patent_scope["key_appln_nr"] = patent_scope["appln_auth"] + patent_scope["appln_nr"] + \
-        patent_scope["appln_kind"] + patent_scope["receiving_office"]
+    patent_scope = get_patent_from_set_family("tls201", family_scope, "docdb_family_id",
+                                              DICT.get("tls201_patent_from_set_family"))
+    patent_scope["key_appln_nr"] = patent_scope["appln_auth"] + patent_scope["appln_nr"] +\
+                                   patent_scope["appln_kind"] + patent_scope["receiving_office"]
     patent_scope.to_csv("patent_scope.csv", sep='|', index=False)
 
 

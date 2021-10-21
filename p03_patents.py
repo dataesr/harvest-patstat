@@ -96,7 +96,7 @@ def get_first_grant(patent_table: pd.DataFrame, publn_table: pd.DataFrame) -> pd
 # Gestion des priorités
 
 
-def get_priorities(t204directory: str, patent_table: pd.DataFrame) -> pd.DataFrame:
+def get_priorities(t204directory: str, pat_tab: pd.DataFrame, colfilter: str, dict_param_load: dict) -> pd.DataFrame:
     """
     param t204directory:   directory where tls 204 files are
     param patent_table:  output from add_application_phases
@@ -105,18 +105,7 @@ def get_priorities(t204directory: str, patent_table: pd.DataFrame) -> pd.DataFra
 
     print("Start get priorities from application ID")
 
-    def lect_patstat_table_from_appln_id(chunk: pd.DataFrame) -> pd.DataFrame:
-        """
-        param chunk: a chunk from CSV
-        :return: rows with the corresponding application ID
-
-        """
-
-        query = chunk[chunk["appln_id"].isin(patent_table["appln_id"])]
-
-        return query
-
-    t204 = cfq.multi_csv_files_querying(t204directory, lect_patstat_table_from_appln_id, DICT.get(t204directory))
+    t204 = cfq.filtering(t204directory, pat_tab, colfilter, dict_param_load)
 
     print("End get priorities from application ID")
 
@@ -164,7 +153,7 @@ def main():
     publications.to_csv("publications.csv", sep="|", index=False)
     first_application = get_first_application(pat, publications)
     first_grant = get_first_grant(pat, publications)
-    priority_table = get_priorities("tls204", pat)
+    priority_table = get_priorities("tls204", pat, "appln_id", DICT["tls204"])
     ispriority = get_ispriority_byfamily(priority_table, pat)
     patent = pd.merge(pat,
                       first_application,

@@ -16,39 +16,33 @@ DICT = {"sep": ",", "chunksize": 5000000, "dtype": {"appln_id": np.int64}}
 # set working directory
 os.chdir(DATA_PATH)
 
-# load application ID for French persons post 2010 - output from p01
-patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
 
+def get_titles_abstracts_from_appln_id(directory: str, action: str, pat_sc: pd.DataFrame, colfilter: str,
+                                       dict_param_load: dict) -> pd.DataFrame:
+    """
+    This function gets the abstracts and titles corresponding to French applications since 2010.
 
-# function to get titles or abstracts from application ID
-def query_tit_res_from_set_appln_id(chunk: pd.DataFrame) -> pd.DataFrame:
+    :param directory: either tls with abstracts (203) or with titles (202)
+    :param action: abstacts or titles
+    :param pat_sc: df with application IDs to keep
+    :param colfilter: column with the application IDs
+    :param dict_param_load: dictionary with loading parameters
+    :return: df with filtered data
     """
-    :param chunk: a chunk from multi_csv_querying on which the function is applied
-    :return: a subset of dataframe with filtered data
-    """
-    tit_res_chunk = chunk[chunk["appln_id"].isin(patent_scope["appln_id"])]
-    return tit_res_chunk
 
-
-def get_titles_abstracts_from_appln_id(directory: str, action: str) -> pd.DataFrame:
-    """
-    :param directory: directory where table files are
-    :param action: collect titles or abstracts
-    :return: a dataframe with all the data corresponding to the query
-    """
     print(f"Start get {action} from application ID")
-    _titles = cfq.multi_csv_files_querying(directory,
-                                           lambda chunk: query_tit_res_from_set_appln_id(chunk),
-                                           DICT)
+    _titles = cfq.filtering(directory, pat_sc, colfilter, dict_param_load)
     print(f"End get {action} from application ID")
 
     return _titles
 
 
 def main():
-    titles = get_titles_abstracts_from_appln_id("tls202", "titles")
+    # load application ID for French persons post 2010 - output from p01
+    patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
+    titles = get_titles_abstracts_from_appln_id("tls202", "titles", patent_scope, "appln_id", DICT)
     titles.to_csv("titles.csv", sep="|", index=False)
-    abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts")
+    abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts", patent_scope, "appln_id", DICT)
     abstracts.to_csv("abstracts.csv", sep="|", index=False)
 
 

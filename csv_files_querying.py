@@ -24,11 +24,21 @@ def csv_file_querying(csv_file: str, chunk_query, dict_param_load_csv: dict) -> 
 
 
 def filtering(files_directory: str, pat: pd.DataFrame, colfilter: str, dict_param_load_csv: dict) -> pd.DataFrame:
-    def lect_patstat_table_from_appln_id(chunk):
+    """
+    This functions filters data during the pd.read_csv process.
+    Usually, it keeps only the IDs that are found in a different df
+
+    :param files_directory: str corresponding to the directory where the files are
+    :param pat: df where the filtering info are
+    :param colfilter: str corresponding to the column which serves as a filter
+    :param dict_param_load_csv: dictionary with loading parameters
+    :return: df with filtered values
+    """
+    def lect_patstat_table(chunk):
         query = chunk[chunk[colfilter].isin(pat[colfilter])]
 
         return query
 
-    table = multi_csv_files_querying(files_directory, lect_patstat_table_from_appln_id, dict_param_load_csv)
+    table = multi_csv_files_querying(files_directory, lect_patstat_table, dict_param_load_csv)
 
     return table

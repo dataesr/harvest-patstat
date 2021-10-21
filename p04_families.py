@@ -18,8 +18,6 @@ DICT = {"patstat": {"sep": ",", "chunksize": 5000000},
 os.chdir(DATA_PATH)
 
 
-# On reprend la table patent générale
-
 def get_earliest_in_family(patent_table: pd.DataFrame, col: str) -> pd.DataFrame:
     """
     This function gets the earliest date for an event in a family
@@ -208,6 +206,7 @@ def fam_ipc_cpc(pat: pd.DataFrame, colfilter: str, tls: str, dicttype: dict) -> 
     :return: a df with 3 or 4 columns : filtering column (appln_id or docdb_family_id), level, code
     (and classif for tables 224 and 209)
     """
+    print(f"Start fam_ipc_cpc for {tls}.")
 
     # load filtered data from PATSTAT tables
     table_techno = cfq.filtering(tls, pat, colfilter, dicttype)
@@ -227,8 +226,11 @@ def fam_ipc_cpc(pat: pd.DataFrame, colfilter: str, tls: str, dicttype: dict) -> 
                         .drop_duplicates(), ["groupe", "ss_classe", "classe", "section"]))
     df_cpc_patent_codes = pd.concat(df_level)
 
+    # create column "classif" with info on CPC or IPC
     if tls in ("tls224", "tls209"):
         df_cpc_patent_codes["classif"] = col_class_symbol[0:3]
+
+    print(f"End fam_ipc_cpc for {tls}.")
 
     return df_cpc_patent_codes
 
@@ -256,17 +258,13 @@ def unify_technos_family_codes(tech_pat_codes: pd.DataFrame, cpc_fam_codes: pd.D
     :return:
     """
 
-    # Tout d"abord on récupère les codes technos provenant des table 224 et 209 (qui sont par patent)
-    # et on les groupe par famille
+    # techno codes tls 224 and 209 grouped by family instaed of by patent
     fam_ipc_cpc_from_patents = tech_pat_codes.drop(columns=["classif"]).drop_duplicates()
 
-    # On fusionne en une table avec tous les codes technos par famille
+    # merge all techno codes by family
     fam_technos = pd.concat([fam_ipc_cpc_from_patents, cpc_fam_codes]).drop_duplicates()
 
-    # Enfin on récupère les libellés liés à ces codes
-    # (les libellés IPC sont les mêmes que cpc car la classification est une étendue (beaucoup plus volumineuse)
-    # de la classification IPC : elle reprend la même classification de base
-
+    # get techno code names - IPC is a subset of CPC so names from CPC are enough
     fam_technos_with_names = fam_technos.merge(cpc_cat_names, how="left", on="code")
 
     return fam_technos_with_names
@@ -275,19 +273,25 @@ def unify_technos_family_codes(tech_pat_codes: pd.DataFrame, cpc_fam_codes: pd.D
 def unify(pat: pd.DataFrame, cpc_cat_names: pd.DataFrame) -> pd.DataFrame:
     """
     This function applies unify_technos_family_codes to tables 224, 209 and 225
-    :param pat:
+    :param pat: df with patent data
     :param cpc_cat_names: df with CPC codes and names
     :return:
     """
+    print("Start unifying.")
+    # load tls 224 and 209 and apply table_cpc_ipc
     cpc_ipc_table = table_cpc_ipc(pat, ["tls224", "tls209"])
 
+    # create df with techno codes by application and family
     technos_patent_codes = pd.merge(pat[["docdb_family_id", "appln_id"]], cpc_ipc_table,
                                     on="appln_id", how="inner")[["docdb_family_id", "level", "code", "classif"]] \
         .drop_duplicates()
 
+    # load tls 225 and apply table_cpc_ipc
     cpc_family_codes = fam_ipc_cpc(pat, "docdb_family_id", "tls225", DICT["get_cpc_family_codes"])
 
+    # apply unify_technos_family_codes to our data
     fam_tech_codes = unify_technos_family_codes(technos_patent_codes, cpc_family_codes, cpc_cat_names)
+    print("End unifying.")
     return fam_tech_codes
 
 
@@ -301,11 +305,11 @@ def main():
 
     families = fam(patent)
 
-    # families.to_csv("families.csv", sep="|", index=False)
+    families.to_csv("families.csv", sep="|", index=False)
 
     family_technos_codes = unify(patent, cpc_category_names)
 
-    # family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
+    family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
 
 
 if __name__ == "__main__":
