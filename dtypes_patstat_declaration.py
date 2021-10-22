@@ -126,14 +126,14 @@ patent_types = {"appln_id": np.int64, "appln_auth": object, "appln_nr": object, 
                 "grant_publn_number": object,
                 "grant_publn_date": object, "ispriority": np.int64}
 
-partfin_types = {"inpadoc_family_id": str, "docdb_family_id": str, "person_id": str, "type": str, "name_source": str,
-                 "address_source": str,
-                 "country_source": str, "name_corrected": str, "country_corrected": str, "siren": str, "siret": str,
-                 "id_paysage": str,
-                 "rnsr": str, "grid": str, "id_personne": str}
+partfin_types = {"inpadoc_family_id": np.int64, "docdb_family_id": np.int64, "person_id": np.int64, "type": object, "name_source": object,
+                 "address_source": object,
+                 "country_source": object, "name_corrected": object, "country_corrected": object, "siren": object, "siret": object,
+                 "id_paysage": object,
+                 "rnsr": object, "grid": object, "id_personne": object}
 
-part_init_types = {"id_patent": str, "person_id": str, "docdb_family_id": str, "inpadoc_family_id": str,
-                   "appln_auth": str, "earliest_filing_date": str,
+part_init_types = {"id_patent": np.int64, "person_id": np.int64, "docdb_family_id": np.int64, "inpadoc_family_id": np.int64,
+                   "appln_auth": object, "earliest_filing_date": object,
                    "publication_number": str, "type": str, "name_source": str, "address_source": str,
                    "country_source": str, "psn_sector": str,
                    "psn_id": str, "psn_name": str, "old_name": str, "country_corrected": str, "siren": str,
