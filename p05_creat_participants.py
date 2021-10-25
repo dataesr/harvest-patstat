@@ -7,8 +7,6 @@ import text_functions as tf
 import numpy as np
 import os
 import pandas as pd
-import re
-
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"
@@ -55,19 +53,24 @@ def initialization_participants(patents, tls207, tls206, old_part):
     # on crée la variable qui nous sert d'identifiant unique pour les participants et permet de faire le lien
     # d'une version à l'autre
     print("ajout d'un identifiant")
-    new_participants["id_participant"] = new_participants["appln_nr_epodoc"].astype(str) + "_" + new_participants["person_id"].astype(str)
-    new_participants["key_appln_nr_person"] = new_participants["key_appln_nr"] + "_" + new_participants["person_id"].astype(str)
+    new_participants["id_participant"] = new_participants["appln_nr_epodoc"].astype(str) + "_" + new_participants[
+        "person_id"].astype(str)
+    new_participants["key_appln_nr_person"] = new_participants["key_appln_nr"] + "_" + new_participants[
+        "person_id"].astype(str)
     print("Récupération des informations corrigées de la version précédente et renommage des variables")
     part = pd.merge(new_participants[
                         ["id_participant", "appln_nr_epodoc", "person_id", "docdb_family_id", "inpadoc_family_id",
                          "applt_seq_nr",
                          "earliest_filing_date", "invt_seq_nr", "person_name", "person_address", "person_ctry_code",
                          "psn_sector", "psn_id",
-                         "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind", "receiving_office"]],
+                         "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind",
+                         "receiving_office", "key_appln_nr_person", "key_appln_nr"]],
                     old_part[["id_participant", "type", "name_corrected", "country_corrected", "siren", "siret",
                               "id_paysage", "rnsr", "grid",
-                              "sexe", "id_personne"]],
-                    on=["id_participant", "key_appln_nr_person"], how="left") \
+                              "sexe", "id_personne", "appln_id", "appln_nr", "appln_kind",
+                              "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
+                    on=["id_participant", "key_appln_nr_person", "appln_id", "appln_nr", "appln_kind",
+                        "receiving_office", "key_appln_nr"], how="left") \
         .rename(
         columns={"appln_nr_epodoc": "id_patent", "person_name": "name_source", "person_address": "address_source",
                  "person_ctry_code": "country_source", "appln_publn_number": "publication_number",
@@ -82,6 +85,7 @@ def initialization_participants(patents, tls207, tls206, old_part):
 
     return part_init
 
+
 part_init = initialization_participants(patents, tls207, tls206, old_part)
 
 # On crée la variable isascii,
@@ -90,6 +94,7 @@ part_init = initialization_participants(patents, tls207, tls206, old_part)
 
 part_init["isascii"] = part_init["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(tf.isascii)
 part_init["name_clean"] = part_init["name_source"].apply(tf.get_clean_name)
+
 
 # Initialisation de la variable type (pp : personne physique, pm : personne morale)
 

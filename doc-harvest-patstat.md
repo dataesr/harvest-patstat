@@ -131,7 +131,7 @@ Il y 170 647 ID uniques pour la table patent_scope printemps 2021.
 #### earliest_publn_date
 1ère date de publication de la demande &mdash; les demandes de la famille antérieures ne sont pas prises en compte dans ce cas
 
-POur patent_scope printemps 2021, les dates vont du 17 février 2010 au 28 janvier 2021.
+Pour patent_scope printemps 2021, les dates vont du 17 février 2010 au 28 janvier 2021.
 
 #### earliest_publn_year
 Année de la 1ère publication (mêmes conditions que earliest_publn_date)
@@ -253,7 +253,7 @@ Ce fichier est issu de la table 203 et contient 3 variables :
 
 Il y a des valeurs manquantes dans appln_abstract - 3 dans le cas du jeu de données PATSTAT Spring 2021 (appln_id :
 446022198, 503487228 et 503602912). Comme pour les titres, l'anglais est la langue par défaut : les autres langues
-n'apparaissent que si un résumé en anglais n'est pas disponible. langues des titres :
+n'apparaissent que si un résumé en anglais n'est pas disponible. Langues des titres :
 <ul>
 <li>sr : serbe</li>
 <li>ro : roumain</li>
@@ -292,6 +292,105 @@ n'apparaissent que si un résumé en anglais n'est pas disponible. langues des t
 |lv|1|0,00|
 
 ### Dans publications
+Ce fichier est issu de la table 211 et contient 10 variables :
+<ul>
+<li>pat_publn_id </li>
+<li>publn_auth (autorité responsable de la publication)</li>
+<li>publn_nr (numéro de publication)</li>
+<li>publn_nr_original</li>
+<li>publn_kind (type de publication)</li>
+<li>appln_id (ID de la demande)</li>
+<li>publn_date (date de publication)</li>
+<li>publn_lg (langue de publication)</li>
+<li>publn_first_grant (est-ce la 1ère publication ou non d'un brevet octroyé&nbsp;?)</li>
+<li>publn_claims (nombre de revendications)</li>
+</ul>
 
+Seuls les identifiants des demandes &laquo;&nbsp;françaises&nbsp;&raquo; (appln_id) et ceux qui correspondent à la 1ère date de publication sont conservées (earliest_pat_publn_id = pat_publn_id).
+
+#### Autorités de publication
+
+Près de 67&nbsp;% des publications sont effectuées auprès de l'INPI, de l'Office européen des brevets, de USPTO et de WIPO.
+
+|publn_auth|Pays ou organisation|occurences|pourcentage|
+|----------|--------------------|----------|-----------|
+|FR|France|214092|25,52|
+|EP|Office européen des brevets|138140|16,46|
+|US|&Eacute;tats-Unis|122150|14,56|
+|WO|Organisation mondiale de la propriété intellectuelle|94595|11,27|
+|CN|Chine|66978|7,98|
+|JP|Japon|39449|4,70|
+|KR|République de Corée|22899|2,73|
+|CA|Canada|21205|2,53|
+|BR|Brésil|15486|1,85|
+|RU|Russie|15427|1,84|
+|AU|Australie|12996|1,55|
+|ES|Espagne|12308|1,47|
+|MX|Mexique|7530|0,90|
+|TW|Taiwan|5738|0,68|
+|GB|Royaume-Uni|5315|0,63|
+|PL|Pologne|5077|0,61|
+|DE|Allemagne|4001|0,48|
+|IL|Israël|3387|0,40|
+|DK|Danemark|3309|0,39|
+|SG|Singapour|3094|0,37|
+|EA|Organisation eurasienne des brevets|2583|0,31|
+|PT|Portugal|2501|0,30|
+|AR|Argentine|2019|0,24|
+|ZA|Afrique du Sud|1915|0,23|
+|HK|Hong Kong|1571|0,19|
+|HU|Hongrie|1267|0,15|
+|IN|Inde|1081|0,13|
+|MA|Maroc|966|0,12|
+|CL|Chili|999|0,12|
+|NO|Norvège|751|0,09|
+|SI|Slovénie|758|0,09|
+|NZ|Nouvelle-Zélande|694|0,08|
+|HR|Croatie|687|0,08|
+|TR|Turquie|674|0,08|
+|UA|Ukraine|630|0,08|
+|CO|Colombie|579|0,07|
+|PH|Philippines|573|0,07|
+|RS|Serbie|485|0,06|
+|TN|Tunisie|476|0,06|
+|PE|Pérou|387|0,05|
+|LT|Lituanie|430|0,05|
+|CH|Suisse|326|0,04|
+|BE|Belgique|294|0,04|
+|IT|Italie|294|0,04|
+|UY|Uruguay|320|0,04|
+|MY|Malaisie|332|0,04|
+|CY|Chypre|300|0,04|
+|AP|ARIPO &mdash; African Regional Property Organization|246|0,03|
+|CR|Costa Rica|235|0,03|
+|NL|Pays-Bas|130|0,02|
+|SE|Suède|135|0,02|
+|CU|Cuba|161|0,02|
+|EC|&Eacute;quateur|190|0,02|
+|AT|Autriche|68|0,01|
+|LU|Luxembourg|56|0,01|
+|DO|République dominicaine|106|0,01|
+|MD|Moldavie|120|0,01|
+|GE|Géorgie|70|0,01|
+|SM|République de Saint-Marin|46|0,01|
+|GT|Guatemala|94|0,01|
+|JO|Jordanie|43|0,01|
+|ME|Montenegro|54|0,01|
+|NI|Nicaragua|79|0,01|
+|CZ|République tchèque|10|0,00|
+|SK|Slovaquie|3|0,00|
+|EE|Estonie|7|0,00|
+|FI|Finlande|18|0,00|
+|GR|Grèce|7|0,00|
+|IE|République d'Irlande|8|0,00|
+|RO|Roumanie|31|0,00|
+|SV|Salvador|27|0,00|
+|HN|Honduras|6|0,00|
+|EG|Egypte|14|0,00|
+|MC|Monaco|17|0,00|
+|BG|Bulgarie|6|0,00|
+|SA|Arabie saoudite|16|0,00|
+|LV|Lettonie|1|0,00|
+|ID|Indonésie|1|0,00|
 
 ### Dans patent
