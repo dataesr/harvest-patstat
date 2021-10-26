@@ -28,17 +28,17 @@ Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publicat
 <li>p09_geoloc</li>
 </ol>
 
-## Notes
+## Notes :
 
-### Enregistrements fichiers
+### Enregistrements fichiers :
 
 <ul>
 <li>217&nbsp;760 enregistrements dans docdb_family_scope</li>
 <li>581&nbsp;733 enregistrements pour patent_scope</li>
 <li>579&nbsp;217 enregistrements pour titles (titres des brevets)</li>
-<li>542&nbsp;372 enregistrements pour abstracts (résumés des brevets)</li>
-<li>Manque des titres et des résumés pour les demandes. Ce ne sont pas les demandes artificielles car il n'y en a que 2 (appln_kind "D")</li>
-<li>839&nbsp;073 enregistrements pour publications.</li>
+<li>542&nbsp;372 enregistrements pour abstracts (résumés des brevets): il manque des titres et des résumés pour les demandes. Ce ne sont pas les demandes artificielles car il n'y en a que 2 (appln_kind "D")</li>
+<li>839&nbsp;073 enregistrements pour publications</li>
+<li>581&nbsp;733 enregistrements pour patent</li>
 </ul>
 
 ### Dans patent_scope :
@@ -85,7 +85,7 @@ Bureau où la demande internationale a été effectuée - vide si demande nation
 #### internat_appln_id : 
 Numéro d'identification de la demande de brevet de la procédure Patent Cooperation Treaty (PCT). Si le numéro est égal à zéro, pas de demande PCT préalable.
 
-#### int, nat, reg_phase 
+#### int, nat, reg_phase :
 Ces variables disent est-ce que la demande est ou a été dans cette phase - vide pour les demandes pour lesquelles l'info n'est pas connue
 Routes possibles d'une demande : <br>
 
@@ -116,61 +116,61 @@ Les combinaisons disponibles de int, nat, reg_phase dans patent_scope printemps 
 
 <br>
 
-#### earliest_filing_date
+#### earliest_filing_date :
 1ère date de demande : date la plus ancienne parmi toutes les possibilités possibles (demande nationale, internationale, priorité convention de Paris,...)
 
 Pour patent_scope printemps 2021, les dates vont du 22 janvier 1999 au 18 décembre 2020.
 
-#### earliest_filing_year
+#### earliest_filing_year :
 Année de la 1ère demande (mêmes conditions que earliest_filing_date)
 
-#### earliest_filing_id
+#### earliest_filing_id :
 ID de la 1ère demande : ID la plus ancienne parmi toutes les possibilités possibles (demande nationale, internationale, priorité convention de Paris,...)
 
 Il y 170 647 ID uniques pour la table patent_scope printemps 2021.
 
-#### earliest_publn_date
+#### earliest_publn_date :
 1ère date de publication de la demande &mdash; les demandes de la famille antérieures ne sont pas prises en compte dans ce cas
 
 Pour patent_scope printemps 2021, les dates vont du 17 février 2010 au 28 janvier 2021.
 
-#### earliest_publn_year
+#### earliest_publn_year :
 Année de la 1ère publication (mêmes conditions que earliest_publn_date)
 
-#### earliest_pat_publn_id
+#### earliest_pat_publn_id :
 ID de la 1ère publication (mêmes conditions que earliest_publn_date)
 
-#### granted
+#### granted :
 Y si la demande a été octroyée et N si elle ne l'a pas été. N signifie exactement qu'il n'y a <U>AUCUNE</U> indication dans les données disponibles que la demande a été octroyée.
 
 Dans patent_scope, il y a 273 237 Y (environ 47 %) et 308 496 N (53 %).
 
-#### docdb_family_id
+#### docdb_family_id :
 ID de la famille DOCDB qui est une variable créée automatiquement par l'OEB : une famille DOCDB signifie que les différentes demandes partagenet exactement les mêmes priorités
 
 Pour patent_scope printemps 2021, il y a 173 410 ID uniques.
 
-#### inpadoc_family_id
+#### inpadoc_family_id :
 ID de la famille INPADOC : variable qui indique que la demande partage une priorité directe ou via une demande tiers. Chaque application appartient à une et une seule famille INPADOC.
 
 Pour patent_scope printemps 2021, il y a 167 708 ID uniques.
 
-#### docdb_family_size
+#### docdb_family_size :
 Nombre de demandes au sein de chaque famille DOCDB.
 
 La taille des familles va de 1 à 242. La taille médiane est de 5, la moyenne de 7 et le mode de 2. Plus de 85 % des enregistrements ont une taille de famille compris entre 1 et 10 inclus.
 
-#### nb_citing_docdb_fam
+#### nb_citing_docdb_fam :
 Nombre de citations par une famille DOCDB d'au moins une publication ou demande de la famille DOCDB de la demande actuelle.
 
 Le nombre de citations va de 0 à 768. La médiane est de 1, la moyenne de 4,876 et le mode de 0. Plus de 90 % des demandes ont moins de 11 citations.
 
-#### nb_applicants
+#### nb_applicants :
 Nombre de demandeurs pour chaque demande selon la publication la plus récente qui contient des noms de personnes en caractères latins (si pas de caractères, le nombre de demandeurs est fixé à zéro &mdash; ça ne veut pas dire qu'il n'y a pas de demandeurs).
 
 Le nombre de demandeurs va de 0 à 30. La médiane est de 1, la moyenne de 1,391 et le mode de 1. Plus de 98 % des demandes ont moins de 6 demandeurs et 3,54 % ont &laquo;&nbsp;zéro&nbsp;&raquo; demandeur.
 
-#### nb_inventors
+#### nb_inventors :
 Nombre d'inventeurs pour chaque demande selon la publication la plus récente qui contient des noms de personnes en caractères latins (si pas de caractères, le nombre d'inventeurs est fixé à zéro &mdash; ça ne veut pas dire qu'il n'y a pas d'inventeurs).
 
 Le nombre d'inventeurs va de 0 à 40. La médiane est de 2, la moyenne de 2,617 et le mode de 2. Plus de 93 % des demandes ont moins de 6 inventeurs et 4,43 % ont &laquo;&nbsp;zéro&nbsp;&raquo; inventeur.
@@ -256,7 +256,7 @@ n'apparaissent que si un résumé en anglais n'est pas disponible. Langues des t
 |it|italien|1|0,00|
 |lv|letton|1|0,00|
 
-### Dans publications
+### Dans publications :
 Ce fichier est issu de la table 211 et contient 10 variables :
 <ul>
 <li>pat_publn_id </li>
@@ -273,7 +273,7 @@ Ce fichier est issu de la table 211 et contient 10 variables :
 
 Seuls les identifiants des demandes &laquo;&nbsp;françaises&nbsp;&raquo; (appln_id) et ceux qui correspondent à la 1ère date de publication sont conservées (earliest_pat_publn_id = pat_publn_id).
 
-#### Autorités de publication (publn_auth)
+#### Autorités de publication (publn_auth) :
 
 Près de 67&nbsp;% des publications sont effectuées auprès de l'INPI, de l'Office européen des brevets, de USPTO et de WIPO.
 
@@ -360,10 +360,10 @@ Il y a un gros écart entre la part de l'autorité chinoise pour la publication 
 |LV|Lettonie|1|0,00|
 |ID|Indonésie|1|0,00|
 
-#### Numéro de publication (publn_nr)
+#### Numéro de publication (publn_nr) :
 Numéro donné par l'autorité de publication. Il n'est pas unique dans 179&nbsp;951 cas (environ 21&nbsp;%).
 
-#### Numéro de publication au format originel (publn_nr_original)
+#### Numéro de publication au format originel (publn_nr_original) :
 En moyenne, environ 20&nbsp;% de toutes les publications ont un numéro au format originel selon le dictionnaire de données de PATSTAT.
 
 Dans le cas des demandes &laquo;&nbsp;françaises&nbsp;&raquo;&nbsp;:
@@ -374,7 +374,7 @@ Dans le cas des demandes &laquo;&nbsp;françaises&nbsp;&raquo;&nbsp;:
 </ul>
  
 
-#### Type de publication (publn_kind)
+#### Type de publication (publn_kind) :
 Type de publication tel qu'attribué par l'autorité de publication&nbsp;: leur signification dépend de l'autorité.
 
 |pubn_kind|occurences|pourcentage|
@@ -436,7 +436,7 @@ Type de publication tel qu'attribué par l'autorité de publication&nbsp;: leur 
 |U5      |1        |0,00|
 |Y4      |1        |0,00|
 
-#### Langue de publication (publn_lg)
+#### Langue de publication (publn_lg) :
 
 Le français et l'anglais sont les langues les plus fréquentes et représentent 74&nbsp;% des langues de publication.
 L'allemand, qui est la 3ème langue officielle des brevets européens, arrive bien derrière avec 1&nbsp;%.
@@ -480,13 +480,58 @@ Le chinois, à près de 8&nbsp;%, est la 3ème langue la plus utilisée.
 |letton|lv      |   1      |   0,00|
 |indonésien|id      |   1      |   0,00|
 
-#### Publication du 1er octroi (publn_frist_grant)
+#### Publication du 1er octroi (publn_frist_grant) :
 
 68&nbsp;% des cas ne correspondent pas à publication du 1er octroi et 32&nbsp;% le sont.
 
-#### Nombre de revendications (publn_claims)
+#### Nombre de revendications (publn_claims) :
 
 Environ 85&nbsp;% des publications n'ont aucune revendication. Le nombre maximal de revendications est de 177.
 La médiane et le mode sont de zéro. La moyenne est de 2,014.
 
-### Dans patent
+### Dans patent :
+Patent a 42 variables. Le fichier reprend les variables de patent_scope auxquelles s'ajoutent&nbsp;:
+<ul>
+<li>key_appln_nr</li>
+<li>oeb</li>
+<li>international</li>
+<li>appln_publn_id</li>
+<li>appln_publn_number</li>
+<li>appln_publn_date</li>
+<li>publn_kind</li>
+<li>grant_publn_id</li>
+<li>grant_publn_number</li>
+<li>grant_publn_date</li>
+<li>ispriority</li>
+<li>appln_title_lg</li>
+<li>appln_title</li>
+<li>appln_abstract_lg</li>
+<li>appln_abstract</li>
+</ul>
+
+Patent est le résultat de la jointure (sur appln_id) des données sur la 1ère publication, le 1er octroi, la présence de priorités, les titres et les résumés (cf. Dans titles et Dans abstracts).
+
+#### reg_phase, nat_phase, oeb et international :
+reg_phase et nat_phase sont transformés en variables &laquo;&nbsp;dummy&nbsp;&raquo; avec 0 pour N et 1 pour les autres cas&nbsp;: les valeurs manquantes représentées par une chaîne de caractères vides prennent donc une valeur de 1.
+oeb est une variable &laquo;&nbsp;dummy&nbsp;&raquo; avec 1 si il y a à la fois une valeur de 1 dans reg_phase et EP dans appln_auth sinon 0. Les valeurs manquantes prennent une valeur de 0.
+international reprend la variable int_phase en la transformant en variable &laquo;&nbsp;dummy&nbsp;&raquo; avec 1 pour Y et 0 pour les autres valeurs: les valeurs manquantes prennent donc une valeur de 0.
+
+Pour la variable oeb, il y a 15,44&nbsp;% de demandes auprès de l'Office européen des brevets.
+
+#### 1ère publication
+Suite à une jointure entre patent_scope (earliest_pat_publn_id) et publications (pat_publn_id), on obtient la 1ère date de publication pour chaque demande. On garde les variables publn_nr, publn_date et pat_publn_id qui sont renommées appln_publn_number, appln_publn_date et appln_publn_id.
+
+#### 1er octroi
+Suite à une jointure sur les ID de demandes entre patent_scope et publications (pour les enregistrements qui ont une valeur de Y à la variable publn_first_grant), on obtient la 1ère date d'octroi. On garde publn_nr, publn_date, et pat_publn_id qui sont renommées grant_publn_number, grant_publn_date et grant_publn_id.
+
+#### Présence de priorités
+Les informations sur les priorités sont présentes dans la table 204 : seuls les ID de demandes présents à la fois dans patent_scope et la table 204 sont chargés. Ensuite, on crée une variable &laquo;&nbsp;dummy&nbsp;&raquo; indiquant s'il y a une priorité ou non dans la famille de brevets.
+17&nbsp;% des demandes ont des priorités.
+
+### Dans families :
+
+
+### Dans families_technologies :
+
+
+
