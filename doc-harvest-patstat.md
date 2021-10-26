@@ -33,11 +33,12 @@ Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publicat
 ### Enregistrements fichiers
 
 <ul>
-<li>217 760 enregistrements dans docdb_family_scope</li>
-<li>581 733 enregistrements pour patent_scope</li>
-<li>579 217 enregistrements pour titles (titres des brevets)</li>
-<li>542 372 enregistrements pour abstracts (résumés des brevets)</li>
+<li>217&nbsp;760 enregistrements dans docdb_family_scope</li>
+<li>581&nbsp;733 enregistrements pour patent_scope</li>
+<li>579&nbsp;217 enregistrements pour titles (titres des brevets)</li>
+<li>542&nbsp;372 enregistrements pour abstracts (résumés des brevets)</li>
 <li>Manque des titres et des résumés pour les demandes. Ce ne sont pas les demandes artificielles car il n'y en a que 2 (appln_kind "D")</li>
+<li>839&nbsp;073 enregistrements pour publications.</li>
 </ul>
 
 ### Dans patent_scope :
@@ -185,62 +186,33 @@ Ce fichier est issu de la table 202 et contient 3 variables :
 
 Aucune valeur manquante. 69,24 % des titres en anglais et 19,19 % en français. Anglais comme langue par défaut : les
 titres dans les autres langues ne sont considérés que s'il n'existe pas de titre en anglais. Langues des titres :
-<ul>
-<li>tr = turc</li>
-<li>el = grec</li>
-<li>pt = portugais</li>
-<li>pl = polonais</li>
-<li>ar = arabe</li>
-<li>lt = lituanien</li>
-<li>et = estonien</li>
-<li>hr = croate</li>
-<li>he = hébreu</li>
-<li>uk = ukrainien</li>
-<li>en = anglais</li>
-<li>fr = français</li>
-<li>ja = japonais</li>
-<li>es = espagnol</li>
-<li>ko = coréen</li>
-<li>de = allemand</li>
-<li>da = danois</li>
-<li>ru = russe</li>
-<li>zh = chinois</li>
-<li>it = italien</li>
-<li>no = norvégien</li>
-<li>sv = suédois</li>
-<li>ar = arabe</li>
-<li>nl = néerlandais</li>
-<li>fi = finnois</li>
-</ul>
-<br>
 
-
-|langues|occurences|pourcentage|
-|-------|----------|-----------|
-|en     |401076    |69,24      |
-|fr     |111173    |19,19      |
-|ja     |19493     |3,37       |
-|es     |16865     |2,91       |
-|pt     |13258     |2,29       |
-|ko     |4556      |0,79       |
-|de     |3641      |0,63       |
-|da     |3194      |0,55       |
-|ru     |2851      |0,49       |
-|zh     |1205      |0,21       |
-|tr     |673       |0,12       |
-|it     |321       |0,06       |
-|el     |300       |0,05       |
-|no     |226       |0,04       |
-|uk     |199       |0,03       |
-|nl     |59        |0,01       |
-|sv     |57        |0,01       |
-|ar     |56        |0,01       |
-|fi     |6         |0,00       |
-|pl     |3         |0,00       |
-|lt     |2         |0,00       |
-|et     |1         |0,00       |
-|hr     |1         |0,00       |
-|he     |1         |0,00       |
+|code ISO langues|langues    |occurences|pourcentage|
+|----------------|-----------|----------|-----------|
+|en              |anglais    |401076    |69,24      |
+|fr              |français   |111173    |19,19      |
+|ja              |japonais   |19493     |3,37       |
+|es              |espagnol   |16865     |2,91       |
+|pt              |portugais  |13258     |2,29       |
+|ko              |coréen     |4556      |0,79       |
+|de              |allemand   |3641      |0,63       |
+|da              |danois     |3194      |0,55       |
+|ru              |russe      |2851      |0,49       |
+|zh              |chinois    |1205      |0,21       |
+|tr              |turc       |673       |0,12       |
+|it              |italien    |321       |0,06       |
+|el              |grec       |300       |0,05       |
+|no              |norvégien  |226       |0,04       |
+|uk              |ukrainien  |199       |0,03       |
+|nl              |néerlandais|59        |0,01       |
+|sv              |suédois    |57        |0,01       |
+|ar              |arabe      |56        |0,01       |
+|fi              |finnois    |6         |0,00       |
+|pl              |polonais   |3         |0,00       |
+|lt              |lituanien  |2         |0,00       |
+|et              |estonien   |1         |0,00       |
+|hr              |croate     |1         |0,00       |
+|he              |hébreu     |1         |0,00       |
 
 
 ### Dans abstracts :
@@ -254,42 +226,35 @@ Ce fichier est issu de la table 203 et contient 3 variables :
 Il y a des valeurs manquantes dans appln_abstract - 3 dans le cas du jeu de données PATSTAT Spring 2021 (appln_id :
 446022198, 503487228 et 503602912). Comme pour les titres, l'anglais est la langue par défaut : les autres langues
 n'apparaissent que si un résumé en anglais n'est pas disponible. Langues des titres :
-<ul>
-<li>sr : serbe</li>
-<li>ro : roumain</li>
-<li>cs : tchèque</li>
-<li>me : monténégrin</li>
-</ul>
 
-
-|langues|occurences|pourcentage|
-|-------|----------|-----------|
-|en|344927|63,60|
-|fr|133354|24,59|
-|ja|15936|2,94|
-|es|15634|2,88|
-|ko|12264|2,26|
-|pt|11413|2,10|
-|de|4074|0,75|
-|ru|1713|0,32|
-|zh|1206|0,22|
-|tr|673|0,12|
-|uk|321|0,06|
-|el|299|0,06|
-|no|241|0,04|
-|sr|109|0,02|
-|ar|77|0,01|
-|pl|49|0,01|
-|nl|39|0,01|
-|sv|13|0,00|
-|da|11|0,00|
-|ro|9|0,00|
-|hr|3|0,00|
-|cs|2|0,00|
-|me|2|0,00|
-|fi|1|0,00|
-|it|1|0,00|
-|lv|1|0,00|
+|code ISO langues|langues|occurences|pourcentage|
+|----------------|-------|----------|-----------|
+|en|anglais|344927|63,60|
+|fr|français|133354|24,59|
+|ja|japonais|15936|2,94|
+|es|espagnol|15634|2,88|
+|ko|coréen|12264|2,26|
+|pt|portugais|11413|2,10|
+|de|allemand|4074|0,75|
+|ru|russe|1713|0,32|
+|zh|chinois|1206|0,22|
+|tr|turc|673|0,12|
+|uk|ukrainien|321|0,06|
+|el|grec|299|0,06|
+|no|norvégien|241|0,04|
+|sr|serbe|109|0,02|
+|ar|arabe|77|0,01|
+|pl|polonais|49|0,01|
+|nl|néerlandais|39|0,01|
+|sv|sudéois|13|0,00|
+|da|danois|11|0,00|
+|ro|roumain|9|0,00|
+|hr|croate|3|0,00|
+|cs|tchèque|2|0,00|
+|me|monténégrin|2|0,00|
+|fi|finnois|1|0,00|
+|it|italien|1|0,00|
+|lv|letton|1|0,00|
 
 ### Dans publications
 Ce fichier est issu de la table 211 et contient 10 variables :
@@ -308,9 +273,11 @@ Ce fichier est issu de la table 211 et contient 10 variables :
 
 Seuls les identifiants des demandes &laquo;&nbsp;françaises&nbsp;&raquo; (appln_id) et ceux qui correspondent à la 1ère date de publication sont conservées (earliest_pat_publn_id = pat_publn_id).
 
-#### Autorités de publication
+#### Autorités de publication (publn_auth)
 
 Près de 67&nbsp;% des publications sont effectuées auprès de l'INPI, de l'Office européen des brevets, de USPTO et de WIPO.
+
+Il y a un gros écart entre la part de l'autorité chinoise pour la publication et la part du chinois dans les langues des titres et résumés.
 
 |publn_auth|Pays ou organisation|occurences|pourcentage|
 |----------|--------------------|----------|-----------|
@@ -392,5 +359,134 @@ Près de 67&nbsp;% des publications sont effectuées auprès de l'INPI, de l'Off
 |SA|Arabie saoudite|16|0,00|
 |LV|Lettonie|1|0,00|
 |ID|Indonésie|1|0,00|
+
+#### Numéro de publication (publn_nr)
+Numéro donné par l'autorité de publication. Il n'est pas unique dans 179&nbsp;951 cas (environ 21&nbsp;%).
+
+#### Numéro de publication au format originel (publn_nr_original)
+En moyenne, environ 20&nbsp;% de toutes les publications ont un numéro au format originel selon le dictionnaire de données de PATSTAT.
+
+Dans le cas des demandes &laquo;&nbsp;françaises&nbsp;&raquo;&nbsp;:
+<ul>
+<li>7,77&nbsp;% n'ont pas de numéro,</li>
+<li>39,71&nbsp;% n'ont pas un numéro unique et</li>
+<li>52,52 ont un numéro unique.</li>
+</ul>
+ 
+
+#### Type de publication (publn_kind)
+Type de publication tel qu'attribué par l'autorité de publication&nbsp;: leur signification dépend de l'autorité.
+
+|pubn_kind|occurences|pourcentage|
+|---------|----------|-----------|
+|A1 |404189       |48,17|
+|B1 |141702       |16,89|
+|A |113397       |13,51|
+|B2  |62363        |7,43|
+|B  |27530        |3,28|
+|A2  |26431        |3,15|
+|T3  |20103        |2,40|
+|A3  |10726        |1,28|
+|C2   |5662        |0,67|
+|D0   |4548        |0,54|
+|C   |4350        |0,52|
+|A4   |3111        |0,37|
+|T   |2405        |0,29|
+|U   |1889        |0,23|
+|T1   |1847        |0,22|
+|A8   |1552        |0,18|
+|T2   |1255        |0,15|
+|C1   |1013        |0,12|
+|T4    |714        |0,09|
+|A9    |650        |0,08|
+|T5    |624        |0,07|
+|B8    |618        |0,07|
+|U1    |549        |0,07|
+|E    |531        |0,06|
+|B4    |248        |0,03|
+|A0    |199        |0,02|
+|B3    |187        |0,02|
+|B9    |144        |0,02|
+|A7    |108        |0,01|
+|R1     |90        |0,01|
+|A5     |78        |0,01|
+|C9     |52        |0,01|
+|T8     |45        |0,01|
+|U2     |38        |0,00|
+|Y     |33        |0,00|
+|S     |17        |0,00|
+|B6     |17        |0,00|
+|Y1     |17        |0,00|
+|T9      |9        |0,00|
+|I1      |6        |0,00|
+|U3      |3        |0,00|
+|T7      |3        |0,00|
+|C8      |3        |0,00|
+|U9      |2        |0,00|
+|T6      |2        |0,00|
+|U8      |2        |0,00|
+|B5      |2        |0,00|
+|U0      |1        |0,00|
+|R2      |1        |0,00|
+|W      |1        |0,00|
+|C5      |1        |0,00|
+|Y3      |1        |0,00|
+|E2      |1        |0,00|
+|Y8      |1        |0,00|
+|U5      |1        |0,00|
+|Y4      |1        |0,00|
+
+#### Langue de publication (publn_lg)
+
+Le français et l'anglais sont les langues les plus fréquentes et représentent 74&nbsp;% des langues de publication.
+L'allemand, qui est la 3ème langue officielle des brevets européens, arrive bien derrière avec 1&nbsp;%.
+Le chinois, à près de 8&nbsp;%, est la 3ème langue la plus utilisée.
+
+|langues|publn_lg|occurences|pourcentage|
+|-------|--------|---------|-----------|
+|français|fr      |370600    |  44,17|
+|anglais|en      |252323    |  30,07|
+|chinois|zh      |66932     |   7,98|
+|japonais|ja      |32600     |   3,89|
+|espagnol|es      |25064     |   2,99|
+|coréen|ko      |22942     |   2,73|
+|russe|ru      |18171     |   2,17|
+|portugais|pt      |17513     |   2,09|
+|valeurs manquantes|      |10147     |   1,21|
+|allemand|de      |8407      |   1,00|
+|polonais|pl      |5077      |   0,61|
+|danois|da      |3296      |   0,39|
+|hongrois|hu      |1253      |   0,15|
+|slovène|sl      | 758      |   0,09|
+|croate|hr      | 686      |   0,08|
+|turc|tr      | 669      |   0,08|
+|ukrainien|uk      | 520      |   0,06|
+|lituanien|lt      | 430      |   0,05|
+|serbe|sr      | 376      |   0,04|
+|italien|it      | 312      |   0,04|
+|grec|el      | 307      |   0,04|
+|norvégien|no      | 182      |   0,02|
+|roumain|ro      | 137      |   0,02|
+|suédois|sv      | 122      |   0,01|
+|néerlandais|nl      |  93      |   0,01|
+|monténégrin|me      |  54      |   0,01|
+|arabe|ar      |  53      |   0,01|
+|moldave|mo      |  14      |   0,00|
+|finnois|fi      |  12      |   0,00|
+|tchèque|cs      |  10      |   0,00|
+|bulgare|bg      |   6      |   0,00|
+|estonien|et      |   3      |   0,00|
+|slovaque|sk      |   2      |   0,00|
+|letton|lv      |   1      |   0,00|
+|indonésien|id      |   1      |   0,00|
+
+#### Publication du 1er octroi (publn_frist_grant)
+
+68&nbsp;% des cas ne correspondent pas à publication du 1er octroi et 32&nbsp;% le sont.
+
+#### Nombre de revendications (publn_claims)
+
+Environ 85&nbsp;% des publications n'ont aucune revendication. Le nombre maximal de revendications est de 177.
+La médiane et le mode sont de zéro. La moyenne est de 2,014.
 
 ### Dans patent
