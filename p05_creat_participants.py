@@ -7,6 +7,7 @@ import text_functions as tf
 import numpy as np
 import os
 import pandas as pd
+import re
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"
@@ -16,20 +17,13 @@ DICT = {"tls207": {'sep': ',', 'chunksize': 10000000, 'dtype': types.tls207_type
 
 # set working directory
 os.chdir(DATA_PATH)
+
+
 # On commence par récupérer les fichiers patent (infos sur les dépôts de brevets) et old_part
 # (participants dédoublonnés et identifiés de la version antérieure)
 
-patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
-old_part = pd.read_csv("old_part_key.csv",
-                       sep='|',
-                       dtype=types.partfin_types,
-                       encoding="utf-8")
 
-tls207 = cfq.filtering("tls207", patents, "appln_id", DICT["tls207"])
-tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
-
-
-def initialization_participants(patents, tls207, tls206, old_part):
+def initialization_participants(pat, t207, t206, part_history):
     """   This function initializes a table of participants from past corrected informations
     and new patstat version informations
 
@@ -48,8 +42,8 @@ def initialization_participants(patents, tls207, tls206, old_part):
     """
 
     print("Création de la table participants à partir des tables 207 et 206")
-    new_participants = patents.merge(tls207, how="inner", on="appln_id") \
-        .merge(tls206, how="inner", on="person_id")
+    new_participants = pat.merge(t207, how="inner", on="appln_id") \
+        .merge(t206, how="inner", on="person_id")
     # on crée la variable qui nous sert d'identifiant unique pour les participants et permet de faire le lien
     # d'une version à l'autre
     print("ajout d'un identifiant")
@@ -65,10 +59,10 @@ def initialization_participants(patents, tls207, tls206, old_part):
                          "psn_sector", "psn_id",
                          "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind",
                          "receiving_office", "key_appln_nr_person", "key_appln_nr"]],
-                    old_part[["id_participant", "type", "name_corrected", "country_corrected", "siren", "siret",
-                              "id_paysage", "rnsr", "grid",
-                              "sexe", "id_personne", "appln_id", "appln_nr", "appln_kind",
-                              "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
+                    part_history[["id_participant", "type", "name_corrected", "country_corrected", "siren", "siret",
+                                  "id_paysage", "rnsr", "grid",
+                                  "sexe", "id_personne", "appln_id", "appln_nr", "appln_kind",
+                                  "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
                     on=["id_participant", "key_appln_nr_person", "appln_id", "appln_nr", "appln_kind",
                         "receiving_office", "key_appln_nr"], how="left") \
         .rename(
@@ -76,24 +70,18 @@ def initialization_participants(patents, tls207, tls206, old_part):
                  "person_ctry_code": "country_source", "appln_publn_number": "publication_number",
                  "name_corrected": "old_name"})
     # il y a en base des noms de participants nuls, qu'on enlève
-    part_init = part[part["name_source"].isna() == False].copy()
+    part_hist_new = part[part["name_source"].notna()].copy()
     # on rectifie les codes pays erronés qui contiennent des espaces
-    part_init["country_source"] = part_init["country_source"].replace("  ", "")
+    part_hist_new["country_source"] = part_hist_new["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
 
-    for col in part_init.columns:
-        part_init[col] = part_init[col].replace(np.nan, "")
+    part_hist_new.fillna("", inplace=True)
 
-    return part_init
+    return part_hist_new
 
-
-part_init = initialization_participants(patents, tls207, tls206, old_part)
 
 # On crée la variable isascii,
 # pour pouvoir prendre en compte ou non dans la suite des traitements les caractères spéciaux - alphabets non latins
 # et une variable nom propre
-
-part_init["isascii"] = part_init["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(tf.isascii)
-part_init["name_clean"] = part_init["name_source"].apply(tf.get_clean_name)
 
 
 # Initialisation de la variable type (pp : personne physique, pm : personne morale)
@@ -130,24 +118,26 @@ def add_type_to_part(part_table):
     return part2
 
 
-part_init2 = add_type_to_part(part_init)
+def main():
+    patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
+    old_part = pd.read_csv("old_part_key.csv",
+                           sep='|',
+                           dtype=types.partfin_types,
+                           encoding="utf-8")
 
-# initialisation de "country_corrected"
+    tls207 = cfq.filtering("tls207", patents, "appln_id", DICT["tls207"])
+    tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
+    part_init = initialization_participants(patents, tls207, tls206, old_part)
+    part_init["isascii"] = part_init["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(
+        tf.isascii)
+    part_init["name_clean"] = part_init["name_source"].apply(tf.get_clean_name)
+    part_init2 = add_type_to_part(part_init)
+    part_init2["country_corrected"] = np.where(part_init2["country_corrected"] == "", part_init2["country_source"],
+                                               part_init2["country_corrected"])
+    part_init2.to_csv("part_init.csv", sep="|", index=False)
+    part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
+    part_init3.to_csv("part.csv", sep="|", index=False)
 
 
-part_init2["country_corrected"] = np.where(part_init2["country_corrected"] == "", part_init2["country_source"],
-                                           part_init2["country_corrected"])
-
-#  cette table conserve l'information sur les types de participations : déposants et inventeurs
-# une personne est donc répertoriée 2 fois si elle est à la fois déposant et inventeur pour un même dépôt
-
-
-part_init2.to_csv("part_init.csv", sep="|", index=False)
-
-# enfin on enlève les variables "applt_seq_nr" et "invt_seq_nr"
-# qui créent des doublons pour les étapes de dédoublonnage et identification
-
-
-part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
-
-part_init3.to_csv("part.csv", sep="|", index=False)
+if __name__ == "__main__":
+    main()

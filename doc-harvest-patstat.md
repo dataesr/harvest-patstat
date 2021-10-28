@@ -146,7 +146,7 @@ Y si la demande a été octroyée et N si elle ne l'a pas été. N signifie exac
 Dans patent_scope, il y a 273 237 Y (environ 47 %) et 308 496 N (53 %).
 
 #### docdb_family_id :
-ID de la famille DOCDB qui est une variable créée automatiquement par l'OEB : une famille DOCDB signifie que les différentes demandes partagenet exactement les mêmes priorités
+ID de la famille DOCDB qui est une variable créée automatiquement par l'OEB : une famille DOCDB signifie que les différentes demandes partagent exactement les mêmes priorités
 
 Pour patent_scope printemps 2021, il y a 173 410 ID uniques.
 

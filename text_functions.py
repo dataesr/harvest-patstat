@@ -9,7 +9,7 @@ def remove_punctuations(string, list_punct_except=None):
     to_remove = st.punctuation
     if list_punct_except:
         for exception in list_punct_except:
-            to_remove = to_remove.replace(exception, '')
+            to_remove = to_remove.replace(exception, "")
     list_replacement = " " * len(to_remove)
     trantab = str.maketrans(to_remove, list_replacement)
     string_clean = remove_first_end_spaces(remove_multiple_spaces(string.translate(trantab)))
@@ -22,7 +22,7 @@ def isascii(string):
 
 
 def remove_multiple_spaces(string):
-    string_clean = re.sub(' +', ' ', string)
+    string_clean = re.sub(r"\s{2,}", " ", string)
     return string_clean
 
 
@@ -48,27 +48,25 @@ def remove_accents(input_str):
 
 def remove_words(string, pattern_to_remove):
     p = re.compile(pattern_to_remove)
-    s = p.sub('', string).strip()
+    s = p.sub("", string).strip()
     return s
 
 
 def put_title_format(chaine):
     try:
         titre = chaine.title()
-    except:
-        print('problème avec la chaine ')
-        print(chaine)
-        titre = ''
+    except ValueError:
+        print(f"problème avec la chaine {chaine}.")
+        titre = ""
     return titre
 
 
 def put_lower_format(chaine):
     try:
         lower_str = chaine.lower()
-    except:
-        print('problème avec la chaine ')
-        print(chaine)
-        lower_str = ''
+    except ValueError:
+        print(f"problème avec la chaine {chaine}.")
+        lower_str = ""
     return lower_str
 
 
@@ -103,12 +101,10 @@ def put_words_in_order(string):
 
     """
 
-    words = string.split(' ')
+    words = string.split(" ")
     words.sort()
-    order_list = []
-    for word in words:
-        order_list.append(word)
-        order_string = ' '.join(order_list)
+    order_list = [word for word in words]
+    order_string = " ".join(order_list)
 
     return order_string
 
@@ -126,7 +122,7 @@ def test_string_within_string(string1, string2):
     """
 
     (reduced_string1, reduced_string2) = remove_identic_words(string1, string2)
-    if (reduced_string1 == '') or (reduced_string2 == ''):
+    if (reduced_string1 == "") or (reduced_string2 == ""):
         is_substring = True
     else:
         is_substring = False
@@ -163,7 +159,7 @@ def remove_identic_words(string1, string2, len_min_of_word=1):
                 try:
                     new_setwords1_with_ini.remove(mot)
                     new_setwords2_with_ini.remove(word)
-                except:
+                except ValueError:
                     print('erreur : noms : ' + string1 + ' et nom ' + string2)
 
     return (' '.join(new_setwords1_with_ini), ' '.join(new_setwords2_with_ini)), test_mot_identique
