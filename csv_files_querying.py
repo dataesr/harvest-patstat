@@ -34,11 +34,13 @@ def filtering(files_directory: str, pat: pd.DataFrame, colfilter: str, dict_para
     :param dict_param_load_csv: dictionary with loading parameters
     :return: df with filtered values
     """
+    print(f"start loading {files_directory}.")
     def lect_patstat_table(chunk):
         query = chunk[chunk[colfilter].isin(pat[colfilter])]
 
         return query
 
     table = multi_csv_files_querying(files_directory, lect_patstat_table, dict_param_load_csv)
+    print(f"End loading {files_directory}.")
 
     return table

@@ -6,11 +6,13 @@
 
 from bs4 import BeautifulSoup
 import config_emmanuel as config
+import os
 import re
 import requests
 from retry import retry
 
 URL_PATSTAT = "https://publication.epo.org/raw-data"
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 
 # fonction pour faire les requêtes GET sur l'API Patstat
@@ -39,6 +41,13 @@ def connexion_api(address):
     return _session
 
 
+def ed_number(url_86, _sess):
+    ed = get_url(url_86, _sess)
+    sp = BeautifulSoup(ed.text, "lxml")
+    edit = re.search(r"\d{4}", str(sp.find("url"))).group(0)
+    return edit
+
+
 # fonction pour extraire les URLs du résultat de la requête GET sur l'API Patstat
 # function to extract URLs from the GET request on the PATSTAT API
 def extraction_url(content):
@@ -49,8 +58,8 @@ def extraction_url(content):
 
 # fonction pour ne garder que le nom du fichier sans le reste de l'URL
 # function to keep only the file name from the URL
-def name_list(listurl):
-    namelist = list(map(lambda a: re.sub(f"{URL_PATSTAT}/products/86/editions/6891/files/", "", a), listurl))
+def name_list(listurl, nb):
+    namelist = list(map(lambda a: re.sub(f"{URL_PATSTAT}/products/86/editions/{nb}/files/", "", a), listurl))
     return namelist
 
 
@@ -73,9 +82,11 @@ def main():
     # authentication
     session = connexion_api(url_id)
 
+    ed_nr = ed_number(f"{URL_PATSTAT}/products/86/editions/", session)
+
     # requête API Patstat pour accéder à liste de tous les URLs des fichiers zip à télécharger
     # API request on Patstat to access the list of all the zipped folders URLs to download
-    requete = get_url(f"{URL_PATSTAT}/products/86/editions/6891/files", session)
+    requete = get_url(f"{URL_PATSTAT}/products/86/editions/{ed_nr}/files", session)
 
     # extraction des URLs
     # URLs extraction
@@ -83,7 +94,16 @@ def main():
 
     # extraction des noms de fichier
     # files name extraction
-    list_name = name_list(list_url)
+    list_name = name_list(list_url, ed_nr)
+
+    edition = re.search(r"\d{4}_\w+", list_name[0]).group(0)
+
+    path = DATA_PATH + edition
+
+    os.makedirs(path, exist_ok=True)
+
+    # set working directory
+    os.chdir(path)
 
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
