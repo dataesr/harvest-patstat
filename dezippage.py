@@ -17,7 +17,7 @@ import shutil
 import zipfile
 
 # directory where the folders are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = "/run/media/julia/DATA/test/2021_Autumn/"
 
 
 # function to unzip the folders

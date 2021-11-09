@@ -3,6 +3,7 @@
 
 import csv_files_querying as cfq
 import dtypes_patstat_declaration as types
+import fasttext
 import text_functions as tf
 import numpy as np
 import os
@@ -14,6 +15,15 @@ DATA_PATH = "/run/media/julia/DATA/test/"
 DICT = {"tls207": {'sep': ',', 'chunksize': 10000000, 'dtype': types.tls207_types},
         "tls206": {'sep': ',', 'chunksize': 3000000, 'dtype': types.tls206_types}
         }
+
+PM = ["COMPANY",
+      "GOV NON-PROFIT",
+      "UNIVERSITY",
+      "HOSPITAL",
+      "GOV NON-PROFIT UNIVERSITY",
+      "COMPANY GOV NON-PROFIT",
+      "COMPANY UNIVERSITY",
+      "COMPANY HOSPITAL"]
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -30,8 +40,11 @@ def initialization_participants(pat, t207, t206, part_history):
     :return: df with "clean" inforation on participants
     """
 
-    new_participants = pat.merge(t207, how="inner", on="appln_id") \
-        .merge(t206, how="inner", on="person_id")
+    part_history = part_history.drop(columns="type")
+
+    tbl207 = pat.merge(t207, how="inner", on="appln_id")
+
+    new_participants = pd.merge(tbl207, t206, how="inner", on="person_id")
 
     # we create a unique participant ID "key_appln_nr_person"
     # before "id_participant" but "appln_nr_epodoc" is deprecated and will be removed at some point
@@ -45,12 +58,12 @@ def initialization_participants(pat, t207, t206, part_history):
     # "appln_kind", "receiving_office" and "key_appln_nr"
     part = pd.merge(new_participants[
                         ["id_participant", "appln_nr_epodoc", "person_id", "docdb_family_id", "inpadoc_family_id",
-                         "applt_seq_nr",
+                         "applt_seq_nr", "doc_std_name", "doc_std_name_id",
                          "earliest_filing_date", "invt_seq_nr", "person_name", "person_address", "person_ctry_code",
                          "psn_sector", "psn_id",
                          "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind",
                          "receiving_office", "key_appln_nr_person", "key_appln_nr"]],
-                    part_history[["id_participant", "type", "old_name", "country_corrected", "siren", "siret",
+                    part_history[["id_participant", "old_name", "country_corrected", "siren", "siret",
                                   "id_paysage", "rnsr", "grid",
                                   "sexe", "id_personne", "appln_id", "appln_nr", "appln_kind",
                                   "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
@@ -61,17 +74,34 @@ def initialization_participants(pat, t207, t206, part_history):
                  "person_ctry_code": "country_source", "appln_publn_number": "publication_number"})
 
     # remove records where name is missing
-    part_hist_new = part[part["name_source"].notna()].copy()
+    part = part.dropna(subset=["name_source"])
+
+    part["label"] = part["psn_sector"].apply(
+        lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
+
+    part_na = part[part["label"].isna()]
+    part_known = part[part["label"].notna()]
+    part_known["type"] = part_known["label"]
+
+    mod = fasttext.load_model("model")
+    part_na["txt"] = part_na["doc_std_name"] + " " + part["name_source"]
+    part_na["prediction"] = part_na["txt"].apply(lambda a: mod.predict(a))
+
+    part_na["type"] = part["prediction"].apply(lambda a: re.search("pp|pm", str(a)).group(0))
+
+    part_na = part_na.drop(columns=["prediction", "txt"])
+
+    part2 = pd.concat([part_na, part_known])
 
     # "clean" country code: empty string if country_source consists of 2 blank spaces or nan
     # there is also a country code "75" which must correspond to FR but receiving office is US
     # leave it this way for now
-    part_hist_new["country_source"] = part_hist_new["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
+    part2["country_source"] = part2["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
 
     # replace missing values by empty strings
-    part_hist_new.fillna("", inplace=True)
+    part2.fillna("", inplace=True)
 
-    return part_hist_new
+    return part2
 
 
 def add_type_to_part(part_table):
@@ -82,62 +112,11 @@ def add_type_to_part(part_table):
     """
     part = part_table.copy()
 
-    # subset avec psn_sector pour name_clean dans famille inpadoc
-
-    psn_sector = part[["psn_sector", "name_clean", "inpadoc_family_id"]]
-    psn_sector = psn_sector.drop_duplicates()
-
-    # bool pour indiquer q'il y a une valeur manquante dans psn_sector
-    psn_sector["missing"] = psn_sector["psn_sector"].apply(lambda a: 1 if a in ["", "UNKNOWN"] else 0)
-    psn_sector = psn_sector.sort_values("name_clean")
-
-    # regarde s'il y a des cas où plusieurs psn_sector pour même personne
-    val_counts = psn_sector[["name_clean", "inpadoc_family_id"]].value_counts()
-    val_counts = val_counts.reset_index()
-    val_counts = val_counts.rename(columns={0: "compte"})
-    psn = pd.merge(psn_sector, val_counts, on=["name_clean", "inpadoc_family_id"], how="left")
-
-    # ne garde que les cas où il y a plusieurs psn_sector et où il n'y a pas de valeurs manquantes
-    # complétera les valeurs manquantes plus tard
-    psn = psn[psn["compte"] > 1]
-    psn2 = psn[psn["missing"] == 0]
-
-    # cherche également s'il y a plusieurs valeurs pour le même ID
-    val_counts2 = psn2[["name_clean", "inpadoc_family_id"]].value_counts()
-    val_counts2 = val_counts2.reset_index()
-    val_counts2 = val_counts2.rename(columns={0: "cmpt"})
-    psn3 = pd.merge(psn2, val_counts2, on=["name_clean", "inpadoc_family_id"], how="left")
-    psn3 = psn3.drop_duplicates()
-    # ne garde que les valeurs doublonnées
-    psn4 = psn3[psn3["compte"] > 1]
-    psn3 = psn3.rename(columns={"psn_sector": "secteur"})
-    # psn_sector au format binaire (individuel ou non)
-    psn4["sect_binaire"] = psn4["psn_sector"].apply(lambda a: 1 if a == "INDIVIDUAL" else 0)
-    # récupère le type et invt_seq_nr pour les ID identifiés comme problématiques
-    tricky = pd.merge(part[["name_clean", "inpadoc_family_id", "type", "invt_seq_nr"]], psn4,
-                      on=["name_clean", "inpadoc_family_id"], how="right")
-    tricky = tricky.drop_duplicates()
-    # le manuel indique que invt_seq_nr >= 1 signifie qu'il s'agit d'un inventeur
-    # et 0 pour une autre personne (le plus souvent le demandeur) donc proxy intéressant pour identifier les pp des pm
-    # certains ID peuvent avoir des 0, puis, 1, 2,... et donc des "types" différents
-    # dans ce cas, fait la somme des invt_seq_nr pour savoir si l'ID a une valeur = ou > 0
-    tricky["somme"] = tricky.groupby(["name_clean", "inpadoc_family_id"])["invt_seq_nr"].transform("sum")
-    # si somme > 0 personne physique sinon personne morale
-    tricky["sect_bin2"] = tricky["somme"].apply(lambda a: "pp" if a > 0 else "pm")
-
-    # vérifie que nos résultats sont similaires à ceux de "type" :
-    tricky["test"] = tricky["type"] == tricky["sect_bin2"]
-    # ne garde que les cas où il y a des différences
-    # se rend compte que cette méthode est plus efficace
-    # récupère les résultats nouvelles méthodes dans la variable "type"
-    trick = tricky[tricky["test"] == False]
-    trick["type"] = trick["sect_bin2"].apply(lambda a: "pm" if a == "pm" else "pp")
-    # maintenant on fait le merge trick avec autres df pour continuer corriger
-
-
     # first: fill in missing values in type
     # if invt_seq_nr > 0, the participant is an inventor - so: natural person - PP
     # else juridical person - PM
+    part["type"] = part["sector"]
+
     part["type"] = np.where(part["type"] == "", np.where(part["invt_seq_nr"] > 0, "pp", "pm"), part["type"])
 
     # select cases where the same participant (same name in INPADOC family) is both considered PP and PM
