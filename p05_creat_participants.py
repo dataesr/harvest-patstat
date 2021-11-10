@@ -81,17 +81,20 @@ def initialization_participants(pat, t207, t206, part_history):
 
     part_na = part[part["label"].isna()]
     part_known = part[part["label"].notna()]
-    part_known["type"] = part_known["label"]
+    part_known["type"] = part_known["psn_sector"].apply(
+        lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
     mod = fasttext.load_model("model")
-    part_na["txt"] = part_na["doc_std_name"] + " " + part["name_source"]
+    part_na["txt"] = part_na["doc_std_name"] + " " + part_na["name_source"]
     part_na["prediction"] = part_na["txt"].apply(lambda a: mod.predict(a))
 
-    part_na["type"] = part["prediction"].apply(lambda a: re.search("pp|pm", str(a)).group(0))
+    part_na["type"] = part_na["prediction"].apply(lambda a: re.search("pp|pm", str(a)).group(0))
 
     part_na = part_na.drop(columns=["prediction", "txt"])
 
     part2 = pd.concat([part_na, part_known])
+
+    part2 = part2.drop(columns="label")
 
     # "clean" country code: empty string if country_source consists of 2 blank spaces or nan
     # there is also a country code "75" which must correspond to FR but receiving office is US
@@ -115,8 +118,6 @@ def add_type_to_part(part_table):
     # first: fill in missing values in type
     # if invt_seq_nr > 0, the participant is an inventor - so: natural person - PP
     # else juridical person - PM
-    part["type"] = part["sector"]
-
     part["type"] = np.where(part["type"] == "", np.where(part["invt_seq_nr"] > 0, "pp", "pm"), part["type"])
 
     # select cases where the same participant (same name in INPADOC family) is both considered PP and PM
