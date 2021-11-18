@@ -7,6 +7,7 @@ import fasttext
 import numpy as np
 import os
 import pandas as pd
+import re
 from sklearn.model_selection import train_test_split
 
 # directory where the files are
@@ -27,6 +28,7 @@ PM = ["COMPANY",
 # set working directory
 os.chdir(DATA_PATH)
 
+
 def create_dataset(t206):
     """
 
@@ -35,7 +37,8 @@ def create_dataset(t206):
     """
     tls206_c = t206.dropna(subset=["person_name"])
 
-    doc_std_name = tls206_c[["person_id","person_name", "doc_std_name", "doc_std_name_id", "psn_sector"]].drop_duplicates()
+    doc_std_name = tls206_c[
+        ["person_id", "person_name", "doc_std_name", "doc_std_name_id", "psn_sector", "invt_seq_nr"]].drop_duplicates()
 
     doc_std_name = doc_std_name.sort_values("doc_std_name_id")
 
@@ -50,34 +53,49 @@ def create_dataset(t206):
 
     return lrn
 
-def learning_type(learn):
-    """
 
-    :param learn:
-    :return:
-    """
-
-    train, test = train_test_split(learn, random_state=123, shuffle=True)
-
+def learning_type(trn, tst):
     train_file = open('train.txt', 'w')
-    for i, row in train.iterrows():
+    for i, row in trn.iterrows():
         my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} \n"
         train_file.write(my_line)
     train_file.close()
 
     test_file = open('test.txt', 'w')
-    for i, row in test.iterrows():
+    for i, row in tst.iterrows():
         my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} \n"
         test_file.write(my_line)
     test_file.close()
 
     model = fasttext.train_supervised('train.txt',
-                                           wordNgrams = 2,
-                                           minCount = 20,
-                                           loss='ova',
-                                           epoch = 50)
+                                      wordNgrams=2,
+                                      minCount=20,
+                                      loss='ova',
+                                      epoch=50)
 
     return model
+
+
+def learning_type_invt(trn, tst):
+    train_file2 = open('train2.txt', 'w')
+    for i, row in trn.iterrows():
+        my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} str({row.invt_seq_nr}) \n"
+        train_file2.write(my_line)
+    train_file2.close()
+
+    test_file2 = open('test2.txt', 'w')
+    for i, row in tst.iterrows():
+        my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} str({row.invt_seq_nr}) \n"
+        test_file2.write(my_line)
+    test_file2.close()
+
+    model2 = fasttext.train_supervised('train2.txt',
+                                       wordNgrams=2,
+                                       minCount=20,
+                                       loss='ova',
+                                       epoch=50)
+
+    return model2
 
 
 def main():
@@ -91,15 +109,27 @@ def main():
 
     tls207 = cfq.filtering("tls207", appln_id, "appln_id", DICT["tls207"])
     tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
-    learning = create_dataset(tls206)
-    mod = learning_type(learning)
-    mod.save_model('model')
+    new_participants = pd.merge(tls207, tls206, how="inner", on="person_id")
+    learning = create_dataset(new_participants)
+    train, test = train_test_split(learning, random_state=123, shuffle=True)
+    mod = learning_type(train, test)
+    mod2 = learning_type_invt(train, test)
+    mod.save_model('model_test')
+    mod2.save_model("model_test2")
     test_pred = mod.test('test.txt', k=-1, threshold=0.5)
-    print(test_pred)
+    test_pred2 = mod2.test('test2.txt', k=-1, threshold=0.5)
+    test = test.copy()
+    test["txt"] = test["doc_std_name"] + " " + test["person_name"]
+    test["prediction"] = test["txt"].apply(lambda a: mod.predict(a))
+    test["type"] = test["prediction"].apply(lambda a: re.search("pp|pm", str(a)).group(0))
+    test = test.copy()
+    test["txt_invt"] = test["doc_std_name"] + " " + test["person_name"] + " " + test["invt_seq_nr"].astype(str)
+    test["pred_invt"] = test["txt_invt"].apply(lambda a: mod2.predict(a))
+    test["type_int"] = test["pred_invt"].apply(lambda a: re.search("pp|pm", str(a)).group(0))
+    test["invt"] = test["invt_seq_nr"].apply(lambda a: "pm" if a == 0 else "pp")
+    test.to_csv("predictions_fasttext.csv", sep=";", encoding="utf-8", index=False)
+    print(test_pred, test_pred2)
+
 
 if __name__ == "__main__":
     main()
-
-
-
-

@@ -76,12 +76,14 @@ def initialization_participants(pat, t207, t206, part_history):
     # remove records where name is missing
     part = part.dropna(subset=["name_source"])
 
-    part["label"] = part["psn_sector"].apply(
+    part.loc[:, "label"] = part["psn_sector"].apply(
         lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
     part_na = part[part["label"].isna()]
+    part_na = part_na.copy()
     part_known = part[part["label"].notna()]
-    part_known["type"] = part_known["psn_sector"].apply(
+    part_known = part_known.copy()
+    part_known.loc[:, "type"] = part_known["psn_sector"].apply(
         lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
     mod = fasttext.load_model("model")
@@ -156,9 +158,9 @@ def main():
     # On crée la variable isascii,
     # pour pouvoir prendre en compte ou non dans la suite des traitements les caractères spéciaux - alphabets non latins
     # et une variable nom propre
-    part_init["isascii"] = part_init["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(
+    part_init.loc[:, "isascii"] = part_init["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(
         tf.isascii)
-    part_init["name_clean"] = part_init["name_source"].apply(tf.get_clean_name)
+    part_init.loc[:, "name_clean"] = part_init["name_source"].apply(tf.get_clean_name)
 
     part_init2 = add_type_to_part(part_init)
     part_init2["country_corrected"] = np.where(part_init2["country_corrected"] == "", part_init2["country_source"],
