@@ -84,7 +84,7 @@ def trn_tst(lrn: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
     return tst, trn_ros
 
 
-def learning_type_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame):
+def learning_type_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame) -> fasttext.FastText:
     train_file = open('train.txt', 'w')
     for i, row in trn.iterrows():
         my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} \n"
@@ -110,7 +110,7 @@ def learning_type_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame):
     return model
 
 
-def learning_type_invt_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame):
+def learning_type_invt_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame) -> fasttext.FastText:
     train_file2 = open('train2.txt', 'w')
     for i, row in trn.iterrows():
         my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} str({row.invt_seq_nr}) \n"
@@ -137,7 +137,7 @@ def learning_type_invt_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame):
     return model2
 
 
-def testing_fasttext(tst: pd.DataFrame, col_txt: str, col_pred: str, col_type: str, mod_fsttxt) -> pd.DataFrame:
+def testing_fasttext(tst: pd.DataFrame, col_txt: str, col_pred: str, col_type: str, mod_fsttxt: fasttext.FastText) -> pd.DataFrame:
     tst[col_pred] = tst[col_txt].apply(lambda a: mod_fsttxt.predict(a))
     tst[col_type] = tst[col_pred].apply(lambda a: re.search("pp|pm", str(a)).group(0))
 
@@ -184,6 +184,20 @@ def learning_xgb(trn_xgb: pd.DataFrame, tst: pd.DataFrame, colmns: list) -> (
 
     return bst, trn_xgb, tst_xgb, tst
 
+def comparison(tst: pd.DataFrame) -> pd.DataFrame:
+    comp = tst[["invt_seq_nr", "person_name", "doc_std_name", "label", "type_xgb", "type", "type_int", "invt"]].copy()
+    comp["test_invt"] = np.where(comp["label"] != comp["invt"], 1, 0)
+    comp["test_fsttxt1"] = np.where(comp["label"] != comp["type"], 1, 0)
+    comp["test_fsttxt_invt"] = np.where(comp["label"] != comp["type_int"], 1, 0)
+    comp["test_xgb"] = np.where(comp["label"] != comp["type_xgb"], 1, 0)
+
+    res = pd.DataFrame(data={"invt": [comp["test_invt"].sum()],
+                             "fsttxt1": [comp["test_fsttxt1"].sum()],
+                             "fsttxt_invt": [comp["test_fsttxt_invt"].sum()],
+                             "xgb": [comp["test_xgb"].sum()]})
+
+    return res
+
 
 def main():
     patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
@@ -210,19 +224,8 @@ def main():
     test = testing_fasttext(test, "txt_invt", "pred_invt", "type_int", mod2)
     test = test.copy()
     test["invt"] = test["invt_seq_nr"].apply(lambda a: "pm" if a == 0 else "pp")
-
-    comp = test[["invt_seq_nr", "person_name", "doc_std_name", "label", "type_xgb", "type", "type_int", "invt"]].copy()
-    comp["test_invt"] = np.where(comp["label"] != comp["invt"], 1, 0)
-    comp["test_fsttxt1"] = np.where(comp["label"] != comp["type"], 1, 0)
-    comp["test_fsttxt_invt"] = np.where(comp["label"] != comp["type_int"], 1, 0)
-    comp["test_xgb"] = np.where(comp["label"] != comp["type_xgb"], 1, 0)
-
-    res = pd.DataFrame(data={"invt": [comp["test_invt"].sum()],
-                             "fsttxt1": [comp["test_fsttxt1"].sum()],
-                             "fsttxt_invt": [comp["test_fsttxt_invt"].sum()],
-                             "xgb": [comp["test_xgb"].sum()]})
-
-    print("Best model:", res.idxmin(axis=1)[0])
+    results = comparison(test)
+    print("Best model:", results.idxmin(axis=1)[0])
 
 
 if __name__ == "__main__":
