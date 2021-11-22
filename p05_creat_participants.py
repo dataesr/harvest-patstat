@@ -29,7 +29,8 @@ PM = ["COMPANY",
 os.chdir(DATA_PATH)
 
 
-def initialization_participants(pat, t207, t206, part_history):
+def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.DataFrame,
+                                part_history: pd.DataFrame) -> pd.DataFrame:
     """ This function initializes a table of participants from past corrected informations
     and new patstat version informations
 
@@ -37,7 +38,7 @@ def initialization_participants(pat, t207, t206, part_history):
     :param t207: df with table 207 PATSTAT or extract of
     :param t206: df with table 206 PATSTAT or extract of
     :param part_history: participants history - output "part_init" of p05 from previous PATSTAT edition
-    :return: df with "clean" inforation on participants
+    :return: df with "clean" information on participants
     """
 
     part_history = part_history.drop(columns="type")
@@ -76,17 +77,41 @@ def initialization_participants(pat, t207, t206, part_history):
     # remove records where name is missing
     part = part.dropna(subset=["name_source"])
 
+    # create label based on PSN sector
     part.loc[:, "label"] = part["psn_sector"].apply(
         lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
-    part_na = part[part["label"].isna()]
-    part_na = part_na.copy()
-    part_known = part[part["label"].notna()]
-    part_known = part_known.copy()
-    part_known.loc[:, "type"] = part_known["psn_sector"].apply(
-        lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
+    # check if one single doc_std_name, doc_std_name_id and name_source have only 1 label / type
+    indiv_with_pm_type = part[["doc_std_name", "doc_std_name_id", "name_source", "label"]].drop_duplicates() \
+        .groupby(["doc_std_name", "doc_std_name_id", "name_source"]).count().reset_index().rename(
+        columns={"label": "count_label"})
 
-    mod = fasttext.load_model("model")
+    # keep only records where there are more type than 1
+    indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["count_label"] > 1]
+
+    # merge to get info on the cases, especially invt_seq_nr (if 0 "pm" else "pp")
+    double = pd.merge(indiv_with_pm_type, part, on=["doc_std_name", "doc_std_name_id", "name_source"], how="left")
+
+    # sum of the invt_seq_nr by doc_std_name and name_source. If the sum is greater than 0 "pp" else "pm"
+    sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "name_source"])["invt_seq_nr"].sum()).rename(
+        columns={"invt_seq_nr": "sum_invt"})
+    double = pd.merge(double, sum_invt, on=["doc_std_name", "name_source"], how="left")
+    double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
+    double = double.copy()
+    double = double[["doc_std_name", "name_source", "type2"]].drop_duplicates()
+
+    part2 = pd.merge(part, double, on=["doc_std_name", "name_source"], how="left")
+    part2 = part2.copy()
+    part2["label2"] = np.where(part2["type2"].isna(), part2["label"], part2["type2"])
+    part2 = part2.drop(columns=["label", "type2"]).rename(columns={"label2": "label"})
+
+    part_na = part2[part2["label"].isna()]
+    part_na = part_na.copy()
+    part_known = part2[part2["label"].notna()]
+    part_known = part_known.copy()
+    part_known.loc[:, "type"] = part_known.loc[:, "label"]
+
+    mod = fasttext.load_model("model_test")
     part_na["txt"] = part_na["doc_std_name"] + " " + part_na["name_source"]
     part_na["prediction"] = part_na["txt"].apply(lambda a: mod.predict(a))
 
@@ -94,46 +119,47 @@ def initialization_participants(pat, t207, t206, part_history):
 
     part_na = part_na.drop(columns=["prediction", "txt"])
 
-    part2 = pd.concat([part_na, part_known])
+    part3 = pd.concat([part_na, part_known])
 
-    part2 = part2.drop(columns="label")
+    part3 = part3.drop(columns="label")
 
     # "clean" country code: empty string if country_source consists of 2 blank spaces or nan
     # there is also a country code "75" which must correspond to FR but receiving office is US
     # leave it this way for now
-    part2["country_source"] = part2["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
+    part3["country_source"] = part3["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
 
     # replace missing values by empty strings
-    part2.fillna("", inplace=True)
+    part3.fillna("", inplace=True)
 
-    return part2
+    return part3
 
 
-def add_type_to_part(part_table):
+def add_type_to_part(part_table: pd.DataFrame) -> pd.DataFrame:
     """ This function updates the "type" variable ("PP": natural person or "PM": juridical person)
      in the participant table
     :param part_table: df with participant info
-    :return: df with the "type" variable updated according to the INPADOC family
+    :return: df with the "type" variable updated according to the doc_std_name
     """
     part = part_table.copy()
 
-    # first: fill in missing values in type
-    # if invt_seq_nr > 0, the participant is an inventor - so: natural person - PP
-    # else juridical person - PM
-    part["type"] = np.where(part["type"] == "", np.where(part["invt_seq_nr"] > 0, "pp", "pm"), part["type"])
+    indiv_with_pm_type = part[["doc_std_name", "doc_std_name_id", "name_source", "type"]].drop_duplicates() \
+        .groupby(["doc_std_name", "doc_std_name_id", "name_source"]).count().reset_index().rename(
+        columns={"type": "count_type"})
+    indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["count_type"] > 1]
 
-    # select cases where the same participant (same name in INPADOC family) is both considered PP and PM
-    indiv_with_pm_type = part[["inpadoc_family_id", "type", "name_clean"]].drop_duplicates() \
-        .groupby(["inpadoc_family_id", "name_clean"]).count()
-    indiv_with_pm_type = indiv_with_pm_type.reset_index()
-    indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["type"] > 1]
-    # dans ce cas, on leur colle une variable "deposant_indiv" de valeur 1
-    indiv_with_pm_type["deposant_indiv"] = 1
-    indiv_with_pm_type = indiv_with_pm_type.drop(columns={"type"})
-    # on récupère la variable "deposant_indiv" qu'on rajoute dans la table initialisée "part"
-    part2 = part.merge(indiv_with_pm_type, how="left", on=["inpadoc_family_id", "name_clean"])
-    part2["type"] = np.where(part2["deposant_indiv"] == 1, "pp", part2["type"])
-    part2 = part2.drop(columns={"deposant_indiv"})
+    double = pd.merge(indiv_with_pm_type, part, on=["doc_std_name", "doc_std_name_id", "name_source"], how="left")
+    sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "name_source"])["invt_seq_nr"].sum()).rename(
+        columns={"invt_seq_nr": "sum_invt"})
+    double = pd.merge(double, sum_invt, on=["doc_std_name", "name_source"], how="left")
+    double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
+    double = double.copy()
+    double["type3"] = np.where(double["type"] != double["type2"], double["type2"], double["type"])
+    double = double[["doc_std_name", "name_source", "type3"]].rename(columns={"type3": "double_type"}).drop_duplicates()
+
+    part2 = pd.merge(part, double, on=["doc_std_name", "name_source"], how="left")
+    part2 = part2.copy()
+    part2["type3"] = np.where(part2["double_type"].isna(), part2["type"], part2["double_type"])
+    part2 = part2.drop(columns=["type", "double_type"]).rename(columns={"type3": "type"})
 
     return part2
 

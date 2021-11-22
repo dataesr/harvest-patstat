@@ -40,6 +40,7 @@ appln_id = pd.DataFrame(patents["appln_id"].append(old_part["appln_id"])).drop_d
 
 tls207 = cfq.filtering("tls207", appln_id, "appln_id", DICT["tls207"])
 tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
+
 new_participants = pd.merge(tls207, tls206, how="inner", on="person_id")
 
 tls206_c = new_participants.dropna(subset=["person_name"])
@@ -49,7 +50,28 @@ tls206_c = tls206_c.copy()
 tls206_c["label"] = tls206_c["psn_sector"].apply(
     lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
-lrn = tls206_c[tls206_c["label"].notna()].drop(
+part = tls206_c.copy()
+
+indiv_with_pm_type = part[["doc_std_name", "doc_std_name_id", "person_name", "label"]].drop_duplicates() \
+    .groupby(["doc_std_name", "doc_std_name_id", "person_name"]).count().reset_index().rename(
+    columns={"label": "count_label"})
+
+indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["count_label"] > 1]
+
+double = pd.merge(indiv_with_pm_type, part, on=["doc_std_name", "doc_std_name_id", "person_name"], how="left")
+sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "person_name"])["invt_seq_nr"].sum()).rename(
+    columns={"invt_seq_nr": "sum_invt"})
+double = pd.merge(double, sum_invt, on=["doc_std_name", "person_name"], how="left")
+double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
+double = double.copy()
+double = double[["doc_std_name", "person_name", "type2"]].drop_duplicates()
+
+part2 = pd.merge(part, double, on=["doc_std_name", "person_name"], how="left")
+part2 = part2.copy()
+part2["label2"] = np.where(part2["type2"].isna(), part2["label"], part2["type2"])
+part2 = part2.drop(columns=["label", "type2"]).rename(columns={"label2": "label"})
+
+lrn = part2[part2["label"].notna()].drop(
     columns=["applt_seq_nr", "person_id", "appln_id", "doc_std_name_id", "nuts", "nuts_level", "doc_std_name_id",
              "psn_id", "psn_level", "psn_sector", "han_id",
              "han_harmonized"]).drop_duplicates()
@@ -122,7 +144,7 @@ train_xgb = train_ros.copy()
 test_xgb["label2"] = test_xgb["label"].apply(
     lambda a: 0 if a == "pm" else 1)
 
-test_xgb = test_xgb.drop(columns="label").rename(columns={"label2": "label"}).copy()
+test_xgb = test_xgb.drop(columns=["label"]).rename(columns={"label2": "label"}).copy()
 
 train_xgb["label2"] = train_xgb["label"].apply(
     lambda a: 0 if a == "pm" else 1)
@@ -137,7 +159,7 @@ for col in colonnes:
     train_xgb[col] = train_xgb[col].astype("category")
     test_xgb[col] = test_xgb[col].astype("category")
 
-dtrain = xgb.DMatrix(train_xgb[:, :-1], train_xgb["label"], enable_categorical=True)
+dtrain = xgb.DMatrix(train_xgb.iloc[:, :-1], train_xgb["label"], enable_categorical=True)
 dtest = xgb.DMatrix(test_xgb.iloc[:, :-1], test_xgb["label"], enable_categorical=True)
 
 param = {'max_depth': 2, 'objective': 'binary:logistic', 'seed': 123, 'nthread': 2, 'eval_metric': 'auc'}
