@@ -20,7 +20,7 @@
 Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publications et patent.
 </li>
 <li>p04_families : extrait les informations sur les familles de brevets (1ère publication, 1er octroi,...). Inputs = patent, tls 209, tls 224, tls 225 et lib_cpc.csv (fichier extrait du XML de classification coopérative des brevets &mdash; programme commun OEB et USPTO &mdash; reste à voir comment récupérer et traiter ces données). Outputs : families et families_technologies.</li>
-<li>p05_creat_participants</li>
+<li>p05_creat_participants : </li>
 <li>p06_clean_participants_individuals</li>
 <li>p07a_get_siren_inpi</li>
 <li>p07b_clean_participants_entp</li>
@@ -529,9 +529,13 @@ Les informations sur les priorités sont présentes dans la table 204 : seuls le
 17&nbsp;% des demandes ont des priorités.
 
 ### Dans families :
-
+Le fichier reprend les données de patent mais les présente du point de la famille du brevet (docdb family ID).
+Les langues sont classées selon un ordre de priorité pour titles et abstracts (allemand, puis langues romanes, anglais-français et ensuite les autres langues du monde).
 
 ### Dans families_technologies :
+&Agrave; chaque DOCDB family ID est associé les sections, classes, sous-classes et groupes, codes et libellés issus des catégories CPC.
+
+### Dans part_init
 
 
-
+### Dans part

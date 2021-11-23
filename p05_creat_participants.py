@@ -29,6 +29,51 @@ PM = ["COMPANY",
 os.chdir(DATA_PATH)
 
 
+def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
+    """
+    Function to check if each doc_std_name, doc_std_id and name_source combinaison has only one label/type pp/pm
+    If a combinaison has several types, get the sum of invt_sq_nr. If the sum is greater than 0, pp, else pm
+
+    :param part_table: df with doc_std_name, doc_std_id, name_source, label/type and invt_sq_nr
+    :param lbl: column with label/type info
+    :return:
+    """
+    part = part_table.copy()
+
+    # count number of occurences of label/type grouped by doc_std_name, doc_std_name_id and name_source
+    # keep only cases where occurences are greater than 1 (same person has different types/labels)
+
+    indiv_with_pm_type = part[["doc_std_name", "doc_std_name_id", "name_source", lbl]].drop_duplicates() \
+        .groupby(["doc_std_name", "doc_std_name_id", "name_source"]).count().reset_index().rename(
+        columns={lbl: f"count_{lbl}"})
+    indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type[f"count_{lbl}"] > 1]
+
+    # merge identified people with part in order to get invt_seq_nr and all the occurences of doc_std_name,
+    # doc_std_name_id and name_source
+
+    # get the sum of invt_seq_nr : if it's greater than 0, pp, else pm
+
+    double = pd.merge(indiv_with_pm_type, part, on=["doc_std_name", "doc_std_name_id", "name_source"], how="left")
+    sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "name_source"])["invt_seq_nr"].sum()).rename(
+        columns={"invt_seq_nr": "sum_invt"})
+    double = pd.merge(double, sum_invt, on=["doc_std_name", "name_source"], how="left")
+    double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
+    double = double.copy()
+    double["type3"] = np.where(double[lbl] != double["type2"], double["type2"], double[lbl])
+    double = double[["doc_std_name", "name_source", "type3"]].rename(
+        columns={"type3": f"double_{lbl}"}).drop_duplicates()
+
+    # replace type/label in the part table with the new ones
+
+    deduplicated = pd.merge(part, double, on=["doc_std_name", "name_source"], how="left")
+    deduplicated = deduplicated.copy()
+    deduplicated["type3"] = np.where(deduplicated[f"double_{lbl}"].isna(), deduplicated[lbl],
+                                     deduplicated[f"double_{lbl}"])
+    deduplicated = deduplicated.drop(columns=[lbl, f"double_{lbl}"]).rename(columns={"type3": lbl})
+
+    return deduplicated
+
+
 def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.DataFrame,
                                 part_history: pd.DataFrame) -> pd.DataFrame:
     """ This function initializes a table of participants from past corrected informations
@@ -81,87 +126,72 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     part.loc[:, "label"] = part["psn_sector"].apply(
         lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
-    # check if one single doc_std_name, doc_std_name_id and name_source have only 1 label / type
-    indiv_with_pm_type = part[["doc_std_name", "doc_std_name_id", "name_source", "label"]].drop_duplicates() \
-        .groupby(["doc_std_name", "doc_std_name_id", "name_source"]).count().reset_index().rename(
-        columns={"label": "count_label"})
+    # make sure that label info are the complete and the same for each combinaison of doc_std_name, doc_std_name_id
+    # and name_source
+    part2 = add_type_to_part(part, "label")
 
-    # keep only records where there are more type than 1
-    indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["count_label"] > 1]
+    return part2
 
-    # merge to get info on the cases, especially invt_seq_nr (if 0 "pm" else "pp")
-    double = pd.merge(indiv_with_pm_type, part, on=["doc_std_name", "doc_std_name_id", "name_source"], how="left")
 
-    # sum of the invt_seq_nr by doc_std_name and name_source. If the sum is greater than 0 "pp" else "pm"
-    sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "name_source"])["invt_seq_nr"].sum()).rename(
-        columns={"invt_seq_nr": "sum_invt"})
-    double = pd.merge(double, sum_invt, on=["doc_std_name", "name_source"], how="left")
-    double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
-    double = double.copy()
-    double = double[["doc_std_name", "name_source", "type2"]].drop_duplicates()
+def fasttext_learning(part_record: pd.DataFrame) -> pd.DataFrame:
+    """
+    Predict label pp/pm with fasttext model
 
-    part2 = pd.merge(part, double, on=["doc_std_name", "name_source"], how="left")
-    part2 = part2.copy()
-    part2["label2"] = np.where(part2["type2"].isna(), part2["label"], part2["type2"])
-    part2 = part2.drop(columns=["label", "type2"]).rename(columns={"label2": "label"})
+    :param part_record: df create_part
+    :return: df with pm/pp for each records
+    """
 
-    part_na = part2[part2["label"].isna()]
+    # split dataset between records with label and without label
+    # fasttext model only on the dataset which doesn't have labels
+    part_na = part_record[part_record["label"].isna()]
     part_na = part_na.copy()
-    part_known = part2[part2["label"].notna()]
+    part_known = part_record[part_record["label"].notna()]
     part_known = part_known.copy()
     part_known.loc[:, "type"] = part_known.loc[:, "label"]
 
+    # predict label with fasttext model
     mod = fasttext.load_model("model_test")
     part_na["txt"] = part_na["doc_std_name"] + " " + part_na["name_source"]
     part_na["prediction"] = part_na["txt"].apply(lambda a: mod.predict(a))
 
+    # extract type from prediction
     part_na["type"] = part_na["prediction"].apply(lambda a: re.search("pp|pm", str(a)).group(0))
 
     part_na = part_na.drop(columns=["prediction", "txt"])
 
-    part3 = pd.concat([part_na, part_known])
+    # join datasets dataset with predicted types with dataset with known types
+    part_concat = pd.concat([part_na, part_known])
 
-    part3 = part3.drop(columns="label")
+    part_concat = part_concat.drop(columns="label")
 
     # "clean" country code: empty string if country_source consists of 2 blank spaces or nan
     # there is also a country code "75" which must correspond to FR but receiving office is US
     # leave it this way for now
-    part3["country_source"] = part3["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
+    part_concat["country_source"] = part_concat["country_source"].apply(lambda a: re.sub(r"\s{2}|nan", "", str(a)))
 
     # replace missing values by empty strings
-    part3.fillna("", inplace=True)
+    part_concat.fillna("", inplace=True)
 
-    return part3
+    # make sure that each doc_std_name, doc_std_name_id and name combinaison has only one type
+    # if not, use invt_seq_nr to assign a value
+    part_concat = add_type_to_part(part_concat, "type")
+
+    return part_concat
 
 
-def add_type_to_part(part_table: pd.DataFrame) -> pd.DataFrame:
-    """ This function updates the "type" variable ("PP": natural person or "PM": juridical person)
-     in the participant table
-    :param part_table: df with participant info
-    :return: df with the "type" variable updated according to the doc_std_name
-    """
-    part = part_table.copy()
+def isascii(part_ds: pd.DataFrame) -> pd.DataFrame:
+    # On crée la variable isascii,
+    # pour pouvoir prendre en compte ou non dans la suite des traitements les caractères spéciaux - alphabets non latins
+    # et une variable nom propre
+    part_ds.loc[:, "isascii"] = part_ds["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(
+        tf.isascii)
+    part_ds.loc[:, "name_clean"] = part_ds["name_source"].apply(tf.get_clean_name)
 
-    indiv_with_pm_type = part[["doc_std_name", "doc_std_name_id", "name_source", "type"]].drop_duplicates() \
-        .groupby(["doc_std_name", "doc_std_name_id", "name_source"]).count().reset_index().rename(
-        columns={"type": "count_type"})
-    indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["count_type"] > 1]
+    part_ds2 = part_ds.copy()
+    part_ds2["country_corrected"] = np.where(part_ds2["country_corrected"] == "", part_ds2["country_source"],
+                                             part_ds2["country_corrected"])
 
-    double = pd.merge(indiv_with_pm_type, part, on=["doc_std_name", "doc_std_name_id", "name_source"], how="left")
-    sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "name_source"])["invt_seq_nr"].sum()).rename(
-        columns={"invt_seq_nr": "sum_invt"})
-    double = pd.merge(double, sum_invt, on=["doc_std_name", "name_source"], how="left")
-    double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
-    double = double.copy()
-    double["type3"] = np.where(double["type"] != double["type2"], double["type2"], double["type"])
-    double = double[["doc_std_name", "name_source", "type3"]].rename(columns={"type3": "double_type"}).drop_duplicates()
-
-    part2 = pd.merge(part, double, on=["doc_std_name", "name_source"], how="left")
-    part2 = part2.copy()
-    part2["type3"] = np.where(part2["double_type"].isna(), part2["type"], part2["double_type"])
-    part2 = part2.drop(columns=["type", "double_type"]).rename(columns={"type3": "type"})
-
-    return part2
+    return part_ds2
 
 
 def main():
@@ -179,18 +209,11 @@ def main():
 
     tls207 = cfq.filtering("tls207", patents, "appln_id", DICT["tls207"])
     tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
-    part_init = initialization_participants(patents, tls207, tls206, old_part)
+    create_part = initialization_participants(patents, tls207, tls206, old_part)
+    part_init = fasttext_learning(create_part)
 
-    # On crée la variable isascii,
-    # pour pouvoir prendre en compte ou non dans la suite des traitements les caractères spéciaux - alphabets non latins
-    # et une variable nom propre
-    part_init.loc[:, "isascii"] = part_init["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(
-        tf.isascii)
-    part_init.loc[:, "name_clean"] = part_init["name_source"].apply(tf.get_clean_name)
+    part_init2 = isascii(part_init)
 
-    part_init2 = add_type_to_part(part_init)
-    part_init2["country_corrected"] = np.where(part_init2["country_corrected"] == "", part_init2["country_source"],
-                                               part_init2["country_corrected"])
     part_init2.to_csv("part_init.csv", sep="|", index=False)
 
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()

@@ -93,7 +93,7 @@ def get_family_tit_abstract(type_publn: str, pat: pd.DataFrame) -> pd.DataFrame:
     """
     Select the title and abstract attached to each DOCDB family ID. Transform authorities and languages into ordered
     categorical values : WO (0) > EP (1) > FR (2) > rest (3) and German (0) > other Romance languages* (1) >
-    English and French (2) > rest (3). Pick which language gets first position for each application and
+    English and French (2) > rest (99). Pick which language gets first position for each application and
     create a dataframe with 5 variables : DOCDB family ID, title/abstract in English, title/abstract in French,
     default language and title/abstract in default language
     * Romance languages that have been found in PATSTAT Global since 2010.
