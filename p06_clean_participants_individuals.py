@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import config_emmanuel
-from datetime import datetime as dt
-import dtypes_patstat_declaration as types
-from fuzzywuzzy import fuzz
-import text_functions as tf
-import numpy as np
 import operator
 import os
+import time
+from datetime import datetime as dt
+
+import numpy as np
 import pandas as pd
 import requests
-import time
+from fuzzywuzzy import fuzz
+
+import config_emmanuel
+import dtypes_patstat_declaration as types
+import text_functions as tf
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"
@@ -19,15 +21,9 @@ DATA_PATH = "/run/media/julia/DATA/test/"
 # set working directory
 os.chdir(DATA_PATH)
 
-part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
-
-len(part)
-
-part_indiv = part[part['type'] == 'pp'].copy()
-
 
 # Par famille élargie, on rapproche les noms des participants (individus).
-# Pour cela , on commence par sélectionner les participants à clusteriser :
+# Pour cela, on commence par sélectionner les participants à clusteriser :
 # ceux appartenant aux familles dont au moins un nouveau participant a été ajouté à la dernière version.
 
 def get_part_to_deduplicate_by_fam(part_table, famtype, name_or, name_cor):
@@ -49,11 +45,11 @@ def get_part_to_deduplicate_by_fam(part_table, famtype, name_or, name_cor):
 
     """
 
-    part = part_table[[famtype, name_or, name_cor, 'isascii']].copy()
+    part = part_table[[famtype, "doc_std_name", name_or, name_cor, 'isascii']].copy()
     for col in part.columns:
         part[col] = part[col].replace(np.nan, '')
     #  on ne dédoublonne que les noms en caractères latins
-    part2 = part[part['isascii'] == True].copy()
+    part2 = part[part['isascii']].copy()
     # on sélectionne les familles qui ont des nouveaux participants
     # (ceux dont le nom corrigé de la version précédente est nul)
     fam_to_deduplicate = part2[part2[name_cor] == ''][[famtype]].drop_duplicates().copy()
@@ -64,9 +60,6 @@ def get_part_to_deduplicate_by_fam(part_table, famtype, name_or, name_cor):
                                           how='inner').drop_duplicates()
 
     return part_to_deduplicate_by_fam
-
-
-part_ind_to_deduplicate = get_part_to_deduplicate_by_fam(part_indiv, 'inpadoc_family_id', 'name_source', 'old_name')
 
 
 # On clusterise
@@ -114,7 +107,7 @@ def get_multinames_info(name, separator=","):
 def get_max_key(one_dict):
     """   This function gets the item with maximum value in a dictionary
 
-    param one_dict: a dictionary from wich we want to get the maximum value
+    param one_dict: a dictionary from which we want to get the maximum value
     type one_dict: dictionary
 
     :return:  the item of the dictionary with the maximum value
@@ -353,17 +346,6 @@ def get_dict_score_individus(dict_clusters, name):
     return dict_score
 
 
-deduplicated_ind = deduplicate_part_by_fam(part_ind_to_deduplicate, 'inpadoc_family_id', 'name_source',
-                                           get_dict_score_individus)
-
-# On recompose ensuite la table individus avec les nouveaux clusters
-
-part_ind = part_indiv.merge(deduplicated_ind[['inpadoc_family_id', 'name_source', 'new_name']].drop_duplicates(),
-                            on=['inpadoc_family_id', 'name_source'], how='left')
-for col in part_ind.columns:
-    part_ind[col] = part_ind[col].fillna('')
-
-
 # Ensuite on va choisir pour chaque cluster mis en avant dans chaque famille,
 # le nom qu'on va garder. On ne fait la sélection que sur les nouveaux clusters
 
@@ -411,20 +393,6 @@ def select_nice_name(name_table, family_var, source_name_var, cluster_name_var, 
     return df_name_nice
 
 
-part_ind_name_nice = select_nice_name(part_ind[part_ind['new_name'] != ''], 'inpadoc_family_id', 'name_source',
-                                      'new_name', 'appln_auth')
-
-part_individuals = part_ind.merge(part_ind_name_nice[['inpadoc_family_id', 'new_name']],
-                                  on=['inpadoc_family_id', 'new_name'], how='left')
-for col in part_individuals.columns:
-    part_individuals[col] = part_individuals[col].fillna('')
-
-# pour les anciens clusters, on garde le old_name, qui était l'ancien nom du cluster de la version précédente
-
-part_individuals['name_corrected'] = np.where(part_individuals['new_name'] == '', part_individuals['old_name'],
-                                              part_individuals['new_name'])
-
-
 # Enfin on prend une belle orthographe
 def clean_name_to_nice(name):
     """   This function transforms a name in a nice one for publication
@@ -442,9 +410,6 @@ def clean_name_to_nice(name):
         tf.remove_multiple_spaces(tf.remove_punctuations(s1.lower(), list_punct_except=["'", "-", "."])))
 
     return string_clean.title()
-
-
-part_individuals['name_corrected'] = part_individuals['name_corrected'].apply(clean_name_to_nice)
 
 
 # On corrige le pays :
@@ -476,15 +441,6 @@ def affectation_most_occurences(table_to_fill, famtype, var_to_fill, var_to_matc
     return table_extrapol
 
 
-part_individuals = affectation_most_occurences(part_individuals, 'inpadoc_family_id', 'country_corrected',
-                                               'name_corrected')
-
-# Enfin on récupère le sexe par API pour les nouvelles personnes
-
-table_to_get_sex = part_individuals[(part_individuals['isascii'] == True) & (part_individuals['new_name'] != '')].copy()
-set_to_get_sex = set(table_to_get_sex['name_corrected'])
-
-
 def get_sex_proba_from_name(name):
     """   This function uses a dataesr API to get sex from name : it can be a first name or complete name. It gets the
     first occurence : best result
@@ -501,24 +457,21 @@ def get_sex_proba_from_name(name):
     url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
     headers = {"Authorization": f"{config_emmanuel.P06}"}
     proba = 0.0
-    try:
-        r = requests.get(url_sexe_request + name, headers=headers)
-        if r.status_code == 200:
-            if (r.json()['status']) == 'detected':
-                prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
-                sexe = prem_occurr['gender']
-                if sexe == 'M':
-                    proba = round(prem_occurr['proportion_M'])
-                if sexe == 'F':
-                    proba = prem_occurr['proportion_F']
-                occurrences = prem_occurr['nb_occurrences_with_gender']
-                return sexe, proba, occurrences, 'detected'
-            else:
-                return "", "", "", "not_detected"
+    r = requests.get(url_sexe_request + name, headers=headers)
+    if r.status_code != 200:
+        raise ConnectionError("Failed while trying to access the URL")
+    else:
+        if (r.json()['status']) == 'detected':
+            prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
+            sexe = prem_occurr['gender']
+            if sexe == 'M':
+                proba = round(prem_occurr['proportion_M'])
+            if sexe == 'F':
+                proba = prem_occurr['proportion_F']
+            occurrences = prem_occurr['nb_occurrences_with_gender']
+            return sexe, proba, occurrences, 'detected'
         else:
-            return "", "", "", "api_error"
-    except:
-        return "", "", "", "server_error"
+            return "", "", "", "not_detected"
 
 
 def get_sex_from_name_set(set_nom):
@@ -551,21 +504,66 @@ def get_sex_from_name_set(set_nom):
     return sex_table
 
 
-sex_table = get_sex_from_name_set(set_to_get_sex)
+def main():
+    part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
 
-sex_table.to_csv('sex_table.csv', sep='|', index=False)
-# sex_table = pd.read_csv(path_inter + 'sex_table.csv', sep = '|')
+    len(part)
+
+    part_indiv = part[part['type'] == 'pp'].copy()
+
+    part_ind_to_deduplicate = get_part_to_deduplicate_by_fam(part_indiv, 'inpadoc_family_id', 'name_source', 'old_name')
+
+    deduplicated_ind = deduplicate_part_by_fam(part_ind_to_deduplicate, 'inpadoc_family_id', 'name_source',
+                                               get_dict_score_individus)
+
+    # On recompose ensuite la table individus avec les nouveaux clusters
+
+    part_ind = part_indiv.merge(deduplicated_ind[['inpadoc_family_id', 'name_source', 'new_name']].drop_duplicates(),
+                                on=['inpadoc_family_id', 'name_source'], how='left')
+    for col in part_ind.columns:
+        part_ind[col] = part_ind[col].fillna('')
+
+    part_ind_name_nice = select_nice_name(part_ind[part_ind['new_name'] != ''], 'inpadoc_family_id', 'name_source',
+                                          'new_name', 'appln_auth')
+
+    part_individuals = part_ind.merge(part_ind_name_nice[['inpadoc_family_id', 'new_name']],
+                                      on=['inpadoc_family_id', 'new_name'], how='left')
+    for col in part_individuals.columns:
+        part_individuals[col] = part_individuals[col].fillna('')
+
+    # pour les anciens clusters, on garde le old_name, qui était l'ancien nom du cluster de la version précédente
+
+    part_individuals['name_corrected'] = np.where(part_individuals['new_name'] == '', part_individuals['old_name'],
+                                                  part_individuals['new_name'])
+
+    part_individuals['name_corrected'] = part_individuals['name_corrected'].apply(clean_name_to_nice)
+
+    part_individuals = affectation_most_occurences(part_individuals, 'inpadoc_family_id', 'country_corrected',
+                                                   'name_corrected')
+
+    # Enfin on récupère le sexe par API pour les nouvelles personnes
+
+    table_to_get_sex = part_individuals[
+        (part_individuals['isascii']) & (part_individuals['new_name'] != '')].copy()
+    set_to_get_sex = set(table_to_get_sex['name_corrected'])
+
+    sex_table = get_sex_from_name_set(set_to_get_sex)
+
+    sex_table.to_csv('sex_table.csv', sep='|', index=False)
+
+    sex_table = pd.read_csv('sex_table.csv', sep='|')
+
+    part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrected', right_on='name', how='left')
+
+    for col in part_individuals_fin.columns:
+        part_individuals_fin[col] = part_individuals_fin[col].fillna('')
+        part_individuals_fin[col] = part_individuals_fin[col].astype(str)
+
+    part_individuals_fin['sexe'] = np.where(part_individuals_fin['sexe'] == '', part_individuals_fin['sex'],
+                                            part_individuals_fin['sexe'])
+
+    part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
 
 
-sex_table = pd.read_csv('sex_table.csv', sep='|')
-
-part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrected', right_on='name', how='left')
-
-for col in part_individuals_fin.columns:
-    part_individuals_fin[col] = part_individuals_fin[col].fillna('')
-    part_individuals_fin[col] = part_individuals_fin[col].astype(str)
-
-part_individuals_fin['sexe'] = np.where(part_individuals_fin['sexe'] == '', part_individuals_fin['sex'],
-                                        part_individuals_fin['sexe'])
-
-part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
+if __name__ == '__main__':
+    main()
