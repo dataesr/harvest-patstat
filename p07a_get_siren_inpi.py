@@ -1,49 +1,25 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import os
 import glob
+import os
+import re
 import zipfile
-from lxml import etree
-import json
-import config_emmanuel
 
-import numpy as np
 import pandas as pd
 import requests
-from fuzzywuzzy import fuzz
+from lxml import etree
 
+import config_emmanuel
 import text_functions as tf
-import re
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"
 
+COOKIE_NAME = "JSESSIONID"
+
 # set working directory
 os.chdir(DATA_PATH)
-
-
-def login_inpi():
-    headers = {'Login': config_emmanuel.P07A_LOGIN, 'Password': config_emmanuel.P07A_PWD}
-    r = requests.post(
-        url='https://opendata-rncs.inpi.fr/services/diffusion/login',
-        headers=headers
-    )
-    if r.status_code != 200:
-        raise ConnectionError("Failed while trying to access the URL")
-    else:
-        print("URL successfully accessed")
-    sess_id = r.headers.get("Set-Cookie").split(";")[0]
-    return sess_id
-
-
-
-
-
-def logout_inpi():
-    return requests.post("https://opendata-rncs.inpi.fr/services/diffusion/logout")
-
-
 
 
 def dezip_inpi_dos(inpi_path):
@@ -133,7 +109,7 @@ def clean_siren(string):
     siren_clean = tf.remove_all_spaces(tf.remove_punctuations(string))
     if not pd.isnull(siren_clean):
         mo = siren_regex.search(siren_clean.replace(" ", ""))
-        if (mo == None) or (siren_clean == '000000000'):
+        if (mo is None) or (siren_clean == '000000000'):
             return None
         else:
             return siren_clean
