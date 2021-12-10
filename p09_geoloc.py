@@ -2,10 +2,17 @@
 # coding: utf-8
 
 import numpy as np
+import os
 import pandas as pd
 
 import a01_outils_divers as a01
 import text_functions as tf
+
+# directory where the files are
+DATA_PATH = "/run/media/julia/DATA/test/"
+
+# set working directory
+os.chdir(DATA_PATH)
 
 
 def main():
@@ -21,7 +28,7 @@ def main():
         patent[['appln_nr_epodoc', 'appln_nr', 'appln_filing_year', 'appln_publn_number']], how='left',
         left_on='id_patent',
         right_on='appln_nr_epodoc')[
-        ['id_participant', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
+        ['key_appln_nr_person', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
          'name_corrected', 'appln_nr', 'appln_filing_year', 'appln_publn_number', 'siren']].rename(
         columns={'appln_publn_number': 'numpubli', 'siren': 'siren_patstat', 'appln_nr': 'numdepot',
                  'address_source': 'adr_patstat', 'appln_filing_year': 'annee_depot', 'name_corrected': 'name_source'})
@@ -37,13 +44,13 @@ def main():
     part2['adresse'] = part2['adresse'].apply(tf.remove_multiple_spaces).apply(tf.remove_first_end_spaces)
     part2['adresse'] = np.where(part2['adresse'] == '', part2['adr_patstat'], part2['adresse'])
     part_adr = part2[(part2['adresse'] != '')][
-        ['id_participant', 'adr_patstat', 'address', 'city', 'postcode', 'adresse']]
+        ['key_appln_nr_person', 'adr_patstat', 'address', 'city', 'postcode', 'adresse']]
 
-    # save_object(part_adr, path_inter + 'part_adr.p')
-    part_adr = a01.load_object('part_adr.p')
+    # a01.save_object(part_adr, 'part_adr.p')
+    # part_adr = a01.load_object('part_adr.p')
     # part_adr = part_adr0.sample(200)
 
-    lien_id_adr = part_adr[['id_participant', 'adr_patstat', 'address', 'city', 'postcode']].rename(
+    lien_id_adr = part_adr[['key_appln_nr_person', 'adr_patstat', 'address', 'city', 'postcode']].rename(
         columns={'address': 'adr_inpi', 'city': 'city_inpi', 'postcode': 'cp_inpi'})
     lien_id_adr['adr_patstat_orig'] = lien_id_adr['adr_patstat']
     lien_id_adr['adr_inpi_orig'] = lien_id_adr['adr_inpi']
@@ -111,21 +118,21 @@ def main():
     # 3ème cas : CPville : score > 0.4
 
     best_geocod_a = best_scores_b[(best_scores_b['cpville'] == '') & (best_scores_b['score_comp'] > 0.9)][
-        ['id_participant', 'city_inpi', 'cp_inpi', 'cpville', 'adresse', 'dep', 'score_comp', 'city_comp',
+        ['key_appln_nr_person', 'city_inpi', 'cp_inpi', 'cpville', 'adresse', 'dep', 'score_comp', 'city_comp',
          'housenumber_comp', 'cp_comp', 'street_comp', 'city_code_comp', 'dep_comp']].rename(
         columns={'score_comp': 'score', 'city_comp': 'geocoded_city', 'housenumber_comp': 'geocoded_number',
                  'cp_comp': 'geocoded_cp', 'street_comp': 'geocoded_street', 'city_code_comp': 'geocoded_city_code',
                  'dep_comp': 'geocoded_dep'})
 
     best_geocod_b = best_scores_b[(best_scores_b['cpville'] != '') & (best_scores_b['score_comp'] > 0.4)][
-        ['id_participant', 'city_inpi', 'cp_inpi', 'cpville', 'adresse', 'dep', 'score_comp', 'city_comp',
+        ['key_appln_nr_person', 'city_inpi', 'cp_inpi', 'cpville', 'adresse', 'dep', 'score_comp', 'city_comp',
          'housenumber_comp', 'cp_comp', 'street_comp', 'city_code_comp', 'dep_comp']].rename(
         columns={'score_comp': 'score', 'city_comp': 'geocoded_city', 'housenumber_comp': 'geocoded_number',
                  'cp_comp': 'geocoded_cp', 'street_comp': 'geocoded_street', 'city_code_comp': 'geocoded_city_code',
                  'dep_comp': 'geocoded_dep'})
 
     best_geocod_c = best_scores_b[(best_scores_b['cpville'] != '') & (best_scores_b['score_cpville'] > 0.4)][
-        ['id_participant', 'city_inpi', 'cp_inpi', 'cpville', 'adresse', 'dep', 'score_cpville',
+        ['key_appln_nr_person', 'city_inpi', 'cp_inpi', 'cpville', 'adresse', 'dep', 'score_cpville',
          'city_cpville', 'housenumber_cpville', 'cp_cpville', 'street_cpville',
          'city_code_cpville', 'dep_cpville']] \
         .rename(columns={'city_cpville': 'geocoded_city', 'housenumber_cpville': 'geocoded_number',

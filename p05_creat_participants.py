@@ -1,14 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import os
+import re
+
+import fasttext
+import numpy as np
+import pandas as pd
+
 import csv_files_querying as cfq
 import dtypes_patstat_declaration as types
-import fasttext
 import text_functions as tf
-import numpy as np
-import os
-import pandas as pd
-import re
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"

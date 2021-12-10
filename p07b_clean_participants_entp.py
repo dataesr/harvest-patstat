@@ -134,7 +134,7 @@ def main():
     # - on extrapole mais on ne prend en compte les changements que pour les
     # psn_id dans la liste
 
-    psn_id_valids = pd.read_csv('/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/PATSTAT/psn_id_valids.txt', sep='|',
+    psn_id_valids = pd.read_csv('psn_id_valids.txt', sep='|',
                                 dtype={'psn_id': str}).drop_duplicates()
     set_psn_id_valids = set(psn_id_valids['psn_id'])
 
