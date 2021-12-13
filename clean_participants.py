@@ -3,7 +3,6 @@
 
 import operator
 import os
-import re
 from datetime import datetime as dt
 
 import numpy as np
@@ -75,15 +74,14 @@ def get_initial_info(text):
 
     list_words = text.split(' ')
     list_init = [mot for mot in list_words if len(mot) == 1]
+    init = False
     if list_init:
         init = True
-    else:
-        init = False
 
     return init
 
 
-def get_multinames_info(name, separator=","):
+def get_multinames_info(name):
     """   This function tests the number of words separated by the separator in input
 
     param name: the string to be tested for number of words
@@ -94,26 +92,13 @@ def get_multinames_info(name, separator=","):
     :return: a boolean that returns True if there are more than two words seperated, False otherwise
 
     """
-
-    if len(name.split(separator)) > 2:
-        multin = True
-    else:
-        multin = False
+    separator = [",", ";", "/"]
+    multin = False
+    for sep in separator:
+        if len(name.split(sep)) > 2:
+            multin = True
 
     return multin
-
-
-def get_max_key(one_dict):
-    """   This function gets the item with maximum value in a dictionary
-
-    param one_dict: a dictionary from which we want to get the maximum value
-    type one_dict: dictionary
-
-    :return:  the item of the dictionary with the maximum value
-
-    """
-
-    return max(one_dict.items(), key=operator.itemgetter(1))[0]
 
 
 def get_dict_cluster_name(fam_table, name_var, function_dict_score):
@@ -135,7 +120,8 @@ def get_dict_cluster_name(fam_table, name_var, function_dict_score):
     # get_clean_name est défini dans le fichier 'text_functions.py'
     # on crée les variables 'init' et 'multin' qui sont des indicateurs utilisés dans les comparaisons entre noms
     family_table['name_clean'] = family_table[name_var].apply(tf.get_clean_name,
-                                                              list_pattern_to_remove=['^dr ', '^mme ', ' mme '])
+                                                              list_pattern_to_remove=['^dr ', '^mme ', ' mme ',
+                                                                                      r'\d\)'])
     family_table['init'] = family_table['name_clean'].apply(get_initial_info)
     family_table['multin'] = family_table[name_var].apply(get_multinames_info)
     family_table['len_name'] = family_table['name_clean'].apply(len)
@@ -151,7 +137,7 @@ def get_dict_cluster_name(fam_table, name_var, function_dict_score):
         dict_score = function_dict_score(dict_clusters, namesource)
         test_cluster = True
         if len(dict_score):
-            best_occur = get_max_key(dict_score)
+            best_occur = max(dict_score.items(), key=operator.itemgetter(1))[0]
             max_score = dict_score[best_occur]
             best_name = [name for name in dict_clusters.keys() if best_occur in dict_clusters[name]['occurences']][0]
             if max_score >= 90:
@@ -384,8 +370,8 @@ def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict
 
     # On recompose ensuite la table individus avec les nouveaux clusters
 
-    part_ind = part_indiv.merge(deduplicated_ind[[family, 'name_source', 'new_name']].drop_duplicates(),
-                                on=[family, 'name_source'], how='left')
+    part_ind = part_indiv.merge(deduplicated_ind[[family, 'doc_std_name', 'name_source', 'new_name']].drop_duplicates(),
+                                on=[family, 'doc_std_name', 'name_source'], how='left')
 
     for col in part_ind.columns:
         part_ind[col] = part_ind[col].replace(np.nan, '')
@@ -404,6 +390,11 @@ def main():
     part_ind.to_csv("part_ind.csv", sep="|", index=False, encoding="utf-8")
 
     part_entp = deduplication(part, "pm", "inpadoc_family_id", get_dict_score_entp_identicals)
+    for col in part_entp.columns:
+        part_entp[col] = part_entp[col].fillna('')
+        part_entp['name_corrected'] = np.where(part_entp['new_name'] == '', part_entp['old_name'],
+                                               part_entp['new_name'])
+    part_entp['name_corrected'] = part_entp['name_corrected'].apply(tf.put_title_format)
 
     part_entp.to_csv("part_entp.csv", sep="|", index=False, encoding="utf-8")
 

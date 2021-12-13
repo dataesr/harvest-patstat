@@ -39,6 +39,30 @@ def clean_siren(string):
         return None
 
 
+def multi_name(df_part: pd.DataFrame) -> pd.DataFrame:
+    """
+
+    :param df_part:
+    :return:
+    """
+    df = df_part.copy()
+    df["name_source_list"] = df["name_source"].copy()
+    df["name_source_list"] = df["name_source_list"].apply(lambda a: re.sub(r"^1\)\s?", "", a)).copy()
+    df["name_source_list"] = df["name_source_list"].apply(lambda a: re.split(r";?\s?\d\)\s?", a)).copy()
+
+    df2 = df[["key_appln_nr_person",
+                        "publication_number",
+                        "psn_id",
+                        "name_source",
+                        "name_source_list", "siren"]].copy()
+
+    df3 = df2.explode("name_source_list").copy()
+
+    return df3
+
+
+# matcher SIREN
+
 def extrapolation(table_to_fill, famtype, var_to_fill, var_to_match):
     """
     This function fills the variable 'var_to_fill' when the value is missing in the table 'table_to_fill' for the same
@@ -93,13 +117,13 @@ def affectation_most_occurences(table_to_fill, famtype, var_to_fill, var_to_matc
 
 
 def main():
-    part_entp = pd.read_csv('part_entp.csv', sep='|', dtype=types.part_init_types)
+    part_entp = pd.read_csv('part_entp.csv', sep='|', dtype=types.part_entp_types)
 
     for col in part_entp.columns:
         part_entp[col] = part_entp[col].fillna('')
-        part_entp['name_corrected'] = np.where(part_entp['new_name'] == '', part_entp['old_name'],
-                                               part_entp['new_name'])
-    part_entp['name_corrected'] = part_entp['name_corrected'].apply(tf.put_title_format)
+
+
+    part_multi = multi_name(part_entp)
 
     # on sélectionne les identifiants participants de la dernière version pour rechercher les siren correspondant
 
@@ -108,8 +132,8 @@ def main():
     siren_inpi_generale = pd.read_csv('siren_inpi_generale.csv', sep='|',
                                       dtype={'siren': str, 'nom': str, 'numpubli': str})
 
-    part_entp1 = part_entp.merge(siren_inpi_brevet.rename(columns={'siren': 'siren_nouv'}), how='left',
-                                 left_on=['publication_number', 'name_source'], right_on=['numpubli', 'nom']).drop(
+    part_entp1 = part_multi.merge(siren_inpi_brevet.rename(columns={'siren': 'siren_nouv'}), how='left',
+                                 left_on=['publication_number', 'name_source_list'], right_on=['numpubli', 'nom']).drop(
         columns={'nom', 'numpubli'}).drop_duplicates()
     # on élimine les anciens siren erronés
     part_entp1['siren'] = part_entp1['siren'].apply(clean_siren)
@@ -119,16 +143,28 @@ def main():
     part_entp1['siren'] = np.where(part_entp1['siren'] == '', part_entp1['siren_nouv'], part_entp1['siren'])
     part_entp2 = part_entp1.drop(columns={'siren_nouv'}).drop_duplicates().copy()
 
+    part_entp3 = pd.merge(part_entp.drop(columns="siren"),
+                          part_entp2, on=["key_appln_nr_person",
+                                          "publication_number",
+                                          "psn_id",
+                                          "name_source"],
+                          how="left")
+
+
+    missing_siren = part_entp3[part_entp3["siren"].isna()][["key_appln_nr_person", "name_source", "name_source_list"]].copy()
+
+    siren = pd.merge(missing_siren, siren_inpi_generale, left_on="name_source", right_on="nom", how="left")
+
     # Partie non effectuée - A faire
     # - recherche semi_manuelle avec l'aide de la machine à données des SIREN manquants sur la dernière année
 
     # extrapolations  -  les fonctions sont dans le fichier 'extrapolation_functions.py'
 
     # si on a le même nom dans la même famille, on extrapole le pays
-    part_entp3 = extrapolation(part_entp2, 'inpadoc_family_id', 'country_corrected', 'name_corrected')
+    part_entp4 = extrapolation(part_entp3, 'inpadoc_family_id', 'country_corrected', 'name_corrected')
 
     # si on a le même nom dans la même famille, on extrapole le siren
-    part_entp4 = extrapolation(part_entp3, 'inpadoc_family_id', 'siren', 'name_corrected')
+    part_entp5 = extrapolation(part_entp4, 'inpadoc_family_id', 'siren', 'name_corrected')
 
     # pour une liste de psn_id qui sont sûrs, on va extrapoler
     # - on extrapole mais on ne prend en compte les changements que pour les
@@ -138,17 +174,17 @@ def main():
                                 dtype={'psn_id': str}).drop_duplicates()
     set_psn_id_valids = set(psn_id_valids['psn_id'])
 
-    part_entp4['name_psn'] = part_entp4['name_corrected']
+    part_entp5['name_psn'] = part_entp5['name_corrected']
 
-    part_entp5 = affectation_most_occurences(part_entp4, 'inpadoc_family_id', 'name_psn', 'psn_id')
+    part_entp6 = affectation_most_occurences(part_entp5, 'inpadoc_family_id', 'name_psn', 'psn_id')
 
-    part_entp5['name_corrected'] = np.where(part_entp5['psn_id'].isin(set_psn_id_valids), part_entp5['name_psn'],
-                                            part_entp5['name_corrected'])
+    part_entp6['name_corrected'] = np.where(part_entp6['psn_id'].isin(set_psn_id_valids), part_entp6['name_psn'],
+                                            part_entp6['name_corrected'])
 
-    part_entp5['siren_psn'] = part_entp5['siren']
-    part_entp5['fam'] = 1
+    part_entp6['siren_psn'] = part_entp6['siren']
+    part_entp6['fam'] = 1
 
-    part_entp_final = affectation_most_occurences(part_entp5, 'fam', 'siren_psn', 'psn_id')
+    part_entp_final = affectation_most_occurences(part_entp6, 'fam', 'siren_psn', 'psn_id')
 
     part_entp_final['siren'] = np.where(part_entp_final['psn_id'].isin(set_psn_id_valids), part_entp_final['siren_psn'],
                                         part_entp_final['siren'])
