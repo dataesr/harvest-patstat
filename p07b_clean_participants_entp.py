@@ -17,7 +17,7 @@ DATA_PATH = "/run/media/julia/DATA/test/"
 os.chdir(DATA_PATH)
 
 
-def clean_siren(string):
+def clean_siren(string: str) -> object:
     """   This function verify if the SIREN in input has 9 characters with digits after cleaning (spaces, punctuations)
 
     param string: SIREN to clean
@@ -51,10 +51,10 @@ def multi_name(df_part: pd.DataFrame) -> pd.DataFrame:
     df["name_source_list"] = df["name_source_list"].apply(lambda a: re.split(r";?\s?\d\)\s?", a)).copy()
 
     df2 = df[["key_appln_nr_person",
-                        "publication_number",
-                        "psn_id",
-                        "name_source",
-                        "name_source_list", "siren"]].copy()
+              "publication_number",
+              "psn_id",
+              "name_source",
+              "name_source_list", "siren"]].copy()
 
     df3 = df2.explode("name_source_list").copy()
 
@@ -63,7 +63,7 @@ def multi_name(df_part: pd.DataFrame) -> pd.DataFrame:
 
 # matcher SIREN
 
-def extrapolation(table_to_fill, famtype, var_to_fill, var_to_match):
+def extrapolation(table_to_fill: pd.DataFrame, famtype: str, var_to_fill: str, var_to_match: str) -> pd.DataFrame:
     """
     This function fills the variable 'var_to_fill' when the value is missing in the table 'table_to_fill' for the same
     'famtype' and the same 'var_to_match'
@@ -94,12 +94,13 @@ def extrapolation(table_to_fill, famtype, var_to_fill, var_to_match):
     return table_extrapol
 
 
-def get_max_occurences_from_list(one_list):
+def get_max_occurences_from_list(one_list: list) -> str:
     max_occurr = max(one_list, key=one_list.count)
     return max_occurr
 
 
-def affectation_most_occurences(table_to_fill, famtype, var_to_fill, var_to_match):
+def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_to_fill: str,
+                                var_to_match: str) -> pd.DataFrame:
     # dans une famille, pour un même nom, quand il y a plusieurs pays, on prend celui le plus fréquent
 
     table_var_filled = table_to_fill.groupby([famtype, var_to_match]).agg({var_to_fill: list}).reset_index()
@@ -122,7 +123,6 @@ def main():
     for col in part_entp.columns:
         part_entp[col] = part_entp[col].fillna('')
 
-
     part_multi = multi_name(part_entp)
 
     # on sélectionne les identifiants participants de la dernière version pour rechercher les siren correspondant
@@ -133,7 +133,8 @@ def main():
                                       dtype={'siren': str, 'nom': str, 'numpubli': str})
 
     part_entp1 = part_multi.merge(siren_inpi_brevet.rename(columns={'siren': 'siren_nouv'}), how='left',
-                                 left_on=['publication_number', 'name_source_list'], right_on=['numpubli', 'nom']).drop(
+                                  left_on=['publication_number', 'name_source_list'],
+                                  right_on=['numpubli', 'nom']).drop(
         columns={'nom', 'numpubli'}).drop_duplicates()
     # on élimine les anciens siren erronés
     part_entp1['siren'] = part_entp1['siren'].apply(clean_siren)
@@ -150,8 +151,8 @@ def main():
                                           "name_source"],
                           how="left")
 
-
-    missing_siren = part_entp3[part_entp3["siren"].isna()][["key_appln_nr_person", "name_source", "name_source_list"]].copy()
+    missing_siren = part_entp3[part_entp3["siren"].isna()][
+        ["key_appln_nr_person", "name_source", "name_source_list"]].copy()
 
     siren = pd.merge(missing_siren, siren_inpi_generale, left_on="name_source", right_on="nom", how="left")
 

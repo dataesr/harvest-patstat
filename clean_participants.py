@@ -23,7 +23,7 @@ os.chdir(DATA_PATH)
 # Pour cela, on commence par sélectionner les participants à clusteriser :
 # ceux appartenant aux familles dont au moins un nouveau participant a été ajouté à la dernière version.
 
-def get_part_to_deduplicate_by_fam(part_table, famtype, name_or, name_cor):
+def get_part_to_deduplicate_by_fam(part_table: pd.DataFrame, famtype: str, name_or: str, name_cor: str) -> pd.DataFrame:
     """   This function gets from a participant table a table ready to clusterize
 
     param part_table: table with participants informations - must have 'isascii' and columns corresponding to the input
@@ -62,7 +62,7 @@ def get_part_to_deduplicate_by_fam(part_table, famtype, name_or, name_cor):
 
 # On clusterise
 
-def get_initial_info(text):
+def get_initial_info(text: str) -> bool:
     """ This function tests if the string contains initials : names of persons with initials alone like 'P. Andrews'
 
     param text: the string to be tested for initials
@@ -81,7 +81,7 @@ def get_initial_info(text):
     return init
 
 
-def get_multinames_info(name):
+def get_multinames_info(name: str) -> bool:
     """   This function tests the number of words separated by the separator in input
 
     param name: the string to be tested for number of words
@@ -101,7 +101,7 @@ def get_multinames_info(name):
     return multin
 
 
-def get_dict_cluster_name(fam_table, name_var, function_dict_score):
+def get_dict_cluster_name(fam_table: pd.DataFrame, name_var: str, function_dict_score) -> dict:
     """   This function clusterises all participants of the  input table (corresponding to one family)
 
     param fam_table: table with participant's names of the same family
@@ -155,7 +155,8 @@ def get_dict_cluster_name(fam_table, name_var, function_dict_score):
     return dict_clusters_inv
 
 
-def deduplicate_part_one_family(part_table, famtype, name_var, family, function_dict_score):
+def deduplicate_part_one_family(part_table: pd.DataFrame, famtype: str, name_var: str, family: pd.Int64Dtype(),
+                                function_dict_score) -> pd.DataFrame:
     """   This function gets from a participant table an axtract table with deduplicated names
     for the family 'family' specified in input
 
@@ -192,7 +193,7 @@ def deduplicate_part_one_family(part_table, famtype, name_var, family, function_
     return family_table
 
 
-def deduplicate_part_by_fam(part_table, famtype, name_var, function_dict_score):
+def deduplicate_part_by_fam(part_table: pd.DataFrame, famtype: str, name_var: str, function_dict_score) -> pd.DataFrame:
     """   This function gets from a participant table a table with deduplicated names
 
     param part_table: table with participants informations - must have the columns corresponding
@@ -234,7 +235,7 @@ def deduplicate_part_by_fam(part_table, famtype, name_var, function_dict_score):
     return deduplicated_ind
 
 
-def get_dict_score_individus(dict_clusters, name):
+def get_dict_score_individus(dict_clusters: dict, name: str) -> dict:
     """   This function tries different methods to match a person name from the input with the different occurences
     of names loaded in
     'dict_clusters' dictionary and gets the best score
@@ -303,7 +304,7 @@ def get_dict_score_individus(dict_clusters, name):
     return dict_score
 
 
-def get_score_initials(name1, name2):
+def get_score_initials(name1: str, name2: str) -> float:
     """   This function gets 2 strings in input, with name1 a person name with at least one initial like
     ('O. Wilson') and gives a score for the comparison with name2
 
@@ -331,7 +332,7 @@ def get_score_initials(name1, name2):
     return score
 
 
-def get_dict_score_entp_identicals(dict_clusters, name):
+def get_dict_score_entp_identicals(dict_clusters: dict, name: str) -> dict:
     """   This function tries different methods to match a person name from the input with the different occurences of
     names loaded in
     'dict_clusters' dictionary and gets the best score - This function is adapted to the entreprises, not the persons

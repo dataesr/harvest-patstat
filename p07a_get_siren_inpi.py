@@ -7,10 +7,8 @@ import re
 import zipfile
 
 import pandas as pd
-import requests
 from lxml import etree
 
-import config_emmanuel
 import text_functions as tf
 
 # directory where the files are
@@ -22,7 +20,7 @@ COOKIE_NAME = "JSESSIONID"
 os.chdir(DATA_PATH)
 
 
-def dezip_inpi_dos(inpi_path):
+def dezip_inpi_dos(inpi_path: str) -> str:
     """   This function dezip inpi repertories and removes the original zip
 
     param inpi_path: the path where the inpi zip are
@@ -42,7 +40,7 @@ def dezip_inpi_dos(inpi_path):
     return 'dézippage terminé'
 
 
-def get_siren_inpi(inpi_path):
+def get_siren_inpi(inpi_path: str) -> pd.DataFrame:
     """   This function reads all the xml files in 'inpi_path' in input gets some informations and return it in a
     dataframe
 
@@ -95,7 +93,7 @@ def get_siren_inpi(inpi_path):
     return result
 
 
-def clean_siren(string):
+def clean_siren(string: str) -> object:
     """   This function verify if the SIREN in input has 9 characters with digits after cleaning (spaces, punctuations)
 
     param string: SIREN to clean
@@ -117,7 +115,7 @@ def clean_siren(string):
         return None
 
 
-def clean_siren_table(siren_table, siren_var, name_var):
+def clean_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var: str) -> pd.DataFrame:
     """   This function verify if the SIREN in input has 9 characters with digits after cleaning (spaces, punctuations)
 
     param string: SIREN to clean
@@ -137,7 +135,7 @@ def clean_siren_table(siren_table, siren_var, name_var):
     return siren_table_clear
 
 
-def creat_patent_siren_table(siren_table, siren_var, name_var, patent_var):
+def creat_patent_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var: str, patent_var: str) -> pd.DataFrame:
     siren_tb = siren_table[[patent_var, name_var, siren_var]].drop_duplicates().copy()
     # on compte le nombre de siren par nom d'entp et patent
     nom_doublon = siren_tb.groupby([patent_var, name_var]).count().reset_index()
@@ -148,7 +146,7 @@ def creat_patent_siren_table(siren_table, siren_var, name_var, patent_var):
     return patent_siren_table
 
 
-def creat_general_siren_table(siren_table, siren_var, name_var):
+def creat_general_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var: str) -> pd.DataFrame:
     siren_tb = siren_table[[siren_var, name_var]].drop_duplicates().copy()
     # on compte le nombre de siren par nom d'entp
     nom_doublon = siren_tb.groupby(name_var).count().reset_index()

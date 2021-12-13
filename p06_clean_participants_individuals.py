@@ -23,7 +23,8 @@ os.chdir(DATA_PATH)
 # Ensuite on va choisir pour chaque cluster mis en avant dans chaque famille,
 # le nom qu'on va garder. On ne fait la sélection que sur les nouveaux clusters
 
-def select_nice_name(name_table, family_var, source_name_var, cluster_name_var, office_var):
+def select_nice_name(name_table: pd.DataFrame, family_var: str, source_name_var: str, cluster_name_var: str,
+                     office_var: str) -> pd.DataFrame:
     """   This function selects from a person participants table already clusterised the name to be
     kept among the different occurences from the same cluster
 
@@ -68,7 +69,7 @@ def select_nice_name(name_table, family_var, source_name_var, cluster_name_var, 
 
 
 # Enfin on prend une belle orthographe
-def clean_name_to_nice(name):
+def clean_name_to_nice(name: str) -> str:
     """   This function transforms a name in a nice one for publication
 
     param name: the name to get pretty
@@ -93,12 +94,13 @@ def clean_name_to_nice(name):
 # l'inventeur au lieu du pays de résidence. On va donc affecter pour une famille et un nom donné le même pays :
 # celui qui a le plus d'occurences.
 
-def get_max_occurences_from_list(one_list):
+def get_max_occurences_from_list(one_list: list) -> str:
     max_occurr = max(one_list, key=one_list.count)
     return max_occurr
 
 
-def affectation_most_occurences(table_to_fill, famtype, var_to_fill, var_to_match):
+def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_to_fill: str,
+                                var_to_match: str) -> pd.DataFrame:
     # dans une famille, pour un même nom, quand il y a plusieurs pays, on prend celui le plus fréquent
 
     table_var_filled = table_to_fill.groupby([famtype, var_to_match]).agg({var_to_fill: list}).reset_index()
@@ -115,7 +117,7 @@ def affectation_most_occurences(table_to_fill, famtype, var_to_fill, var_to_matc
     return table_extrapol
 
 
-def get_sex_proba_from_name(name):
+def get_sex_proba_from_name(name: str):
     """   This function uses a dataesr API to get sex from name : it can be a first name or complete name. It gets the
     first occurence : best result
 
@@ -148,7 +150,7 @@ def get_sex_proba_from_name(name):
             return "", "", "", "not_detected"
 
 
-def get_sex_from_name_set(set_nom):
+def get_sex_from_name_set(set_nom: set) -> pd.DataFrame:
     """   This function uses a dataesr API to get sex from name. It takes a set of names and returns a dataframe with
     API variables results for each name in the set
 
@@ -180,7 +182,6 @@ def get_sex_from_name_set(set_nom):
 
 def main():
     part_ind = pd.read_csv('part_ind.csv', sep='|', dtype=types.part_init_types)
-
 
     part_ind_name_nice = select_nice_name(part_ind[part_ind['new_name'] != ''], 'inpadoc_family_id', 'name_source',
                                           'new_name', 'appln_auth')
