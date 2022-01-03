@@ -1,17 +1,21 @@
 #!/usr/bin/env python
 # coding: utf-8
 
+import json
 import os
 import re
 
 import numpy as np
 import pandas as pd
+import requests
 
+import config_emmanuel
 import dtypes_patstat_declaration as types
 import text_functions as tf
 
 # directory where the files are
 DATA_PATH = "/run/media/julia/DATA/test/"
+COOKIE_NAME = "JSESSIONID"
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -117,6 +121,63 @@ def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_t
     return table_extrapol
 
 
+def login_inpi():
+    headers = {'Login': config_emmanuel.P07A_LOGIN, 'Password': config_emmanuel.P07A_PWD}
+    r = requests.post(
+        url='https://opendata-rncs.inpi.fr/services/diffusion/login',
+        headers=headers
+    )
+    if r.status_code != 200:
+        raise ConnectionError("Failed while trying to access the URL")
+    else:
+        print("URL successfully accessed")
+    sess_id = r.headers.get("Set-Cookie").split(";")[0].replace(COOKIE_NAME + "=", '')
+    return sess_id
+
+
+def logout_inpi(sess_id):
+    return requests.post("https://opendata-rncs.inpi.fr/services/diffusion/logout",
+                         cookies={COOKIE_NAME: sess_id})
+
+
+def request_inpi(url, sess_id):
+    return requests.get(url, cookies={COOKIE_NAME: sess_id})
+
+
+def json_df(res):
+    data = json.loads(res.text)
+    df_json = pd.json_normalize(data)
+    df_json = df_json.drop_duplicates()
+
+    return df_json
+
+
+def select_denom(df, denom):
+    df2 = df[df["denominationSociale"] == denom]
+    df2 = df2.drop_duplicates()
+
+    return df2
+
+
+def get_missing_siren(url, item, sess_id):
+    url = url + item
+    response = request_inpi(url, sess_id)
+    df_json = json_df(response)
+    df_select = select_denom(df_json, item)
+
+    return df_select
+
+
+def all_missing_siren(url, ls_denom, sess_id):
+    for item in ls_denom:
+        url = url + item
+        response = request_inpi(url, sess_id)
+        print(item)
+        print(response.text)
+
+    return response
+
+
 def main():
     part_entp = pd.read_csv('part_entp.csv', sep='|', dtype=types.part_entp_types)
 
@@ -151,10 +212,33 @@ def main():
                                           "name_source"],
                           how="left")
 
+    table_siren = part_entp3[["psn_name", "name_source", "name_source_list", "address_source", "siren"]].groupby(
+        ["psn_name", "name_source", "name_source_list", "address_source"]).nunique().reset_index()
+
     missing_siren = part_entp3[part_entp3["siren"].isna()][
-        ["key_appln_nr_person", "name_source", "name_source_list"]].copy()
+        ["key_appln_nr_person", "psn_name", "name_source", "name_source_list", "address_source"]].copy()
+
+    missing_siren = missing_siren[missing_siren["address_source"]!=""]
+
+    missing_siren_table = missing_siren.groupby(["psn_name", "name_source", "name_source_list", "address_source"]).nunique().reset_index().rename(columns={"key_appln_nr_person": "occurences"})
+    missing_siren_table = missing_siren_table.sort_values("occurences", ascending=False)
 
     siren = pd.merge(missing_siren, siren_inpi_generale, left_on="name_source", right_on="nom", how="left")
+
+    siren2 = siren[siren["siren"].isna()][["name_source_list"]].drop_duplicates()
+    siren2["uri"] = "https://opendata-rncs.inpi.fr/services/diffusion/imrs-saisis/find?denominationSociale=" + siren2[
+        "name_source_list"]
+    siren2["length"] = siren2["uri"].apply(lambda a: len(a))
+    list_denm = siren2.name_source_list.tolist()
+
+    session_id = login_inpi()
+    url = "https://opendata-rncs.inpi.fr/services/diffusion/imrs-saisis/find?denominationSociale="
+    response = request_inpi(url, session_id)
+    dataframe = json_df(response)
+    dataframe = select_denom(dataframe, "")
+    print(response.text)
+    manquant = all_missing_siren(url, list_denm, session_id)
+    logout_inpi(session_id)
 
     # Partie non effectuée - A faire
     # - recherche semi_manuelle avec l'aide de la machine à données des SIREN manquants sur la dernière année

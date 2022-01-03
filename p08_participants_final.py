@@ -21,7 +21,8 @@ def main():
 
     part_entp = pd.read_csv('part_entp_final.csv', sep='|',
                             dtype=types.part_entp_types)[
-        ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'name_corrected', 'country_corrected', 'siren',
+        ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'name_corrected', "name_source_list",
+         'country_corrected', 'siren',
          'siret', 'id_paysage', 'rnsr',
          'grid']].copy()
 

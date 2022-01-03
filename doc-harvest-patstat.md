@@ -20,7 +20,8 @@
 Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publications et patent.
 </li>
 <li>p04_families : extrait les informations sur les familles de brevets (1ère publication, 1er octroi,...). Inputs = patent, tls 209, tls 224, tls 225 et lib_cpc.csv (fichier extrait du XML de classification coopérative des brevets &mdash; programme commun OEB et USPTO &mdash; reste à voir comment récupérer et traiter ces données). Outputs : families et families_technologies.</li>
-<li>p05_creat_participants : </li>
+<li>correction_type : programme qui permet d'élaborer le modèle de classification entre les personnes morales et les personnes physiques sur la base des noms. Jeu de données "oversamplé" car beaucoup plus de personnes physiques que morales. Test algo fasttext et extreme gradient boosting avec différentes variables. Sélectionne le modèle qui obtient le mieulleur résultat. Actuellement, fasttext avec label, doc_std_name et person_name. Inputs : tls206, tls207, patent et part_init. Outputs : modèles et l'affichage du meilleur modèle dans la console.</li>
+<li>p05_creat_participants : récupère les données de la précédente édition et ajoute les informations concernant le type de personne (morale ou physique) en mettant en &oelig;uvre le modèle issu de correction_type. Clef composée de key_appln_nr et person_id : 1 ligne = 1 demande de brevet associée à chacune des personnes de la demande. Inputs : tls206, tls207, patent, part_init et meilleur modèle. Output : part_init et part</li>
 <li>p06_clean_participants_individuals</li>
 <li>p07a_get_siren_inpi</li>
 <li>p07b_clean_participants_entp</li>
@@ -533,9 +534,29 @@ Le fichier reprend les données de patent mais les présente du point de la fami
 Les langues sont classées selon un ordre de priorité pour titles et abstracts (allemand, puis langues romanes, anglais-français et ensuite les autres langues du monde).
 
 ### Dans families_technologies :
-&Agrave; chaque DOCDB family ID est associé les sections, classes, sous-classes et groupes, codes et libellés issus des catégories CPC.
+&Agrave; chaque DOCDB family ID est associé les sections, classes, sous-classes et groupes, codes et libellés issus des catégories CPC. Les catégories CPC (classification coopérative des brevets) est une extension de la Classification internationale des brevets (CIB) et est gérée conjointement par l'Office européen des brevets et l'Office des brevets et des marques des &Eacute;tats-Unis.
+Elle est divisée en neuf sections, A-H et Y, à leur tour subdivisées en classes, sous-classes, groupes et sous-groupes. La CPC comporte environ 250 000 entrées de classification.
+
+Les neuf sections de la CPC
+
+| Section | Description                                        |
+|---------|----------------------------------------------------|
+| A       | Nécessités courantes de la vie                     |
+| B       | Techniques industrielles diverses; transports      |
+| C       | Chimie; métallurgie                                |
+| D       | Textiles; papier                                   |
+| E       | Constructions fixes                                |
+| F       | Mécanique; éclairage; chauffage; armement; sautage |
+| G       | Physique                                           |
+| H       | Electricité                                        |
+| Y       |Regroupe les nouveaux développements technologiques; rassemble les technologies qui participent de plusieurs sections issues de diverses sections de la CIB ; concepts techniques couverts par d'anciens recueils de références croisées de l'USPC [XRACs].  |
+
+La CPC s'étend constamment à mesure que de nouveaux domaines techniques apparaissent.
+
+Des informations plus détaillées et une vue d'ensemble complète de la CPC sont disponibles sur le site https://www.cooperativepatentclassification.org/index
 
 ### Dans part_init
+Part_init reprend les informations de patent et les met en relation avec les personnes
 
 
 ### Dans part
