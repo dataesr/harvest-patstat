@@ -20,12 +20,12 @@
 Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publications et patent.
 </li>
 <li>p04_families : extrait les informations sur les familles de brevets (1ère publication, 1er octroi,...). Inputs = patent, tls 209, tls 224, tls 225 et lib_cpc.csv (fichier extrait du XML de classification coopérative des brevets &mdash; programme commun OEB et USPTO &mdash; reste à voir comment récupérer et traiter ces données). Outputs : families et families_technologies.</li>
-<li>correction_type : programme qui permet d'élaborer le modèle de classification entre les personnes morales et les personnes physiques sur la base des noms. Jeu de données "oversamplé" car beaucoup plus de personnes physiques que morales. Test algo fasttext et extreme gradient boosting avec différentes variables. Sélectionne le modèle qui obtient le meilleur résultat. Actuellement, fasttext avec label, doc_std_name et person_name. Inputs : tls206, tls207, patent et part_init. Outputs : modèles et l'affichage du meilleur modèle dans la console.</li>
+<li>correction_type : programme qui permet d'élaborer le modèle de classification entre les personnes morales et les personnes physiques sur la base des noms. Jeu de données suréchantillonné car plus de personnes physiques que morales. Test algo fasttext et extreme gradient boosting avec différentes variables. Sélectionne le modèle qui obtient le meilleur résultat. Actuellement, fasttext avec label, doc_std_name et person_name. Inputs : tls206, tls207, patent et part_init. Outputs : modèles et l'affichage du meilleur modèle dans la console.</li>
 <li>recuperation : appln_nr_epodoc est "deprecated" mais servait d'identifiant pour old_part de p05. Ce programme a pour but de chercher les numéros de demande appln_id correspondant aux identifiants appln_nr_epodoc et permet de rajouter la clef d'identification alternative de tls 201 key_appln_nr (appln_auth, appln_nr, appln_king and receiving_office). L'id_participant, basé sur appln_nr_epodoc est toutefois maintenu assurer la continuité. La récupération est finalisée dans p05 avec les lignes commentées au début de la fonction main. Inputs : tls201 et partfin. Output : old_part_key.</li>
 <li>p05_creat_participants : récupère les données de la précédente édition et ajoute les informations concernant le type de personne (morale ou physique) en mettant en &oelig;uvre le modèle issu de correction_type. Clef composée de key_appln_nr et person_id : 1 ligne = 1 demande de brevet associée à chacune des personnes de la demande. Inputs : tls206, tls207, patent, part_init et meilleur modèle. Output : part_init et part</li>
 <li>clean_participants : séparation entre les personnes physiques et morales, déduplication des participants par famille INPADOC et premier nettoyage des noms. Input : part. Output : part_ind et part_entp</li>
 <li>p06_clean_participants_individuals : nettoyage approfondi des noms des personnes physiques, attribution d'un seul pays par personne (celui le plus fréquent) et attribution d'un genre (probablité en fonction du nom). Inputs : part_ind et API dataesr pour le genre. Outputs : sex_table, part_individuals</li>
-<li>p07a_get_siren_inpi</li>
+<li>p07a_get_siren_inpi : récupère les numéros de publication, noms et SIREN des personnes morales ayant fait des demandes de brevet auprès de l'INPI. Input : base de données brevets de l'INPI au format XML. Outputs : siren_inpi_brevet et siren_inpi_generale.</li>
 <li>p07b_clean_participants_entp</li>
 <li>p08_participants_final</li>
 <li>p09_geoloc</li>
@@ -558,13 +558,100 @@ La CPC s'étend constamment à mesure que de nouveaux domaines techniques appara
 Des informations plus détaillées et une vue d'ensemble complète de la CPC sont disponibles sur le site https://www.cooperativepatentclassification.org/index
 
 ### Dans part_init
-Partfin est similaire à part_init.
-
 La table part_init originelle est le résultat du programme recuperation. Elle est ensuite actualisée de manière itérative.
 
 Part_init reprend les informations de patent et les met en relation avec les informations sur les personnes. L'identifiant dans cette table est constitué de key_appln_nr et de person_id.
 Les mêmes personnes, si elles ont fait plusieurs demandes de brevets, peuvent revenir plusieurs fois. De même, si une demande de brevet est présentée plusieurs par plusieurs personnes, elle peut revenir plusieurs fois.
 
-Part_init contient 36 colonnes 
+Part_init contient 36 colonnes&nbsp;:
+<ul>
+<li>id_participant</li>
+<li>id_patent</li>
+<li>person_id</li>
+<li>docdb_family_id</li>
+<li>inpadoc_family_id</li>
+<li>applt_seq_nr</li>
+<li>doc_std_name</li>
+<li>doc_std_name_id</li>
+<li>earliest_filing_date</li>
+<li>invt_seq_nr</li>
+<li>name_source</li>
+<li>address_source</li>
+<li>country_source</li>
+<li>psn_sector</li>
+<li>psn_id</li>
+<li>psn_name</li>
+<li>publication_number</li>
+<li>appln_auth</li>
+<li>appln_id</li>
+<li>appln_nr</li>
+<li>appln_kind</li>
+<li>receiving_office</li>
+<li>key_appln_nr_person</li>
+<li>key_appln_nr</li>
+<li>old_name</li>
+<li>country_corrected</li>
+<li>siren</li>
+<li>siret</li>
+<li>id_paysage</li>
+<li>rnsr</li>
+<li>grid</li>
+<li>sexe</li>
+<li>id_personne</li>
+<li>type</li>
+<li>isascii</li>
+<li>name_clean</li>
+</ul>
+
+Id_participant est la concaténation d'appln_nr_epodoc et de person_id, et key_appln_nr_person de key_appln_nr et de person_id.
+Les variables appln_nr_epodoc, person_name, person_address, person_ctry_code et appln_publn_number sont renommées en id_patent, name_source, address_source, country_source et publication_number.
+
+L'identification précise des personnes, morales ou physiques, est compliquée. Dans la version PATSTAT Spring 2021, on obtient 845&nbsp;030 person_id différents, 303&nbsp;904 doc_std_name_id (identifiants associés aux noms standardisés selon la procédure DOCDB) et 407&nbsp;564 psn_id (identifiants associés aux noms standardisés selon la procédure développée par ECOOM - K.U. Leuven).
+De même, il est difficile de déterminer la personnalité juridique de chaque personne. Seules les personnes physiques peuvent être des inventeurs. Le manuel de PATSTAT indique que si invt_seq_nr est supérieur à 0, alors on a affaire à un inventeur. Or, il existe des cas où une personne morale a une valeur supérieure à 0 et, inversement, des cas où une personne physique à une valeur égale à 0.
+Psn_sector, information issue du travail d'ECOOM - K.U. Leuven, sert de base pour identifier les personnes physiques et morales. Si psn_sector vaut "INDIVIDUAL" alors le type est personne physique. Pour toutes les autres valeurs non nulles, le type est personne morale. Dans certains cas, une personne identifiée par son doc_sd_name_id a plusieurs personnalités. Dans ce cas, on fait la somme d'invt_seq_nr. Si elle est supérieure à 0, alors il s'agit d'une personne physique.
+Psn_sector est rempli à environ 48&nbsp;%. Pour les valeurs manquantes, on utilise un modèle de classification statistique s'appuyant sur les noms (name_source et doc_std_name). La part des personnes physiques est plus importante que celle des personnes morales dans la variable psn_sector (55&nbsp;% de pp et 45&nbsp;% de pm). L'algorithme de classification avait des difficultés à identifier les personnes morales. Il est donc nécessaire de suréchantillonner les personnes morales.
+
+La variable isascii indique si les noms sont en caractères latins ou non. Seuls ceux en caractères latins seront conservés pour les traitements futurs (probabilité d'un genre et recherche d'un SIREN).
+
+### Dans partfin et old_part_key
+Partfin et old_part_key sont similaires à part_init mais ne contient pas doc_std_name, doc_std_name_id, psn_sector, psn_id, psn_name, publication_number, old_name et name_clean (et sans key_appln_nr pour partfin originel).
 
 ### Dans part
+Part est similaire à part_init mais ne contient pas les variables applt_seq_nr et invt_seq_nr.
+
+### Dans part_ind et part_entp
+Part_ind et part_entp sont créés à partir de part_init. Part_ind ne contient que les enregistrements concernant les personnes physiques, et part_entp ceux concernant les personnes morales. Part_entp contient une variable supplémentaire : name_corrected.
+
+### Dans sex_table
+Sex_table contient 5 variables :
+<ul>
+<li>name</li>
+<li>sex</li>
+<li>proba</li>
+<li>occurence</li>
+<li>error</li>
+</ul>
+
+Name correspond à name_source nettoyé et mis en forme.
+
+### Dans part_individuals
+Part_individuals correspond à part_ind avec les noms et pays corrigés, ainsi que le genre.
+
+### Dans part_ent_final
+
+
+### Dans siren_inpi_brevet et siren_inpi_generale
+Siren_inpi_brevet contient 3 variables&nbsp;:
+<ul>
+<li>numpubli</li>
+<li>nom</li>
+<li>siren</li>
+</ul>
+Siren_inpi_generale ne contient pas la variable numpubli (numéro de publication du brevet).
+
+### Dans idext
+
+
+# Dans role
+
+

@@ -47,7 +47,7 @@ def get_siren_inpi(inpi_path: str) -> pd.DataFrame:
     param inpi_path: the path where the inpi zip are
     type inpi_path: string
 
-    :return:  a dataframe with 'siren', 'nom, 'numpubli' and 'kind' informations
+    :return:  a dataframe with 'siren', 'nom', 'numpubli' and 'kind' informations
 
     """
 
@@ -182,7 +182,7 @@ def main():
 
     siren_inpi_brevet.to_csv('siren_inpi_brevet.csv', sep='|', index=False)
 
-    # on crée une autre table avec les correspondance de nom et siren sans les numéros de brevets
+    # on crée une autre table avec les correspondances de nom et siren sans les numéros de brevets
     # on enlève donc les correspondances multiples : noms avec plusieurs siren différents attribués
 
     siren_inpi_generale = creat_general_siren_table(siren_inpi_brevet, 'siren', 'nom')

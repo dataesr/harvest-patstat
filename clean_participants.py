@@ -20,13 +20,13 @@ os.chdir(DATA_PATH)
 
 
 # Par famille élargie, on rapproche les noms des participants (individus).
-# Pour cela, on commence par sélectionner les participants à clusteriser :
+# Pour cela, on commence par sélectionner les participants à grouper :
 # ceux appartenant aux familles dont au moins un nouveau participant a été ajouté à la dernière version.
 
 def get_part_to_deduplicate_by_fam(part_table: pd.DataFrame, famtype: str, name_or: str, name_cor: str) -> pd.DataFrame:
-    """   This function gets from a participant table a table ready to clusterize
+    """   This function gets from a participant table a table ready to group
 
-    param part_table: table with participants informations - must have 'isascii' and columns corresponding to the input
+    param part_table: table with participants information - must have 'isascii' and columns corresponding to the input
     variables famtype, name_or and name_cor
     type part_table: dataframe
     param famtype: name of the variable containing the type of family in which we want to assimilate the individuals
@@ -50,8 +50,8 @@ def get_part_to_deduplicate_by_fam(part_table: pd.DataFrame, famtype: str, name_
     # on sélectionne les familles qui ont des nouveaux participants
     # (ceux dont le nom corrigé de la version précédente est nul)
     fam_to_deduplicate = part2[part2[name_cor] == ''][[famtype, "doc_std_name"]].drop_duplicates().copy()
-    # on sélectionne tous les particiants qui appartiennent à ces familles :
-    # on reclusterise sur toutes les familles où il y a des nouveaux participants
+    # on sélectionne tous les participants qui appartiennent à ces familles :
+    # on regroupe sur toutes les familles où il y a des nouveaux participants
     # depuis la version précédente
     part_to_deduplicate_by_fam = pd.merge(part2[[famtype, "doc_std_name", name_or]], fam_to_deduplicate,
                                           on=[famtype, "doc_std_name"],
@@ -60,7 +60,7 @@ def get_part_to_deduplicate_by_fam(part_table: pd.DataFrame, famtype: str, name_
     return part_to_deduplicate_by_fam
 
 
-# On clusterise
+# On groupe
 
 def get_initial_info(text: str) -> bool:
     """ This function tests if the string contains initials : names of persons with initials alone like 'P. Andrews'
@@ -89,7 +89,7 @@ def get_multinames_info(name: str) -> bool:
     param separator: the character that is meant to separate the words in the string
     type separator: string
 
-    :return: a boolean that returns True if there are more than two words seperated, False otherwise
+    :return: a boolean that returns True if there are more than two words separated, False otherwise
 
     """
     separator = [",", ";", "/"]
@@ -102,13 +102,13 @@ def get_multinames_info(name: str) -> bool:
 
 
 def get_dict_cluster_name(fam_table: pd.DataFrame, name_var: str, function_dict_score) -> dict:
-    """   This function clusterises all participants of the  input table (corresponding to one family)
+    """   This function groups all participants of the input table (corresponding to one family)
 
     param fam_table: table with participant's names of the same family
     type fam_table: dataframe
     param name_var: name of the variable containing the names to deduplicate
     type name_var: string
-    param function_dict_score: the function to be used for clustering
+    param function_dict_score: the function to be used for grouping
     type function_dict_score: function
 
     :return: a dictionary where the key is the index of table and the value is the new deduplicated name
@@ -125,10 +125,10 @@ def get_dict_cluster_name(fam_table: pd.DataFrame, name_var: str, function_dict_
     family_table['init'] = family_table['name_clean'].apply(get_initial_info)
     family_table['multin'] = family_table[name_var].apply(get_multinames_info)
     family_table['len_name'] = family_table['name_clean'].apply(len)
-    # Les premières chaînes vont être sélectionnées en premier pour servir de référent de cluster.
+    # Les premières chaînes vont être sélectionnées en premier pour servir de référent du groupe.
     # il faut donc que ces premiers référents se rapprochent le plus possible du nom 'commun' de la personne :
     # on trie donc pour avoir la plus courte chaîne, hors cas d'initiales et de multiples noms qu'on traite en dernier
-    # en effet, si on garde un nom long en premier dans le cluster, avec plusieurs prénoms, les autres ne vont pas
+    # en effet, si on garde un nom long en premier dans le groupe, avec plusieurs prénoms, les autres ne vont pas
     # matcher avec.
     family_table = family_table.sort_values(['init', 'multin', 'len_name'])
     for index, row in family_table.iterrows():
@@ -157,10 +157,10 @@ def get_dict_cluster_name(fam_table: pd.DataFrame, name_var: str, function_dict_
 
 def deduplicate_part_one_family(part_table: pd.DataFrame, famtype: str, name_var: str, family: pd.Int64Dtype(),
                                 function_dict_score) -> pd.DataFrame:
-    """   This function gets from a participant table an axtract table with deduplicated names
+    """   This function gets from a participant table an extract table with deduplicated names
     for the family 'family' specified in input
 
-    param part_table: table with participants informations - must have the columns corresponding
+    param part_table: table with participants information - must have the columns corresponding
     to the input variables famtype and name_var
     type part_table: dataframe
     param famtype: name of the variable containing the type of family in which we want to assimilate
@@ -170,7 +170,7 @@ def deduplicate_part_one_family(part_table: pd.DataFrame, famtype: str, name_var
     type name_var: string
     param family: the current family identifier on which the deduplication is being done
     type family: string
-    param function_dict_score: the function to be used for clustering
+    param function_dict_score: the function to be used for grouping
     type function_dict_score: function
 
     :return: an extract of the dataframe in input, filtered on the family 'family' in input,
@@ -196,7 +196,7 @@ def deduplicate_part_one_family(part_table: pd.DataFrame, famtype: str, name_var
 def deduplicate_part_by_fam(part_table: pd.DataFrame, famtype: str, name_var: str, function_dict_score) -> pd.DataFrame:
     """   This function gets from a participant table a table with deduplicated names
 
-    param part_table: table with participants informations - must have the columns corresponding
+    param part_table: table with participants information - must have the columns corresponding
     to the input variables famtype and name_var
     type part_table: dataframe
     param famtype: name of the variable containing the type of family in which we want to assimilate
@@ -205,7 +205,7 @@ def deduplicate_part_by_fam(part_table: pd.DataFrame, famtype: str, name_var: st
     type famtype: string
     param name_var: name of the variable containing the names to deduplicate
     type name_var: string
-    param function_dict_score: the function to be used for clustering
+    param function_dict_score: the function to be used for grouping
     type function_dict_score: function
 
     :return: a dataframe with all deduplicated names by family
@@ -216,14 +216,14 @@ def deduplicate_part_by_fam(part_table: pd.DataFrame, famtype: str, name_var: st
     deduplicated_table_list = []
     count = 0
     print(dt.now())
-    # on va clusteriser par famille, donc on boucle sur les familles
-    # la variable famtype permet de clusteriser au choix sur les familles simples
+    # on va grouper par famille, donc on boucle sur les familles
+    # la variable famtype permet de grouper au choix sur les familles simples
     # 'docdb_family_id' ou sur les familles élargies 'inpadoc_family_id'
     for family in list_families:
         count += 1
-        # cette fonction clusterise sur une famille
+        # cette fonction groupe sur une famille
         family_table = deduplicate_part_one_family(part_table, famtype, name_var, family, function_dict_score)
-        # on enregistre les résultat dasn une liste contentant toutes les tables dédoublonnées
+        # on enregistre les résultats dans une liste contentant toutes les tables dédoublonnées
         deduplicated_table_list.append(family_table)
         # pour savoir où on en est, tous les 3000 familles, on affiche un message
         if count % 3000 == 0:
@@ -242,38 +242,38 @@ def get_dict_score_individus(dict_clusters: dict, name: str) -> dict:
 
     param dict_clusters: a dictionary where the key is a name and the value is another dictionary where keys are the
     index of original person's table and
-    the occurences of cluster name referent
-    type dict_clusters: dictionnary
+    the occurences of group name referent
+    type dict_clusters: dictionary
     param name: name to match
     type name: string
 
-    :return: a dictionnary where the key is the name to deduplicate and the value is the best score
+    :return: a dictionary where the key is the name to deduplicate and the value is the best score
 
     """
 
     # on initialise 'dict_score', qui est le dictionnaire répertoriant toutes les notes pour chaque comparaison du
-    # nom actuel avec une occurence  de cluster
+    # nom actuel avec une occurence du groupe
     dict_score = {}
     # 'init' est la variable qui indique si name1 comprend une ou des initiales
-    # 'multin' indique si name1 comprend plus de 2 noms (càd qu'il y a les 2ème et éventuellement 3ème prénoms)
+    # 'multin' indique si name1 comprend plus de 2 noms (càd qu'il y a les 2ème et éventuellement 3èmes prénoms)
     name1 = tf.get_clean_name(name, list_pattern_to_remove=['^dr ', '^mme ', ' mme '])
     init = get_initial_info(name1)
     multin = get_multinames_info(name)
-    # on parcourt 'dict_clusters', qui est le dictionnaire de clusters (noms rapprochés) déjà identifiés
+    # on parcourt 'dict_clusters', qui est le dictionnaire de groupes (noms rapprochés) déjà identifiés
     for nom, dico in dict_clusters.items():
         occurences = dico['occurences']
-        # pour un même cluster, on parcourt ses occurences déjà rencontrées
+        # pour un même groupe, on parcourt ses occurences déjà rencontrées
         for occur in occurences:
             name2 = occur
-            # name1 est le nom actuel qu'on cherche à rapprocher à un cluster
-            # name2 est l'occurence d'un cluster
+            # name1 est le nom actuel qu'on cherche à rapprocher à un groupe
+            # name2 est l'occurence d'un groupe
             if name1 == name2:
                 dict_score[name2] = 100
             else:
                 if init == 0 & multin == 0:
                     # fuzz.token_sort_ratio match lorsque les mots sont dans un ordre différent
                     # (cas étendu de la distance de Levenshtein)
-                    # gère par exemple le cas ''Jacque stanton" et "Stanton jacques"
+                    # gère par exemple le cas "Jacque stanton" et "Stanton jacques"
                     score1 = fuzz.token_sort_ratio(name1, name2)
                     # fuzz.ratio est plus exigent sur l'ordre des mots, mais moins sur les fautes de frappe
                     # fuzz.ration donne 85 pour "dambach claus" vs "dambakh klaus" alors que fuzz.token_sort_ratio
@@ -339,12 +339,12 @@ def get_dict_score_entp_identicals(dict_clusters: dict, name: str) -> dict:
 
     param dict_clusters: a dictionary where the key is a name and the value is another dictionary where keys are the
     index of original person's table and
-    the occurences of cluster name referent
-    type dict_clusters: dictionnary
+    the occurences of group name referent
+    type dict_clusters: dictionary
     param name: name to match
     type name: string
 
-    :return: a dictionnary where the key is the name to deduplicate and the value is the best score
+    :return: a dictionary where the key is the name to deduplicate and the value is the best score
 
     """
 
@@ -369,7 +369,7 @@ def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict
     deduplicated_ind = deduplicate_part_by_fam(part_ind_to_deduplicate, family, 'name_source',
                                                get_dict)
 
-    # On recompose ensuite la table individus avec les nouveaux clusters
+    # On recompose ensuite la table individus avec les nouveaux groupes
 
     part_ind = part_indiv.merge(deduplicated_ind[[family, 'doc_std_name', 'name_source', 'new_name']].drop_duplicates(),
                                 on=[family, 'doc_std_name', 'name_source'], how='left')
