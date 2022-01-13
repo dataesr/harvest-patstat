@@ -78,7 +78,7 @@ def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
 
 def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.DataFrame,
                                 part_history: pd.DataFrame) -> pd.DataFrame:
-    """ This function initializes a table of participants from past corrected informations
+    """ This function initializes a table of participants from past corrected information
     and new patstat version informations
 
     :param pat: df with application informations - T201 or part of - comes from programme "p03_patents"
@@ -112,7 +112,8 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
                          "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind",
                          "receiving_office", "key_appln_nr_person", "key_appln_nr"]],
                     part_history[["id_participant", "old_name", "country_corrected", "siren", "siret",
-                                  "id_paysage", "rnsr", "grid", "sexe","id_personne", "appln_id", "appln_nr", "appln_kind",
+                                  "id_paysage", "rnsr", "grid", "sexe", "id_personne", "appln_id", "appln_nr",
+                                  "appln_kind",
                                   "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
                     on=["id_participant", "key_appln_nr_person", "appln_id", "appln_nr", "appln_kind",
                         "receiving_office", "key_appln_nr"], how="left") \
