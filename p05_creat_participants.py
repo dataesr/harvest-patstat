@@ -88,8 +88,6 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     :return: df with "clean" information on participants
     """
 
-    part_history = part_history.drop(columns="type")
-
     tbl207 = pat.merge(t207, how="inner", on="appln_id")
 
     new_participants = pd.merge(tbl207, t206, how="inner", on="person_id")
@@ -112,7 +110,8 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
                          "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind",
                          "receiving_office", "key_appln_nr_person", "key_appln_nr"]],
                     part_history[["id_participant", "old_name", "country_corrected", "siren", "siret",
-                                  "id_paysage", "rnsr", "grid", "sexe", "id_personne", "appln_id", "appln_nr",
+                                  "id_paysage", "rnsr", "grid", "sexe", "id_personne", "type", "idref", "oc", "ror",
+                                  "appln_id", "appln_nr",
                                   "appln_kind",
                                   "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
                     on=["id_participant", "key_appln_nr_person", "appln_id", "appln_nr", "appln_kind",
@@ -125,8 +124,12 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     part = part.dropna(subset=["name_source"])
 
     # create label based on PSN sector
-    part.loc[:, "label"] = part["psn_sector"].apply(
+    part.loc[:, "label"] = part.loc[part["type"].isna(),"psn_sector"].apply(
         lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
+
+    part.loc[:, "label"] = part.loc[part["type"].notna(), "type"]
+
+    part = part.drop(columns="type")
 
     # make sure that label info are the complete and the same for each combinaison of doc_std_name, doc_std_name_id
     # and name_source

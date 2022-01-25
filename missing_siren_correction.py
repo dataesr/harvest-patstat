@@ -26,15 +26,8 @@ correction = pd.read_excel("siren_manquants_avec_occurences_complete.xlsx", engi
 
 # ne garde pas la colonne avec les occurences
 correction = correction.drop(columns="occurences")
-# met les types en minuscule
-correction["type"] = correction["type"].str.lower()
-# ne garde pas les personnes pour lesquelles type ou ID = x
-correction = correction.loc[correction["type"] != "x"].copy()
-correction = correction.loc[correction["ID"] != "x"].copy()
-
 # crée le type grid pour les personnes ayant un ID grid
 correction.loc[correction["ID"].str.contains("grid"), "type"] = "grid"
-
 # pour les personnes qui ont plusieurs ID séparés par ";", dédouble l'ID en 2 colonnes
 correction["id_1"] = correction.loc[
     correction["ID"].str.contains(";"), "ID"].apply(lambda a: re.split(";", a, maxsplit=1)[0])
@@ -44,6 +37,11 @@ correction["id_2"] = correction.loc[
 correction["type"] = correction["type"].fillna("multi")
 # type vide pour ZODIAC DATA SYSTEMS - indique que l'ID est un SIRET
 correction.loc[correction["psn_name"] == "ZODIAC DATA SYSTEMS", "type"] = "siret"
+# met les types en minuscule
+correction["type"] = correction["type"].apply(lambda a: a.lower())
+correction = correction.loc[correction["type"] != "x"].copy()
+correction = correction.loc[correction["ID"] != "x"].copy()
+
 # renomme la colonne RNSR car dans type des autres ID RNSR présents - ne veut pas écraser les données
 correction = correction.rename(columns={"RNSR": "RNSR_original"})
 
@@ -64,7 +62,7 @@ apreciser = pd.read_csv("apreciser_corrige.csv", sep="|", encoding="utf-8")
 
 # met les 2 types et les 2 ID dans une liste chacun
 apreciser["liste_type"] = apreciser.apply(lambda x: [x.type1, x.type2], axis=1)
-apreciser["liste_id"] = apreciser.apply(lambda x: (x.id_1, x.id_2), axis=1)
+apreciser["tuple_id"] = apreciser.apply(lambda x: (x.id_1, x.id_2), axis=1)
 apreciser["liste_id2"] = apreciser.apply(lambda x: [x.id_1, x.id_2], axis=1)
 
 # traitement spécifique pour les personnes où plusieurs ID, mais du même type
@@ -75,22 +73,22 @@ apreciser["len_test"] = apreciser["test"].apply(lambda a: len(a))
 
 col_precision = ['oc', 'siret', 'ror', 'pp', 'rnsr']
 
-apreciser_unique = apreciser.loc[apreciser["len_test"] == 1]
+apreciser_unique = apreciser.loc[apreciser["len_test"] == 1].copy()
 apreciser_unique["test"] = apreciser_unique["test"].apply(lambda a: a[0])
 apreciser_unique = apreciser_unique.drop(columns=["liste_type", "len_test"])
 
 col_unique = list(apreciser_unique["test"].unique())
 
-# met la liste des ID dans la colonne correspondant au type
+# met le tuple des ID dans la colonne correspondant au type
 for cl in col_unique:
-    apreciser_unique[cl] = apreciser_unique.loc[apreciser_unique["test"] == cl, "liste_id"]
+    apreciser_unique[cl] = apreciser_unique.loc[apreciser_unique["test"] == cl, "tuple_id"]
 
-apreciser_unique = apreciser_unique.drop(columns=["test", "liste_id", "liste_id2"])
+apreciser_unique = apreciser_unique.drop(columns=["test", "tuple_id", "liste_id2"])
 
 apreciser_unique = apreciser_unique.reset_index().drop(columns="index")
 
 # pour les personnes ayant 2 ID de types différents
-apreciser_multi = apreciser.loc[apreciser["len_test"] == 2]
+apreciser_multi = apreciser.loc[apreciser["len_test"] == 2].copy()
 apreciser_multi = apreciser_multi.drop(columns=["len_test", "test"])
 
 # crée un dictionnaire avec type en clef et ID en valeur
@@ -121,7 +119,8 @@ for cl in col_precision:
 correction_final["rnsr"] = np.where(correction_final["rnsr"].isna(), correction_final["RNSR_original"],
                                     correction_final["rnsr"])
 
-correction_final["pp"] = correction["pp"].str.lower()
+
+correction_final["pp"] = correction_final.loc[correction_final["pp"]=="PP", "pp"].apply(lambda a: a.lower())
 
 # df final des corrections
 correction_final = correction_final.drop(

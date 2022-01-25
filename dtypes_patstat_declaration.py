@@ -185,7 +185,10 @@ part_init_types = {"id_participant": object,
                    "appln_kind": object,
                    "receiving_office": object,
                    "key_appln_nr": object,
-                   "key_appln_nr_person": object}
+                   "key_appln_nr_person": object,
+                   "idref": object,
+                   "oc": object,
+                   "ror": object}
 
 part_entp_types = {"id_participant": object,
                    "person_id": pd.Int64Dtype(),
