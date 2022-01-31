@@ -21,25 +21,27 @@ def main():
 
     part_entp = pd.read_csv('part_entp_final.csv', sep='|',
                             dtype=types.part_entp_types)[
-        ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'name_corrected', "name_source_list",
+        ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'name_corrected',
          'country_corrected', 'siren',
          'siret', 'id_paysage', 'rnsr',
-         'grid']].copy()
+         'grid', 'idref', 'oc', 'ror', 'sexe']].copy()
 
     part_indiv = pd.read_csv('part_individuals.csv', sep='|',
                              dtype=types.part_entp_types)[
-        ['id_participant', 'country_corrected', 'name_corrected', 'sexe']].copy()
+        ['key_appln_nr_person', 'country_corrected', 'name_corrected', 'sexe', 'siren',
+         'siret', 'id_paysage', 'rnsr',
+         'grid', 'idref', 'oc', 'ror']].copy()
 
     part_tmp = pd.concat([part_entp, part_indiv], sort=True)
 
     particip = part[part['isascii']][
         ['key_appln_nr_person', 'person_id', 'id_patent', 'docdb_family_id', 'inpadoc_family_id',
-         'earliest_filing_date',
-         'name_source', 'address_source', 'country_source', 'appln_auth', 'type', 'isascii']].merge(part_tmp,
-                                                                                                    on='key_appln_nr_person',
-                                                                                                    how='left')
+         'earliest_filing_date', 'name_source', 'address_source',
+         'country_source', 'appln_auth', 'type', 'isascii']].merge(part_tmp,
+                                                                   on='key_appln_nr_person',
+                                                                   how='left')
 
-    for col in particip.columns:
+    for col in list(particip.columns):
         particip[col] = particip[col].fillna('')
 
     particip['id_personne'] = particip['key_appln_nr_person']

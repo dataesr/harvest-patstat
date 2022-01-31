@@ -223,4 +223,7 @@ part_entp_types = {"id_participant": object,
                    "fam": object,
                    "new_name": object,
                    "name_psn": object,
-                   "name_corrected": object}
+                   "name_corrected": object,
+                   "idref": object,
+                   "oc": object,
+                   "ror": object}
