@@ -26,7 +26,7 @@ def main():
 
     part = part_init[part_init['country_corrected'] == 'FR'].copy().merge(
         patent[['key_appln_nr', 'appln_nr', 'appln_filing_year', 'appln_publn_number']], how='left', on='key_appln_nr')[
-        ['key_appln_nr', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
+        ['key_appln_nr_person', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
          'name_corrected', 'appln_nr', 'appln_filing_year', 'appln_publn_number', 'siren']].rename(
         columns={'appln_publn_number': 'numpubli', 'siren': 'siren_patstat', 'appln_nr': 'numdepot',
                  'address_source': 'adr_patstat', 'appln_filing_year': 'annee_depot', 'name_corrected': 'name_source'})
