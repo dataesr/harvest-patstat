@@ -35,7 +35,7 @@ def main():
     part_tmp = pd.concat([part_entp, part_indiv], sort=True)
 
     particip = part[part['isascii']][
-        ['key_appln_nr_person', 'person_id', 'id_patent', 'docdb_family_id', 'inpadoc_family_id',
+        ['key_appln_nr_person', 'key_appln_nr','person_id', 'id_patent', 'docdb_family_id', 'inpadoc_family_id',
          'earliest_filing_date', 'name_source', 'address_source',
          'country_source', 'appln_auth', 'type', 'isascii']].merge(part_tmp,
                                                                    on='key_appln_nr_person',
@@ -51,7 +51,7 @@ def main():
     particip.to_csv('part.csv', sep='|', index=False, encoding="utf-8")
 
     participants = particip[
-        ['id_patent', 'key_appln_nr_person', 'id_personne', 'type', 'sexe', 'doc_std_name', "doc_std_name_id",
+        ['id_patent', 'key_appln_nr_person', 'key_appln_nr_person','id_personne', 'type', 'sexe', 'doc_std_name', "doc_std_name_id",
          'name_source', 'name_corrected',
          'address_source',
          'country_source', 'country_corrected']]

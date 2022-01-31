@@ -19,16 +19,14 @@ def main():
     part_init = pd.read_csv('part.csv', sep='|',
                             dtype={'id_participant': str, 'id_patent': str, 'docdb_family_id': str,
                                    'inpadoc_family_id': str, 'siren': str, 'siret': str, 'id_paysage': str, 'rnsr': str,
-                                   'id_personne': str, 'grid': str})
+                                   'id_personne': str, 'grid': str, 'idref': str, 'oc': str, 'ror': str})
     patent = pd.read_csv('patent.csv', sep='|', dtype={'docdb_family_id': str})
     adresses_inpi_init = pd.read_csv('adresses_inpi.csv', sep='|',
                                      dtype={'numpubli': str, 'siren': str, 'family_id': str, 'orgname': str})
 
     part = part_init[part_init['country_corrected'] == 'FR'].copy().merge(
-        patent[['appln_nr_epodoc', 'appln_nr', 'appln_filing_year', 'appln_publn_number']], how='left',
-        left_on='id_patent',
-        right_on='appln_nr_epodoc')[
-        ['key_appln_nr_person', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
+        patent[['key_appln_nr', 'appln_nr', 'appln_filing_year', 'appln_publn_number']], how='left', on='key_appln_nr')[
+        ['key_appln_nr', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
          'name_corrected', 'appln_nr', 'appln_filing_year', 'appln_publn_number', 'siren']].rename(
         columns={'appln_publn_number': 'numpubli', 'siren': 'siren_patstat', 'appln_nr': 'numdepot',
                  'address_source': 'adr_patstat', 'appln_filing_year': 'annee_depot', 'name_corrected': 'name_source'})
