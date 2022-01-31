@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import csv_files_querying as cfq
-import dtypes_patstat_declaration as types
+from patstat import csv_files_querying as cfq
+from patstat import dtypes_patstat_declaration as types
+
 import fasttext
 from imblearn.over_sampling import RandomOverSampler
 import numpy as np
@@ -13,7 +14,7 @@ from sklearn.model_selection import train_test_split
 import xgboost as xgb
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 DICT = {"tls207": {'sep': ',', 'chunksize': 10000000, 'dtype': types.tls207_types},
         "tls206": {'sep': ',', 'chunksize': 3000000, 'dtype': types.tls206_types}
         }

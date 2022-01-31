@@ -9,11 +9,12 @@ import numpy as np
 import pandas as pd
 from lxml import etree
 
-import a01_outils_divers as a01
-import text_functions as tf
+from patstat import a01_outils_divers as a01
+from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# todo : change with env path
 inpi_path = "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/"
 
 # set working directory

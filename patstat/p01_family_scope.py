@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import csv_files_querying as cfq
-import dtypes_patstat_declaration as types
+from patstat import csv_files_querying as cfq
+from patstat import dtypes_patstat_declaration as types
 import os
 import pandas as pd
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 
 COL = {"patent_appln_columns": ["appln_id", "appln_kind", "earliest_filing_year", "ipr_type", 'earliest_publn_year'],
        "person_columns": ["person_id", "person_ctry_code"],

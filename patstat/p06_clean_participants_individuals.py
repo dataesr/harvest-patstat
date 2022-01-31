@@ -8,13 +8,13 @@ import numpy as np
 import pandas as pd
 import requests
 
-import clean_participants as cp
-import config_emmanuel
-import dtypes_patstat_declaration as types
-import text_functions as tf
+from patstat import clean_participants as cp
+from patstat import config_emmanuel
+from patstat import dtypes_patstat_declaration as types
+from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 
 # set working directory
 os.chdir(DATA_PATH)

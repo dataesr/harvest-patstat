@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import csv_files_querying as cfq
-import dtypes_patstat_declaration as types
+from patstat import csv_files_querying as cfq
+from patstat import dtypes_patstat_declaration as types
 import numpy as np
 import os
 import pandas as pd
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 
 # dictionary with pd.read_csv parameters
 DICT = {"tls204": {"sep": ",", "chunksize": 5000000, "dtype": types.tls204_types},

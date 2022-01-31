@@ -9,10 +9,10 @@ import zipfile
 import pandas as pd
 from lxml import etree
 
-import text_functions as tf
+from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 
 COOKIE_NAME = "JSESSIONID"
 

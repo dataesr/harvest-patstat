@@ -1,15 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import csv_files_querying as cfq
-import dtypes_patstat_declaration as types
+from patstat import csv_files_querying as cfq
+from patstat import dtypes_patstat_declaration as types
+
 import numpy as np
 import os
 import pandas as pd
 import re
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 DICT = {"patstat": {"sep": ",", "chunksize": 5000000},
         "get_cpc_family_codes": {"sep": ",", "chunksize": 5000000, "dtype": types.tls225_types}
         }

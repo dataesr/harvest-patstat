@@ -5,14 +5,15 @@
 # This script collects PATSTAT Global data from EPO's API, download and write zipped folders
 
 from bs4 import BeautifulSoup
-import config_emmanuel as config
+from patstat import config_emmanuel as config
+
 import os
 import re
 import requests
 from retry import retry
 
 URL_PATSTAT = "https://publication.epo.org/raw-data"
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 
 
 # fonction pour faire les requêtes GET sur l'API Patstat

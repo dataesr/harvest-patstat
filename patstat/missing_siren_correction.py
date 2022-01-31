@@ -7,10 +7,10 @@ import re
 import numpy as np
 import pandas as pd
 
-import dtypes_patstat_declaration as types
+from patstat import dtypes_patstat_declaration as types
 
 # directory where the files are
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME')
 
 # set working directory
 os.chdir(DATA_PATH)
