@@ -92,7 +92,7 @@ def get_score_initials(name1, name2):
     return score
 
 
-"""   fonction pour récupérer le label des entreprises (que celles qui sont dasn scanR) avec le SIREN
+"""   fonction pour récupérer le label des entreprises (que celles qui sont dans scanR) avec le SIREN
 """
 
 

@@ -1,12 +1,16 @@
 # Documentation des traitements de la base de données PATSTAT
 
-## Organisation des programmes
+
+## Base brevets de l'INPI
+Télécharger depuis le serveur ftp : Bfrbibli@www.inpi.net (mot de passe sur azendoo). Inutile de tout récupérer, ne prendre que la dernière année, tout mettre au même endroit
+
+
+## Organisation des programmes PATSTAT
 
 <ol>
 <li>collectePatstatComplete : requête la base de données PATSTAT et télécharge tous les fichiers zippés de la base</li>
 <li>dezippage : dézippe tous les fichiers zippés de Patstat et range les fichiers CSV issus du dézippage dans le dossier correspondant à leur table PATSTAT</li>
-<li>csv_files_querying : permet de charger les CSV issus de PATSTAT dans Python par morceau, tout en appliquant des filtres - permet de charger les fichiers et de s'en servir en tant que dataframe</li>
-<li>dtypes_patstat_declaration : type des données des fichiers CSV issus de PATSTAT - facilite la création des dataframes</li>
+
 <li>p01_family_scope : limite la sélection aux demandes françaises. Inputs = tls 201, 206 et 207. Outputs = docdb_family_scope et patent_scope</li>
 <li>p02_titles_abstracts : extrait les titres et les résumés des demandes. Inputs = patent_scope, tls 202 et 203. Outputs = titles et abstracts</li>
 <li>p03_patents : extrait l'information sur les publications et consolide le jeu de données &mdash; aux demandes françaises sont ajoutés :
@@ -20,16 +24,45 @@
 Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publications et patent.
 </li>
 <li>p04_families : extrait les informations sur les familles de brevets (1ère publication, 1er octroi,...). Inputs = patent, tls 209, tls 224, tls 225 et lib_cpc.csv (fichier extrait du XML de classification coopérative des brevets &mdash; programme commun OEB et USPTO &mdash; reste à voir comment récupérer et traiter ces données). Outputs : families et families_technologies.</li>
-<li>correction_type : programme qui permet d'élaborer le modèle de classification entre les personnes morales et les personnes physiques sur la base des noms. Jeu de données suréchantillonné car plus de personnes physiques que morales. Test algo fasttext et extreme gradient boosting avec différentes variables. Sélectionne le modèle qui obtient le meilleur résultat. Actuellement, fasttext avec label, doc_std_name et person_name. Inputs : tls206, tls207, patent et part_init. Outputs : modèles et l'affichage du meilleur modèle dans la console.</li>
-<li>recuperation : appln_nr_epodoc est "deprecated" mais servait d'identifiant pour old_part de p05. Ce programme a pour but de chercher les numéros de demande appln_id correspondant aux identifiants appln_nr_epodoc et permet de rajouter la clef d'identification alternative de tls 201 key_appln_nr (appln_auth, appln_nr, appln_king and receiving_office). L'id_participant, basé sur appln_nr_epodoc est toutefois maintenu assurer la continuité. La récupération est finalisée dans p05 avec les lignes commentées au début de la fonction main. Inputs : tls201 et partfin. Output : old_part_key.</li>
 <li>p05_creat_participants : récupère les données de la précédente édition et ajoute les informations concernant le type de personne (morale ou physique) en mettant en &oelig;uvre le modèle issu de correction_type. Clef composée de key_appln_nr et person_id : 1 ligne = 1 demande de brevet associée à chacune des personnes de la demande. Inputs : tls206, tls207, patent, part_init et meilleur modèle. Output : part_init et part</li>
 <li>clean_participants : séparation entre les personnes physiques et morales, déduplication des participants par famille INPADOC et premier nettoyage des noms. Input : part. Output : part_ind et part_entp</li>
 <li>p06_clean_participants_individuals : nettoyage approfondi des noms des personnes physiques, attribution d'un seul pays par personne (celui le plus fréquent) et attribution d'un genre (probablité en fonction du nom). Inputs : part_ind et API dataesr pour le genre. Outputs : sex_table, part_individuals</li>
 <li>p07a_get_siren_inpi : récupère les numéros de publication, noms et SIREN des personnes morales ayant fait des demandes de brevet auprès de l'INPI. Input : base de données brevets de l'INPI au format XML. Outputs : siren_inpi_brevet et siren_inpi_generale.</li>
-<li>p07b_clean_participants_entp : </li>
-<li>p08_participants_final</li>
-<li>p09_geoloc</li>
+<li>p07b_clean_participants_entp : vérifie si le SIREN récupérer est constitué de 9 chiffres et complète les pays et les SIREN par famille pour un même nom corrigé en prenant la valeur la plus fréquente. Inputs : part_entp, siren_inpi_brevet et psn_id_valids. Output : part_entp_final.</li>
+<li>p08_participants_final : Consolidation des infos sur les participants personnes morales et physiques avec notamment les SIREN par key_appln_nr_person et le rôle (déposant ou inventeur) par key_appln_nr_person. Inputs: part_init, part, part_entp et part_indiv. Outputs : part, participants, idext et role.</li>
+<li>outils_inpi_adress : récupère les adresses dans la base de données de l'INPI. Input : dossier contenant la base de données de l'INPI. Outputs : adresses_inpi et inpi_first_and_last_names</li>
+<li>p09_geoloc : géolocalisation des participants à partir des adresses fournies dans les bases PATSTAT et INPI. Inputs : part_init, patent et adresses_inpi. Ouputs : best_scores_b et best_geocod</li>
 </ol>
+
+
+## Programmes d'appui PATSTAT
+
+<ul>
+<li>a01_outils_divers : fonctions qui permettent d'extraire :
+<ul>
+<li>des coordonnées GPS,</li>
+<li>le code postal d'une adresse,</li>
+<li>le département,</li>
+<li>un dataframe d'une liste d'adresses,</li>
+</ul>
+d'évaluer la proximité entre 2 noms, de charger et d'enregustrer un objet au format binaire, de remplacer un saut de ligne et de nettoyer des adresses</li>
+<li>csv_files_querying : permet de charger les CSV issus de PATSTAT dans Python par morceau, tout en appliquant des filtres - permet de charger les fichiers et de s'en servir en tant que dataframe</li>
+<li>dtypes_patstat_declaration : type des données des fichiers CSV issus de PATSTAT - facilite la création des dataframes</li>
+<li>correction_type : programme qui permet d'élaborer le modèle de classification entre les personnes morales et les personnes physiques sur la base des noms. Jeu de données suréchantillonné car plus de personnes physiques que morales. Test algo fasttext et extreme gradient boosting avec différentes variables. Sélectionne le modèle qui obtient le meilleur résultat. Actuellement, fasttext avec label, doc_std_name et person_name. Inputs : tls206, tls207, patent et part_init. Outputs : modèles et l'affichage du meilleur modèle dans la console.</li>
+<li>recuperation : appln_nr_epodoc est "deprecated" mais servait d'identifiant pour old_part de p05. Ce programme a pour but de chercher les numéros de demande appln_id correspondant aux identifiants appln_nr_epodoc et permet de rajouter la clef d'identification alternative de tls 201 key_appln_nr (appln_auth, appln_nr, appln_king and receiving_office). L'id_participant, basé sur appln_nr_epodoc est toutefois maintenu assurer la continuité. La récupération est finalisée dans p05 avec les lignes commentées au début de la fonction main. Inputs : tls201 et partfin. Output : old_part_key.</li>
+<li>config_emmanuel : identifiants et mots de passe des API</li>
+<li>text_functions : fonctions de traitement de texte :
+<ul><li>extraire les initiales d'une chaîne de caractères</li>
+<li>identifier si une chaîne de caractères est ASCII</li>
+<li>mettre les chaînes de caractères en minuscule</li>
+<li>mettre une majuscule à chaque première lettre d'un mot dans des chaînes de caractères</li>
+<li>metrre les mots d'une chaîne de caractères dans l'ordre</li>
+<li>supprimer les espaces, les accents, les mots identiques, la ponctuation et des mots</li>
+<li>tester si 2 mots sont identiques</li>
+</ul></li>
+<li>missing_siren_correction : transformation du fichier avec les SIREN et autres identifiants remplis par Emmanuel pour pouvoir être réintégré à part_init. Inputs: part_init et siren_manquants_avec_occurences_complete. Output : part_init_complete.
+</ul>
+
 
 ## Notes :
 
@@ -563,7 +596,7 @@ La table part_init originelle est le résultat du programme recuperation. Elle e
 Part_init reprend les informations de patent et les met en relation avec les informations sur les personnes. L'identifiant dans cette table est constitué de key_appln_nr et de person_id.
 Les mêmes personnes, si elles ont fait plusieurs demandes de brevets, peuvent revenir plusieurs fois. De même, si une demande de brevet est présentée plusieurs par plusieurs personnes, elle peut revenir plusieurs fois.
 
-Part_init contient 36 colonnes&nbsp;:
+Part_init contient 39 colonnes&nbsp;:
 <ul>
 <li>id_participant</li>
 <li>id_patent</li>
@@ -598,6 +631,9 @@ Part_init contient 36 colonnes&nbsp;:
 <li>grid</li>
 <li>sexe</li>
 <li>id_personne</li>
+<li>idref</li>
+<li>oc</li>
+<li>ror</li>
 <li>type</li>
 <li>isascii</li>
 <li>name_clean</li>
@@ -617,7 +653,36 @@ La variable isascii indique si les noms sont en caractères latins ou non. Seuls
 Partfin et old_part_key sont similaires à part_init mais ne contient pas doc_std_name, doc_std_name_id, psn_sector, psn_id, psn_name, publication_number, old_name et name_clean (et sans key_appln_nr pour partfin originel).
 
 ### Dans part
-Part est similaire à part_init mais ne contient pas les variables applt_seq_nr et invt_seq_nr.
+Part à l'origine est similaire à part_init mais ne contient pas les variables applt_seq_nr et invt_seq_nr. Suite aux traitements du programme consolidant les participants, il est réduit à 27 colonnes :
+<ul>
+<li>key_appln_nr_person</li>
+<li>key_appln_nr</li>
+<li>person_id</li>
+<li>id_patent</li>
+<li>docdb_family_id</li>
+<li>inpadoc_family_id</li>
+<li>earliest_filing_date</li>
+<li>name_source</li>
+<li>address_source</li>
+<li>country_source</li>
+<li>appln_auth</li>
+<li>type</li>
+<li>isascii</li>
+<li>country_corrected</li>
+<li>doc_std_name</li>
+<li>doc_std_name_id</li>
+<li>grid</li>
+<li>id_paysage</li>
+<li>idref</li>
+<li>name_corrected</li>
+<li>oc</li>
+<li>rnsr</li>
+<li>ror</li>
+<li>sexe</li>
+<li>siren</li>
+<li>siret</li>
+<li>id_personne</li>
+</ul>
 
 ### Dans part_ind et part_entp
 Part_ind et part_entp sont créés à partir de part_init. Part_ind ne contient que les enregistrements concernant les personnes physiques, et part_entp ceux concernant les personnes morales. Part_entp contient une variable supplémentaire : name_corrected.
@@ -638,6 +703,7 @@ Name correspond à name_source nettoyé et mis en forme.
 Part_individuals correspond à part_ind avec les noms et pays corrigés, ainsi que le genre.
 
 ### Dans part_ent_final
+Part_entp_final correspond à part_entp avec les SIREN, ainsi que des noms normalisés et des pays corrigés.
 
 
 ### Dans siren_inpi_brevet et siren_inpi_generale
@@ -650,8 +716,28 @@ Siren_inpi_brevet contient 3 variables&nbsp;:
 Siren_inpi_generale ne contient pas la variable numpubli (numéro de publication du brevet).
 
 ### Dans idext
+Idext contient 3 variables :
+<ul>
+<li>key_appln_nr_person</li>
+<li>id_type (type d'identifiant)</li>
+<li>id_value (identifiant)</li>
+</ul>
+
+### Dans role
+Role contient 2 variables :
+<ul>
+<li>key_appln_nr_person</li>
+<li>role (demandeur ou inventeur)</li>
+</ul>
+
+### Dans adresses_inpi
 
 
-# Dans role
+### Dans inpi_first_and_last_names
 
+
+### Dans best_scores_b
+
+
+### Dans best_geocod
 
