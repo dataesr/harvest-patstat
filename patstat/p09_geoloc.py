@@ -1,21 +1,24 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import numpy as np
 import os
+
+import numpy as np
 import pandas as pd
 
 from patstat import a01_outils_divers as a01
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 # set working directory
 os.chdir(DATA_PATH)
 
 
 def main():
+    # geolocalisation of participants
     part_init = pd.read_csv('part.csv', sep='|',
                             dtype={'id_participant': str, 'id_patent': str, 'docdb_family_id': str,
                                    'inpadoc_family_id': str, 'siren': str, 'siret': str, 'id_paysage': str, 'rnsr': str,
@@ -26,7 +29,8 @@ def main():
 
     part = part_init[part_init['country_corrected'] == 'FR'].copy().merge(
         patent[['key_appln_nr', 'appln_nr', 'appln_filing_year', 'appln_publn_number']], how='left', on='key_appln_nr')[
-        ['key_appln_nr_person', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type', 'address_source',
+        ['key_appln_nr_person', 'docdb_family_id', 'inpadoc_family_id', 'id_patent', 'isascii', 'type',
+         'address_source',
          'name_corrected', 'appln_nr', 'appln_filing_year', 'appln_publn_number', 'siren']].rename(
         columns={'appln_publn_number': 'numpubli', 'siren': 'siren_patstat', 'appln_nr': 'numdepot',
                  'address_source': 'adr_patstat', 'appln_filing_year': 'annee_depot', 'name_corrected': 'name_source'})

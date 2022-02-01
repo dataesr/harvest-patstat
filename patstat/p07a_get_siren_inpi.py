@@ -12,7 +12,8 @@ from lxml import etree
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 COOKIE_NAME = "JSESSIONID"
 
@@ -136,6 +137,15 @@ def clean_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var: str) 
 
 
 def creat_patent_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var: str, patent_var: str) -> pd.DataFrame:
+    """
+    Keep only cases where there is a single SIREN for a single patent-name combination
+
+    :param siren_table: df with name, patent and SIREN
+    :param siren_var: name SIREN variable
+    :param name_var: name name vraiable
+    :param patent_var: name patent variable
+    :return: df
+    """
     siren_tb = siren_table[[patent_var, name_var, siren_var]].drop_duplicates().copy()
     # on compte le nombre de siren par nom d'entp et patent
     nom_doublon = siren_tb.groupby([patent_var, name_var]).count().reset_index()
@@ -147,6 +157,14 @@ def creat_patent_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var
 
 
 def creat_general_siren_table(siren_table: pd.DataFrame, siren_var: str, name_var: str) -> pd.DataFrame:
+    """
+    Keep only cases where there is a single SIREN for a single name
+
+    :param siren_table: df with name and SIREN
+    :param siren_var: name SIREN variable
+    :param name_var: name name vraiable
+    :return: df
+    """
     siren_tb = siren_table[[siren_var, name_var]].drop_duplicates().copy()
     # on compte le nombre de siren par nom d'entp
     nom_doublon = siren_tb.groupby(name_var).count().reset_index()

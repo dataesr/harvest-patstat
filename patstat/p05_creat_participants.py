@@ -13,7 +13,8 @@ from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 DICT = {"tls207": {'sep': ',', 'chunksize': 10000000, 'dtype': types.tls207_types},
         "tls206": {'sep': ',', 'chunksize': 3000000, 'dtype': types.tls206_types}
         }
@@ -123,8 +124,8 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     # remove records where name is missing
     part = part.dropna(subset=["name_source"])
 
-    # create label based on PSN sector
-    part.loc[:, "label"] = part.loc[part["type"].isna(),"psn_sector"].apply(
+    # create label based on PSN sector if type is missing
+    part.loc[:, "label"] = part.loc[part["type"].isna(), "psn_sector"].apply(
         lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
 
     part.loc[:, "label"] = part.loc[part["type"].notna(), "type"]
@@ -185,9 +186,13 @@ def fasttext_learning(part_record: pd.DataFrame) -> pd.DataFrame:
 
 
 def isascii(part_ds: pd.DataFrame) -> pd.DataFrame:
-    # On crée la variable isascii,
-    # pour pouvoir prendre en compte ou non dans la suite des traitements les caractères spéciaux - alphabets non latins
-    # et une variable nom propre
+    """
+    Create 'isascii' to indicate if a name is written in the latin alphabet and with special characters,
+    name_clean with name_source cleaned
+    and replace missing values in country_correcetd by values in country_source
+    :param part_ds: df with participant type
+    :return: df
+    """
     part_ds.loc[:, "isascii"] = part_ds["name_source"].apply(tf.remove_punctuations).apply(tf.remove_accents).apply(
         tf.isascii)
     part_ds.loc[:, "name_clean"] = part_ds["name_source"].apply(tf.get_clean_name)

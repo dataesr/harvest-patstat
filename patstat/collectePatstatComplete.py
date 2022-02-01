@@ -13,7 +13,8 @@ import requests
 from retry import retry
 
 URL_PATSTAT = "https://publication.epo.org/raw-data"
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 
 # fonction pour faire les requêtes GET sur l'API Patstat

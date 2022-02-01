@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-import json
 import os
 import re
 
 import numpy as np
 import pandas as pd
-import requests
 
-from patsat import config_emmanuel
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
-COOKIE_NAME = "JSESSIONID"
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -99,63 +96,6 @@ def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_t
     return table_extrapol
 
 
-# def login_inpi():
-#     headers = {'Login': config_emmanuel.P07A_LOGIN, 'Password': config_emmanuel.P07A_PWD}
-#     r = requests.post(
-#         url='https://opendata-rncs.inpi.fr/services/diffusion/login',
-#         headers=headers
-#     )
-#     if r.status_code != 200:
-#         raise ConnectionError("Failed while trying to access the URL")
-#     else:
-#         print("URL successfully accessed")
-#     sess_id = r.headers.get("Set-Cookie").split(";")[0].replace(COOKIE_NAME + "=", '')
-#     return sess_id
-#
-#
-# def logout_inpi(sess_id):
-#     return requests.post("https://opendata-rncs.inpi.fr/services/diffusion/logout",
-#                          cookies={COOKIE_NAME: sess_id})
-#
-#
-# def request_inpi(url, sess_id):
-#     return requests.get(url, cookies={COOKIE_NAME: sess_id})
-#
-#
-# def json_df(res):
-#     data = json.loads(res.text)
-#     df_json = pd.json_normalize(data)
-#     df_json = df_json.drop_duplicates()
-#
-#     return df_json
-#
-#
-# def select_denom(df, denom):
-#     df2 = df[df["denominationSociale"] == denom]
-#     df2 = df2.drop_duplicates()
-#
-#     return df2
-#
-#
-# def get_missing_siren(url, item, sess_id):
-#     url = url + item
-#     response = request_inpi(url, sess_id)
-#     df_json = json_df(response)
-#     df_select = select_denom(df_json, item)
-#
-#     return df_select
-#
-#
-# def all_missing_siren(url, ls_denom, sess_id):
-#     for item in ls_denom:
-#         url = url + item
-#         response = request_inpi(url, sess_id)
-#         print(item)
-#         print(response.text)
-#
-#     return response
-
-
 def main():
     part_entp = pd.read_csv('part_entp.csv', sep='|', dtype=types.part_entp_types)
 
@@ -182,7 +122,7 @@ def main():
     part_entp2 = part_entp1.drop(columns='siren_nouv').drop_duplicates().copy()
 
     part_entp2["siren2"] = part_entp2["siret"].apply(lambda a: a[0:9])
-    part_entp2["siren3"] = np.where(part_entp2["siren"]=="", part_entp2["siren2"], part_entp2["siren"]).copy()
+    part_entp2["siren3"] = np.where(part_entp2["siren"] == "", part_entp2["siren2"], part_entp2["siren"]).copy()
     part_entp2["siren"] = part_entp2["siren3"].copy()
     part_entp2 = part_entp2.drop(columns=["siren2", "siren3"])
 

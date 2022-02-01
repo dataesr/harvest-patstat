@@ -13,7 +13,8 @@ from patstat import a01_outils_divers as a01
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 # todo : change with env path
 inpi_path = "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/"
 
@@ -21,7 +22,7 @@ inpi_path = "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/"
 os.chdir(DATA_PATH)
 
 
-def parse_one_file(file_path):
+def parse_one_file(file_path: str) -> list:
     arbre = etree.parse(file_path)
     l_obj = []
     parties = ['inventor', 'applicant']

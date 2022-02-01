@@ -17,7 +17,7 @@ import pandas as pd
 import requests
 from fuzzywuzzy import fuzz
 
-import config_emmanuel
+from patstat import config_emmanuel
 import text_functions as tf
 
 

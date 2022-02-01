@@ -26,7 +26,7 @@ Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publicat
 <li>clean_participants : séparation entre les personnes physiques et morales, déduplication des participants par famille INPADOC et premier nettoyage des noms. Input : part. Output : part_ind et part_entp</li>
 <li>p06_clean_participants_individuals : nettoyage approfondi des noms des personnes physiques, attribution d'un seul pays par personne (celui le plus fréquent) et attribution d'un genre (probablité en fonction du nom). Inputs : part_ind et API dataesr pour le genre. Outputs : sex_table, part_individuals</li>
 <li>p07a_get_siren_inpi : récupère les numéros de publication, noms et SIREN des personnes morales ayant fait des demandes de brevet auprès de l'INPI. Input : base de données brevets de l'INPI au format XML. Outputs : siren_inpi_brevet et siren_inpi_generale.</li>
-<li>p07b_clean_participants_entp</li>
+<li>p07b_clean_participants_entp : </li>
 <li>p08_participants_final</li>
 <li>p09_geoloc</li>
 </ol>

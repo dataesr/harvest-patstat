@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from patstat import csv_files_querying as cfq
-from patstat import dtypes_patstat_declaration as types
 import os
+
 import pandas as pd
 
+from patstat import csv_files_querying as cfq
+from patstat import dtypes_patstat_declaration as types
+
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 COL = {"patent_appln_columns": ["appln_id", "appln_kind", "earliest_filing_year", "ipr_type", 'earliest_publn_year'],
        "person_columns": ["person_id", "person_ctry_code"],
@@ -161,7 +164,7 @@ def main():
     family_scope.to_csv("docdb_family_scope.csv", sep='|', index=False)
     patent_scope = get_patent_from_set_family("tls201", family_scope, "docdb_family_id",
                                               DICT.get("tls201_patent_from_set_family"))
-    patent_scope["key_appln_nr"] = patent_scope["appln_auth"] + patent_scope["appln_nr"] +\
+    patent_scope["key_appln_nr"] = patent_scope["appln_auth"] + patent_scope["appln_nr"] + \
                                    patent_scope["appln_kind"] + patent_scope["receiving_office"]
     patent_scope.to_csv("patent_scope.csv", sep='|', index=False)
 

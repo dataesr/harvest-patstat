@@ -14,7 +14,8 @@ from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = "/run/media/julia/DATA/test/"
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -28,16 +29,16 @@ def select_nice_name(name_table: pd.DataFrame, family_var: str, source_name_var:
     """   This function selects from a person participants table already clusterised the name to be
     kept among the different occurences from the same cluster
 
-    param name_table: table with participant's names already clusterise
+    param name_table: table with the participant names already clusterised
     type name_table: dataframe
-    param family_var: family variable on which the clusterisation has benn done
+    param family_var: family variable on which the clusterisation has been done
     type family_var: string
-    param source_name_var: Original name of the person (patsta's version)
+    param source_name_var: Original name of the person (PATSTAT's version)
     type source_name_var: string
     param cluster_name_var: The name of the cluster in the family (2 persons with the same cluster_name are meant to be
     the same)
     type cluster_name_var: string
-    param office_var: the office from where comes the application
+    param office_var: the office where the application comes from
     type office_var: string
 
     :return:  a dataframe with one cluster name selected for each family
@@ -95,12 +96,25 @@ def clean_name_to_nice(name: str) -> str:
 # celui qui a le plus d'occurences.
 
 def get_max_occurences_from_list(one_list: list) -> str:
+    """
+    Get the most common name in a list
+    :param one_list: list with names
+    :return:
+    """
     max_occurr = max(one_list, key=one_list.count)
     return max_occurr
 
 
 def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_to_fill: str,
                                 var_to_match: str) -> pd.DataFrame:
+    """
+
+    :param table_to_fill: df with info we want to complete/correct
+    :param famtype: patent family
+    :param var_to_fill: variable we want to complete/correct
+    :param var_to_match: participant name
+    :return: df where for each participant name in a family only the most common value of the var_to_fill is kept
+    """
     # dans une famille, pour un même nom, quand il y a plusieurs pays, on prend celui le plus fréquent
 
     table_var_filled = table_to_fill.groupby([famtype, var_to_match]).agg({var_to_fill: list}).reset_index()
