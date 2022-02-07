@@ -9,8 +9,7 @@ import os
 import pandas as pd
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME')
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 # dictionary with pd.read_csv parameters
 DICT = {"sep": ",", "chunksize": 5000000, "dtype": {"appln_id": np.int64}}

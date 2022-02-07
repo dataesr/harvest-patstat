@@ -12,8 +12,7 @@ from lxml import etree
 from patstat import text_functions as tf
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME')
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 COOKIE_NAME = "JSESSIONID"
 

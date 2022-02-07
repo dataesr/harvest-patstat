@@ -13,10 +13,9 @@ from patstat import a01_outils_divers as a01
 from patstat import text_functions as tf
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME')
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 # todo : change with env path
-inpi_path = "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020"
+inpi_path = os.getenv('MOUNTED_VOLUM_INPI_PATH')
 
 # set working directory
 os.chdir(DATA_PATH)

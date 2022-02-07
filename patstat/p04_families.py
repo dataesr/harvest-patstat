@@ -10,8 +10,7 @@ import pandas as pd
 import re
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME')
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 DICT = {"patstat": {"sep": ",", "chunksize": 5000000},
         "get_cpc_family_codes": {"sep": ",", "chunksize": 5000000, "dtype": types.tls225_types}
         }

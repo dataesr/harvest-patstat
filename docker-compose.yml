@@ -23,8 +23,9 @@ services:
         /bin/sh -c "python3 manage.py run_worker"
     environment:
       APP_SETTINGS: application.server.config.DevelopmentConfig
-      MOUNTED_VOLUME: './' 
-      # MOUNTED_VOLUME: '/run/media/julia/DATA/test/' 
+      MOUNTED_VOLUME_TEST: '/run/media/julia/DATA/test/'
+      MOUNTED_VOLUME_FALL2021: "/run/media/julia/DATA/test/2021_Autumn/"
+      MOUNTED_VOLUM_INPI_PATH: "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020"
     networks:
       - patstat-network
     depends_on:

@@ -9,8 +9,7 @@ import pandas as pd
 from patstat import dtypes_patstat_declaration as types
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME')
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 # set working directory
 os.chdir(DATA_PATH)

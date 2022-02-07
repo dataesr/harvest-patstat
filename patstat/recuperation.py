@@ -7,7 +7,7 @@ import os
 import pandas as pd
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME')
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 # Columns to select in tls201
 COL = {"patent_appln_columns": ["appln_id", "appln_nr_epodoc"]}

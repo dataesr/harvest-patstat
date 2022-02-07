@@ -13,8 +13,7 @@ from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME')
-DATA_PATH = "/run/media/julia/DATA/test/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 DICT = {"tls207": {'sep': ',', 'chunksize': 10000000, 'dtype': types.tls207_types},
         "tls206": {'sep': ',', 'chunksize': 3000000, 'dtype': types.tls206_types}
         }
