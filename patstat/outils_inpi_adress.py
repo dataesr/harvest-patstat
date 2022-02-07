@@ -16,7 +16,7 @@ from patstat import text_functions as tf
 # DATA_PATH = os.getenv('MOUNTED_VOLUME')
 DATA_PATH = "/run/media/julia/DATA/test/"
 # todo : change with env path
-inpi_path = "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/"
+inpi_path = "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020"
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -66,9 +66,7 @@ def parse_one_file(file_path: str) -> list:
 
 
 def main():
-    # On commence par dézipper tous les fichiers nouveaux, puis on supprime les zip
-
-    dossiers_zip = glob.glob(inpi_path + "2010-2020/*.zip")
+    dossiers_zip = glob.glob(inpi_path + "2017_2020/*.zip")
 
     for dos in dossiers_zip:
         with zipfile.ZipFile(dos, 'r') as zip_ref:
@@ -77,7 +75,7 @@ def main():
     for dos in dossiers_zip:
         os.remove(dos)
 
-    dossiers = glob.glob(inpi_path + "2010-2020/*")
+    dossiers = glob.glob(inpi_path + "2017_2020/*")
     for dos in dossiers:
         l_to_dezip = glob.glob(dos + '/doc/*')
         for file_to_dezip in l_to_dezip:
@@ -88,19 +86,22 @@ def main():
     # qu'on transforme ensuite en tableau
 
     listxml = []
-    for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2010-2020"):
+    for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2017_2020/2020"):
         listxml += glob.glob(dirpath + '/*.xml')
 
     l_objets = []
-    for fichier in listxml:
-        l_objets.append(parse_one_file(fichier))
+    try:
+        for fichier in listxml:
+            l_objets.append(parse_one_file(fichier))
+    except etree.ParseError:
+        pass
 
     a01.save_object(l_objets, os.path.join('list_adress_inpi.p'))
 
-    list_adress = a01.load_object(os.path.join('list_adress_inpi.p'))
+    # list_adress = a01.load_object(os.path.join('list_adress_inpi.p'))
 
     list_adresses_inpi = []
-    for list_brevt_adr in list_adress:
+    for list_brevt_adr in l_objets:
         for part_adr in list_brevt_adr:
             list_adresses_inpi.append(part_adr)
 

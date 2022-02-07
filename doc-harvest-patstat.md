@@ -30,8 +30,8 @@ Inputs = patent_scope, abstracts, titles, tls 204 et tls 211. Outputs = publicat
 <li>p07a_get_siren_inpi : récupère les numéros de publication, noms et SIREN des personnes morales ayant fait des demandes de brevet auprès de l'INPI. Input : base de données brevets de l'INPI au format XML. Outputs : siren_inpi_brevet et siren_inpi_generale.</li>
 <li>p07b_clean_participants_entp : vérifie si le SIREN récupérer est constitué de 9 chiffres et complète les pays et les SIREN par famille pour un même nom corrigé en prenant la valeur la plus fréquente. Inputs : part_entp, siren_inpi_brevet et psn_id_valids. Output : part_entp_final.</li>
 <li>p08_participants_final : Consolidation des infos sur les participants personnes morales et physiques avec notamment les SIREN par key_appln_nr_person et le rôle (déposant ou inventeur) par key_appln_nr_person. Inputs: part_init, part, part_entp et part_indiv. Outputs : part, participants, idext et role.</li>
-<li>outils_inpi_adress : récupère les adresses dans la base de données de l'INPI. Input : dossier contenant la base de données de l'INPI. Outputs : adresses_inpi et inpi_first_and_last_names</li>
-<li>p09_geoloc : géolocalisation des participants à partir des adresses fournies dans les bases PATSTAT et INPI. Inputs : part_init, patent et adresses_inpi. Ouputs : best_scores_b et best_geocod</li>
+<li>outils_inpi_adress : dézippe les fichiers zippés et récupère les adresses de la base de données de l'INPI. Input : dossier contenant la base de données de l'INPI. Outputs : adresses_inpi et inpi_first_and_last_names</li>
+<li>p09_geoloc : géolocalisation des participants via une API (se base sur Nominatim) à partir des adresses fournies dans les bases PATSTAT et INPI. Inputs : part_init, patent et adresses_inpi. Ouputs : best_scores_b et best_geocod</li>
 </ol>
 
 
@@ -731,13 +731,75 @@ Role contient 2 variables :
 </ul>
 
 ### Dans adresses_inpi
-
+Adresse_inpi contient 5 variables :
+<ul>
+<li>numpubli : numéro de publication</li>
+<li>name: nom complet de la personne</li>
+<li>address : numéro et libellé de la rue</li>
+<li>city : ville</li>
+<li>postcode : code postal</li>
+</ul>
 
 ### Dans inpi_first_and_last_names
-
+INPI_first_and_last_names contient 3 variables :
+<ul>
+<li>name : nom complet de la personne</li>
+<li>fisrtname : prénom</li>
+<li>lastname : nom</li>
+</ul>
 
 ### Dans best_scores_b
-
+Best_scores_b contient 26 colonnes :
+<ul>
+<li>key_appln_nr_person</li>
+<li>adr_patstat : adresse complete telle que disponible dans PATSTAT - address_source de part_init - mais mise en minuscule, sans ponctuation et sans signes diacritiques</li>
+<li>adr_inpi : adresse telle que disponible dans la base de l'INPI - address dans adresses_inpi - mais mise en minuscule, sans ponctuation et sans signes diacritiques</li>
+<li>city_inpi : ville telle que disponible dans la base de l'INPI - city dans adresses_inpi</li>
+<li>cp_inpi : code postal tel que disponible dans la base de l'INPI - postcode dans adresses_inpi</li>
+<li>adr_patstat_orig : adresse complete telle que disponible dans PATSTAT - address_source de part_init</li>
+<li>adr_inpi_orig : adresse telle que disponible dans la base de l'INPI - address dans adresses_inpi</li>
+<li>cpville : code postal et ville issus de la base INPI</li>
+<li>cpvillepat : code postal et ville issus de la base PATSTAT</li>
+<li>adresse : adr_inpi, cp_inpi et city_inpi sauf s'ils sont manquants. Dans ce cas, on utilise adr_patstat</li>
+<li>score_comp : score de proximité entre l'adresse testée et le résultat de la recherche via l'API</li>
+<li>city_comp : ville issue de la recherche via l'API</li>
+<li>housenumber_comp : numéro de rue issu de la recherche via l'API</li>
+<li>cp_comp : code postal issu de la recherche via l'API</li>
+<li>street_comp : libellé de la rue issu de la recherche via l'API</li>
+<li>city_code_comp : code commune INSEE issu de la recherche via l'API</li>
+<li>dep : département extrait de cpville</li>
+<li>dep_comp : département issu de la recherche via l'API</li>
+<li>input_address : code postal et ville utilisés pour faire la requête via l'API</li>
+<li>score_cpville : score de proximité entre le code postal et la ville testés et le résultat de la recherche via l'API</li>
+<li>city_cpville : ville issue de la recherche via l'API</li>
+<li>housenumber_cpville : numéro de rue issu de la recherche via l'API</li>
+<li>cp_cpville : code postal issu de la recherche via l'API</li>
+<li>street_cpville : libellé de la rue issu de la recherche via l'API</li>
+<li>city_code_cpville : code commune INSEE issu de la recherche via l'API</li>
+<li>dep_cpville : département issu de la recherche via l'API</li>
+</ul>
 
 ### Dans best_geocod
-
+Best_geocod est issu de best_scores_b - ne garde que les meilleurs scores (score_comp et score_cpville) :
+<ol>
+<li>que la ville : score > 0,9</li>
+<li>adresse complète : score > 0.4</li>
+<li>CPville : score > 0.4</li>
+</ol>
+ 
+Le jeu de données contient 13 variables :
+<ul>
+<li>key_appln_nr_person</li>
+<li>city_inpi</li>
+<li>cp_inpi</li>
+<li>cpville</li>
+<li>adresse</li>
+<li>dep</li>
+<li>score - score_comp ou score_cpville</li>
+<li>geocoded_city : city_comp ou city_cpville</li>
+<li>geocoded_number : housenumber_comp ou housenumber_cpville</li>
+<li>geocoded_cp : cp_comp ou cp_cpville</li>
+<li>geocoded_street : street_comp ou street_cpville</li>
+<li>geocoded_city_code : city_code_comp ou city_code_cpville</li>
+<li>geocoded_dep : dep_comp ou dep_cpville</li>
+</ul>
