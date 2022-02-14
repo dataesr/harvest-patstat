@@ -1,5 +1,5 @@
 DOCKER_IMAGE_NAME=dataesr/harvest-patstat
-CURRENT_VERSION=$(shell cat bso/__init__.py | cut -d "'" -f 2)
+CURRENT_VERSION=$(shell cat application/__init__.py | cut -d "'" -f 2)
 
 test: unit
 
@@ -25,7 +25,7 @@ docker-push:
 	@echo Docker image pushed
 
 release:
-	echo "__version__ = '$(VERSION)'" > bso/__init__.py
+	echo "__version__ = '$(VERSION)'" > application/__init__.py
 	git commit -am '[release] version $(VERSION)'
 	git tag $(VERSION)
 	@echo If everything is OK, you can push with tags i.e. git push origin main --tags

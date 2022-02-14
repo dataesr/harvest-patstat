@@ -30,6 +30,8 @@ services:
       - patstat-network
     depends_on:
       - redis
+    volumes:
+      - /run/media/julia/DATA/test:/run/media/julia/DATA/test
 
   web:
     build: .
@@ -38,15 +40,19 @@ services:
       - 5004:5000
     command: python3 manage.py run -h 0.0.0.0
     environment:
-      MOUNTED_VOLUME: './' 
-      # MOUNTED_VOLUME: '/run/media/julia/DATA/test/' 
+      MOUNTED_VOLUME_TEST: '/run/media/julia/DATA/test/'
+      MOUNTED_VOLUME_FALL2021: "/run/media/julia/DATA/test/2021_Autumn/"
+      MOUNTED_VOLUM_INPI_PATH: "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020"
       FLASK_DEBUG: 1
       APP_SETTINGS: application.server.config.DevelopmentConfig
     networks:
       - patstat-network
     depends_on:
       - worker
+    volumes:
+      - /run/media/julia/DATA/test:/run/media/julia/DATA/test
 
 networks:
   patstat-network:
     driver: bridge
+
