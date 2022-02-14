@@ -5,7 +5,7 @@
 # This script collects PATSTAT Global data from EPO's API, download and write zipped folders
 
 from bs4 import BeautifulSoup
-from patstat import config_emmanuel as config
+from patstat import config as config
 
 import os
 import re

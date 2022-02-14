@@ -17,7 +17,7 @@ import pandas as pd
 import requests
 from fuzzywuzzy import fuzz
 
-from patstat import config_emmanuel
+from patstat import config
 import text_functions as tf
 
 
@@ -97,7 +97,7 @@ def get_score_initials(name1, name2):
 
 
 def get_label_organization_siren(siren):
-    headers = config_emmanuel.A01_LAB_ORG_SIREN
+    headers = config.A01_LAB_ORG_SIREN
     url_address_request = 'http://185.161.45.213/organizations/organizations/'
     r = requests.get(url_address_request + str(siren), headers=headers)
     if r.status_code != 200:
@@ -115,7 +115,7 @@ def get_label_organization_siren(siren):
 
 
 def get_geocod_from_address(adresse):
-    headers = config_emmanuel.A01_GEOCOD_ADDRESS
+    headers = config.A01_GEOCOD_ADDRESS
     url_address_request = 'http://185.161.45.213/geocoder/address/'
     r = requests.get(url_address_request + adresse, headers=headers)
     if r.status_code != 200:

@@ -9,7 +9,7 @@ import pandas as pd
 import requests
 
 from patstat import clean_participants as cp
-from patstat import config_emmanuel
+from patstat import config
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
@@ -144,7 +144,7 @@ def get_sex_proba_from_name(name: str):
     """
 
     url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
-    headers = {"Authorization": f"{config_emmanuel.P06}"}
+    headers = {"Authorization": f"{config.P06}"}
     proba = 0.0
     r = requests.get(url_sexe_request + name, headers=headers)
     if r.status_code != 200:
