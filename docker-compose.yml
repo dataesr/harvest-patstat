@@ -20,9 +20,10 @@ services:
     build: .
     privileged: true
     command: >
-        /bin/sh -c "python3 manage.py run_worker"
+        /bin/sh -c "python3 /home/julia/Documents/harvest-patstat/manage.py run_worker"
     environment:
       APP_SETTINGS: application.server.config.DevelopmentConfig
+      LOCAL: "/home/julia/Documents/harvest-patstat/"
       MOUNTED_VOLUME_TEST: '/run/media/julia/DATA/test/'
       MOUNTED_VOLUME_FALL2021: "/run/media/julia/DATA/test/2021_Autumn/"
       MOUNTED_VOLUM_INPI_PATH: "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020"
@@ -31,15 +32,21 @@ services:
     depends_on:
       - redis
     volumes:
+      - /home/julia/Documents/harvest-patstat/:/home/julia/Documents/harvest-patstat/
       - /run/media/julia/DATA/test:/run/media/julia/DATA/test
+      - /run/media/julia/DATA/test/2021_Autumn/:/run/media/julia/DATA/test/2021_Autumn/
+      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020:/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020
+      
+      
 
   web:
     build: .
     privileged: true
     ports:
       - 5004:5000
-    command: python3 manage.py run -h 0.0.0.0
+    command: python3 /home/julia/Documents/harvest-patstat/manage.py run -h 0.0.0.0
     environment:
+      LOCAL: "/home/julia/Documents/harvest-patstat/"
       MOUNTED_VOLUME_TEST: '/run/media/julia/DATA/test/'
       MOUNTED_VOLUME_FALL2021: "/run/media/julia/DATA/test/2021_Autumn/"
       MOUNTED_VOLUM_INPI_PATH: "/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020"
@@ -50,7 +57,10 @@ services:
     depends_on:
       - worker
     volumes:
+      - /home/julia/Documents/harvest-patstat/:/home/julia/Documents/harvest-patstat/
       - /run/media/julia/DATA/test:/run/media/julia/DATA/test
+      - /run/media/julia/DATA/test/2021_Autumn/:/run/media/julia/DATA/test/2021_Autumn/
+      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020:/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017-2020/2020
 
 networks:
   patstat-network:
