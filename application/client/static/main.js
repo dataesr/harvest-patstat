@@ -20,3 +20,5 @@ $('.submit').on('click', function() {
     });
 });
 
+$('#patstat').html('Hello World bis!');
+
