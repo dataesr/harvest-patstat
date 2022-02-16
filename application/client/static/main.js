@@ -1,19 +1,12 @@
-$('.submit').on('click', function() {
-    $('#logs').html('... en cours ...');
-    input_json = { 
-	    type: $('#input_type option:selected').val(),
-	    year: $('#input_year option:selected').val(),
-	    query: $('#input_query').val(),
-    }
+$('#hitchhiker').on('click', function() {
     $.ajax({
-        url: '/match_api',
-        data: JSON.stringify(input_json),
+        url: '/query',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
-        method: 'POST'
+        method: 'GET'
     })
     .done(res => {
-        $('#logs').html(res.logs);
+        $('#res_query').html(res.res);
     })
     .fail(err => {
         console.log(err)

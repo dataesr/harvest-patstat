@@ -10,6 +10,10 @@ default_timeout = 43200000
 
 main_blueprint = Blueprint('main', __name__, )
 
+@main_blueprint.route('/query', methods=['GET'])
+def query():
+    return jsonify({"res": "42"})
+
 @main_blueprint.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
