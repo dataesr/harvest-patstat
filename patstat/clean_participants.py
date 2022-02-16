@@ -9,8 +9,8 @@ import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
 
-import dtypes_patstat_declaration as types
-import text_functions as tf
+from patstat import dtypes_patstat_declaration as types
+from patstat import text_functions as tf
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')

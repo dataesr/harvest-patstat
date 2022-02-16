@@ -1,17 +1,14 @@
-$('#hitchhiker').on('click', function() {
+$('#all').on('click', function() {
     $.ajax({
-        url: '/query',
+        url: '/tasks/<task_id>',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         method: 'GET'
     })
     .done(res => {
-        $('#res_query').html(res.res);
+        $('#res_inpi').html(res.status);
     })
     .fail(err => {
         console.log(err)
     });
 });
-
-$('#patstat').html('Hello World bis!');
-

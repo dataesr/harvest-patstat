@@ -49,6 +49,7 @@ et-xmlfile==1.1.0
 fasttext==0.9.1
 Flask==1.1.1
 Flask-Bootstrap==3.3.7.1
+fuzzywuzzy==0.18.0
 idna==3.3
 imbalanced-learn==0.8.1
 importlib-metadata==4.8.3

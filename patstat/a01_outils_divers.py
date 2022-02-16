@@ -18,7 +18,7 @@ import requests
 from fuzzywuzzy import fuzz
 
 from patstat import config
-import text_functions as tf
+from patstat import text_functions as tf
 
 
 def save_object(python_object, path):

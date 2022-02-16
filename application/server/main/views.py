@@ -10,36 +10,24 @@ default_timeout = 43200000
 
 main_blueprint = Blueprint('main', __name__, )
 
-@main_blueprint.route('/query', methods=['GET'])
-def query():
-    return jsonify({"res": "42"})
-
 @main_blueprint.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
 
+
 @main_blueprint.route('/harvest', methods=['POST'])
-def run_task_unpaywall():
+def run_task_harvest():
     """
     Harvest data from unpaywall
     """
     args = request.get_json(force=True)
-    with Connection(redis.from_url(current_app.config['REDIS_URL'])):
-        q = Queue(name='harvest-patstat', default_timeout=default_timeout)
-        task = q.enqueue(create_task_patstat, args)
+    task = create_task_patstat(args)
     response_object = {
         'status': 'success',
         'data': {
             'task_id': task.get_id()
         }
     }
-    return jsonify(response_object)
-
-
-    response_object = {
-        'status': 'success'
-    }
-
     return jsonify(response_object), 202
 
 
