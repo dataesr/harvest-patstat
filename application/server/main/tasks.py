@@ -2,7 +2,7 @@ import sys
 
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, clean_participants, p06_clean_participants_individuals, \
-    p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, utils_inpi_adress, p09_geoloc
+    p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, outils_inpi_adress, p09_geoloc
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
