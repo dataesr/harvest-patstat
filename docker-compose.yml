@@ -22,9 +22,13 @@ services:
         /bin/sh -c "python3 manage.py run_worker"
     environment:
       APP_SETTINGS: application.server.config.DevelopmentConfig
-      MOUNTED_VOLUME: '/patstat_data/'
+      MOUNTED_VOLUME_TEST: '/volume_test/'
+      MOUNTED_VOLUME_TEST_FALL2021: '/volume_test_fall2021/'
+      MOUNTED_VOLUM_INPI_PATH: '/volume_inpi_path/'
     volumes:
-      - /Users/eric/:/patstat_data
+      - /run/media/julia/DATA/test/:/volume_test
+      - /run/media/julia/DATA/test/2021_Autumn/:/volume_test_fall2021
+      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/:/volume_inpi_path
     networks:
       - patstat-network
     depends_on:
@@ -39,9 +43,13 @@ services:
     environment:
       FLASK_DEBUG: 1
       APP_SETTINGS: application.server.config.DevelopmentConfig
-      MOUNTED_VOLUME: '/patstat_data/'
+      MOUNTED_VOLUME_TEST: '/volume_test/'
+      MOUNTED_VOLUME_TEST_FALL2021: '/volume_test_fall2021/'
+      MOUNTED_VOLUM_INPI_PATH: '/volume_inpi_path/'
     volumes:
-      - /Users/eric/:/patstat_data
+      - /run/media/julia/DATA/test/:/volume_test
+      - /run/media/julia/DATA/test/2021_Autumn/:/volume_test_fall2021
+      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/:/volume_inpi_path
     networks:
       - patstat-network
     depends_on:
@@ -52,4 +60,6 @@ networks:
     driver: bridge
 
 volumes:
-  patstat_data:
+  volume_test:
+  volume_test_fall2021:
+  volume_inpi_path:
