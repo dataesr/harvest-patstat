@@ -1,6 +1,6 @@
 $('#all').on('click', function() {
     $.ajax({
-        url: '/tasks/<task_id>',
+        url: '/inpi',
         contentType: 'application/json; charset=utf-8',
         dataType: 'json',
         method: 'GET'

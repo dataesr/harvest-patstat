@@ -4,7 +4,7 @@ import redis
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
-from application.server.main.tasks import create_task_patstat
+from application.server.main.tasks import create_task_inpi
 
 default_timeout = 43200000
 
@@ -15,13 +15,13 @@ def home():
     return render_template('home.html')
 
 
-@main_blueprint.route('/harvest', methods=['POST'])
+@main_blueprint.route('/inpi', methods=['GET'])
 def run_task_harvest():
     """
     Harvest data from unpaywall
     """
     args = request.get_json(force=True)
-    task = create_task_patstat(args)
+    task = create_task_inpi(args)
     response_object = {
         'status': 'success',
         'data': {
