@@ -6,7 +6,7 @@ $('#all').on('click', function() {
         method: 'GET'
     })
     .done(res => {
-        $('#res_inpi').html(res.status);
+        $('#res_inpi').html(res.data);
     })
     .fail(err => {
         console.log(err)

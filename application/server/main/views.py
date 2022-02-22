@@ -1,4 +1,6 @@
+import json
 import os
+import pandas
 import requests
 import redis
 
@@ -20,13 +22,11 @@ def run_task_harvest():
     """
     Harvest data from unpaywall
     """
-    args = request.get_json(force=True)
-    task = create_task_inpi(args)
+    task = create_task_inpi()
+    df_json = task.to_json()
     response_object = {
         'status': 'success',
-        'data': {
-            'task_id': task.get_id()
-        }
+        'data': df_json
     }
     return jsonify(response_object), 202
 
