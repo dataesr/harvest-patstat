@@ -65,85 +65,83 @@ def parse_one_file(file_path: str) -> list:
 
 
 def main():
-    # dossiers_zip = glob.glob(inpi_path + "2017_2020/*.zip")
-    #
-    # for dos in dossiers_zip:
-    #     with zipfile.ZipFile(dos, 'r') as zip_ref:
-    #         zip_ref.extractall(dos.replace(".zip", ""))
-    #
-    # for dos in dossiers_zip:
-    #     os.remove(dos)
-    #
-    # dossiers = glob.glob(inpi_path + "2017_2020/*")
-    # for dos in dossiers:
-    #     l_to_dezip = glob.glob(dos + '/doc/*')
-    #     for file_to_dezip in l_to_dezip:
-    #         with zipfile.ZipFile(file_to_dezip, 'r') as zip_ref:
-    #             zip_ref.extractall(dos.replace(".zip", ""))
-    #
-    # # Ensuite on parcourt tous les XML pour récupérer les SIREN et noms des entreprises dans une liste l_objets,
-    # # qu'on transforme ensuite en tableau
-    #
-    # listxml = []
-    # for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2017_2020/2020"):
-    #     listxml += glob.glob(dirpath + '/*.xml')
-    #
-    # l_objets = []
-    # try:
-    #     for fichier in listxml:
-    #         l_objets.append(parse_one_file(fichier))
-    # except etree.ParseError:
-    #     pass
-    #
-    # a01.save_object(l_objets, os.path.join('list_adress_inpi.p'))
-    #
-    # # list_adress = a01.load_object(os.path.join('list_adress_inpi.p'))
-    #
-    # list_adresses_inpi = []
-    # for list_brevt_adr in l_objets:
-    #     for part_adr in list_brevt_adr:
-    #         list_adresses_inpi.append(part_adr)
-    #
-    # adresses_inpi = pd.DataFrame(list_adresses_inpi)
-    #
-    # for col in adresses_inpi.columns:
-    #     adresses_inpi[col] = adresses_inpi[col].replace(np.nan, '')
-    # adresses_inpi = adresses_inpi.drop_duplicates()
-    #
-    # adresses_inpi['name'] = (
-    #         adresses_inpi['lastname'] + ' ' + adresses_inpi['firstname'] + ' ' + adresses_inpi['orgname'])
-    # adresses_inpi['name'] = adresses_inpi['name'].apply(lambda a: tf.remove_multiple_spaces(a)).apply(
-    #     lambda b: tf.remove_first_end_spaces(b))
-    # adresses_inpi['name'] = adresses_inpi['name'].apply(lambda x: x.lower())
-    #
-    # # quand on a des doublons d'adresses, pour le même couple numpubli/name :
-    # # On choisit de garder l'adresse de l'inventeur
-    #
-    # set_doublons = set(adresses_inpi[['numpubli', 'name', 'address', 'city', 'postcode']].groupby(['numpubli', 'name'])[
-    #                        'postcode'].count().reset_index().query('postcode > 1')['numpubli'])
-    #
-    # adresses_doublons = \
-    #     adresses_inpi[(adresses_inpi['numpubli'].isin(set_doublons)) & (adresses_inpi['type'] == 'inventor')][
-    #         ['numpubli', 'name', 'sequence', 'address', 'city', 'postcode']].drop_duplicates()
-    #
-    # adresses_doublons = adresses_doublons.groupby(['numpubli', 'name']).first().reset_index().drop(columns={'sequence'})
-    #
-    # adresses_inpi2 = pd.concat([adresses_inpi[~(adresses_inpi['numpubli'].isin(set_doublons))][
-    #                                 ['numpubli', 'name', 'address', 'city', 'postcode']], adresses_doublons])
-    #
-    # adresses_inpi2.to_csv('adresses_inpi.csv', sep='|', index=False)
-    #
-    # # on garde l'info corrigée des noms et prénoms séparés
-    #
-    # inpi_first_and_last_names = adresses_inpi[adresses_inpi['firstname'] != ''][
-    #     ['name', 'firstname', 'lastname']].drop_duplicates()
-    #
-    # inpi_first_and_last_names.to_csv('inpi_first_and_last_names.csv', sep='|', index=False)
+    dossiers_zip = glob.glob(inpi_path + "2017_2020/*.zip")
 
-    df = pd.DataFrame(data={"op1": [1, 2, 3], "op2": [2, 3, 4], "somme": [3, 5, 7]})
-    return df
+    for dos in dossiers_zip:
+        with zipfile.ZipFile(dos, 'r') as zip_ref:
+            zip_ref.extractall(dos.replace(".zip", ""))
+
+    for dos in dossiers_zip:
+        os.remove(dos)
+
+    dossiers = glob.glob(inpi_path + "2017_2020/*")
+    for dos in dossiers:
+        l_to_dezip = glob.glob(dos + '/doc/*')
+        for file_to_dezip in l_to_dezip:
+            with zipfile.ZipFile(file_to_dezip, 'r') as zip_ref:
+                zip_ref.extractall(dos.replace(".zip", ""))
+
+    # Ensuite on parcourt tous les XML pour récupérer les SIREN et noms des entreprises dans une liste l_objets,
+    # qu'on transforme ensuite en tableau
+
+    listxml = []
+    for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2017_2020/2020"):
+        listxml += glob.glob(dirpath + '/*.xml')
+
+    l_objets = []
+    try:
+        for fichier in listxml:
+            l_objets.append(parse_one_file(fichier))
+    except etree.ParseError:
+        pass
+
+    a01.save_object(l_objets, os.path.join('list_adress_inpi.p'))
+
+    # list_adress = a01.load_object(os.path.join('list_adress_inpi.p'))
+
+    list_adresses_inpi = []
+    for list_brevt_adr in l_objets:
+        for part_adr in list_brevt_adr:
+            list_adresses_inpi.append(part_adr)
+
+    adresses_inpi = pd.DataFrame(list_adresses_inpi)
+
+    for col in adresses_inpi.columns:
+        adresses_inpi[col] = adresses_inpi[col].replace(np.nan, '')
+    adresses_inpi = adresses_inpi.drop_duplicates()
+
+    adresses_inpi['name'] = (
+            adresses_inpi['lastname'] + ' ' + adresses_inpi['firstname'] + ' ' + adresses_inpi['orgname'])
+    adresses_inpi['name'] = adresses_inpi['name'].apply(lambda a: tf.remove_multiple_spaces(a)).apply(
+        lambda b: tf.remove_first_end_spaces(b))
+    adresses_inpi['name'] = adresses_inpi['name'].apply(lambda x: x.lower())
+
+    # quand on a des doublons d'adresses, pour le même couple numpubli/name :
+    # On choisit de garder l'adresse de l'inventeur
+
+    set_doublons = set(adresses_inpi[['numpubli', 'name', 'address', 'city', 'postcode']].groupby(['numpubli', 'name'])[
+                           'postcode'].count().reset_index().query('postcode > 1')['numpubli'])
+
+    adresses_doublons = \
+        adresses_inpi[(adresses_inpi['numpubli'].isin(set_doublons)) & (adresses_inpi['type'] == 'inventor')][
+            ['numpubli', 'name', 'sequence', 'address', 'city', 'postcode']].drop_duplicates()
+
+    adresses_doublons = adresses_doublons.groupby(['numpubli', 'name']).first().reset_index().drop(columns={'sequence'})
+
+    adresses_inpi2 = pd.concat([adresses_inpi[~(adresses_inpi['numpubli'].isin(set_doublons))][
+                                    ['numpubli', 'name', 'address', 'city', 'postcode']], adresses_doublons])
+
+    adresses_inpi2.to_csv('adresses_inpi.csv', sep='|', index=False)
+
+    # on garde l'info corrigée des noms et prénoms séparés
+
+    inpi_first_and_last_names = adresses_inpi[adresses_inpi['firstname'] != ''][
+        ['name', 'firstname', 'lastname']].drop_duplicates()
+
+    inpi_first_and_last_names.to_csv('inpi_first_and_last_names.csv', sep='|', index=False)
+
+    return adresses_inpi2, inpi_first_and_last_names
 
 
 if __name__ == '__main__':
-    print(main())
     main()

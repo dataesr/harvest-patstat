@@ -87,6 +87,8 @@ def main():
 
     role.to_csv('role.csv', sep='|', index=False)
 
+    return particip, participants, idext, role
+
 
 if __name__ == '__main__':
     main()

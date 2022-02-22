@@ -312,6 +312,8 @@ def main():
 
     family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
 
+    return families, family_technos_codes
+
 
 if __name__ == "__main__":
     main()

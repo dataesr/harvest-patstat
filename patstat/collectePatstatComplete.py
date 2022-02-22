@@ -5,7 +5,7 @@
 # This script collects PATSTAT Global data from EPO's API, download and write zipped folders
 
 from bs4 import BeautifulSoup
-from patstat import config as config
+from patstat import config
 
 import os
 import re
@@ -109,6 +109,8 @@ def main():
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
     download_write(list_url, session, list_name)
+
+    return list_url
 
 
 if __name__ == '__main__':

@@ -206,6 +206,8 @@ def main():
 
     siren_inpi_generale.to_csv('siren_inpi_generale.csv', sep='|', index=False)
 
+    return siren_inpi_brevet, siren_inpi_generale
+
 
 if __name__ == '__main__':
     main()

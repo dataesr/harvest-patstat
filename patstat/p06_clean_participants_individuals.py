@@ -237,6 +237,8 @@ def main():
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
 
+    return sex_table, part_individuals_fin
+
 
 if __name__ == '__main__':
     main()

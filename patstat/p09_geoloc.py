@@ -149,6 +149,8 @@ def main():
 
     best_geocod.to_csv('best_geocod.csv', sep='|', index=False, encoding="utf-8")
 
+    return best_scores_b, best_geocod
+
 
 if __name__ == '__main__':
     main()

@@ -170,6 +170,8 @@ def main():
 
     patent.to_csv("patent.csv", sep="|", index=False)
 
+    return publications, patent
+
 
 if __name__ == "__main__":
     main()

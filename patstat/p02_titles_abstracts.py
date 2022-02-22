@@ -46,6 +46,8 @@ def main():
     abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts", patent_scope, "appln_id", DICT)
     abstracts.to_csv("abstracts.csv", sep="|", index=False)
 
+    return titles, abstracts
+
 
 if __name__ == "__main__":
     main()

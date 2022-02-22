@@ -63,6 +63,8 @@ def main():
         os.makedirs(file_names["table_names"][item], exist_ok=True)
         shutil.move(file_names["file_names"][item], file_names["table_names"][item])
 
+    return file_names
+
 
 if __name__ == '__main__':
     main()

@@ -167,6 +167,8 @@ def main():
                                    patent_scope["appln_kind"] + patent_scope["receiving_office"]
     patent_scope.to_csv("patent_scope.csv", sep='|', index=False)
 
+    return patent_scope
+
 
 if __name__ == "__main__":
     main()
