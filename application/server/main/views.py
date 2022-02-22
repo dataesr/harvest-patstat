@@ -52,7 +52,7 @@ def run_task_harvest():
 
 
 @main_blueprint.route('/process', methods=['GET'])
-def run_task_harvest():
+def run_task_process():
     """
     Processing PATSTAT data
     """
@@ -106,7 +106,7 @@ def run_task_harvest():
 
 
 @main_blueprint.route('/geo', methods=['GET'])
-def run_task_harvest():
+def run_task_geo():
     """
     Geocoding PATSTAT data
     """
