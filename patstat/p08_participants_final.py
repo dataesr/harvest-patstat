@@ -58,7 +58,7 @@ def main():
     # création de la table participants
 
     participants = particip[
-        ['id_patent', 'key_appln_nr_person', 'key_appln_nr_person', 'id_personne', 'type', 'sexe', 'doc_std_name',
+        ['id_patent', 'key_appln_nr', 'key_appln_nr_person', 'id_personne', 'type', 'sexe', 'doc_std_name',
          "doc_std_name_id",
          'name_source', 'name_corrected',
          'address_source',
