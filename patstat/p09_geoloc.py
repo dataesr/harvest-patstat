@@ -34,6 +34,8 @@ def main():
         columns={'appln_publn_number': 'numpubli', 'siren': 'siren_patstat', 'appln_nr': 'numdepot',
                  'address_source': 'adr_patstat', 'appln_filing_year': 'annee_depot', 'name_corrected': 'name_source'})
 
+    part.loc[part["name_source"].isna(), "name_source"] = ""
+
     part['name'] = part['name_source'].apply(lambda x: x.lower())
 
     part2 = part.merge(adresses_inpi_init, on=['numpubli', 'name'], how='left')
