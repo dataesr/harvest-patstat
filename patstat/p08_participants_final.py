@@ -29,7 +29,8 @@ def main():
 
     part_indiv = pd.read_csv('part_individuals.csv', sep='|',
                              dtype=types.part_entp_types)[
-        ['key_appln_nr_person', 'country_corrected', 'name_corrected', 'sexe', 'siren',
+        ['key_appln_nr_person', 'country_corrected', 'doc_std_name', "doc_std_name_id", 'name_corrected', 'sexe',
+         'siren',
          'siret', 'id_paysage', 'rnsr',
          'grid', 'idref', 'oc', 'ror']].copy()
 
