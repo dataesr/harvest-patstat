@@ -85,7 +85,7 @@ def main():
     # qu'on transforme ensuite en tableau
 
     listxml = []
-    for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2017_2020/2020"):
+    for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2017_2020/2021"):
         listxml += glob.glob(dirpath + '/*.xml')
 
     l_objets = []

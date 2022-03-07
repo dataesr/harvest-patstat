@@ -182,12 +182,12 @@ def main():
 
     # On commence par dézipper tous les fichiers nouveaux, puis on supprime les zip
 
-    dezip_inpi_dos("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2020/")
+    dezip_inpi_dos("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2021/")
 
     # Ensuite on parcourt tous les XML pour récupérer les SIREN et noms des entreprises dans une liste l_objets,
     # qu'on transforme ensuite en tableau
 
-    siren_inpi = get_siren_inpi("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2020/")
+    siren_inpi = get_siren_inpi("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2021/")
 
     # On enlève les SIREN erronés (suppression des espaces et sélection des suites de 9 numéros seulement)
 
