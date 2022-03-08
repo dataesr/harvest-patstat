@@ -56,7 +56,6 @@ def create_task_process_patstat():
        
 
 def create_json_patent_scanr():
-    pat, fam, fam_tech_codes, particip, role = create_task_process_patstat()
     json_scanr = comp_version.get_json()
     
     return json_scanr
