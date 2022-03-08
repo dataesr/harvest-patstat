@@ -38,7 +38,7 @@ def get_titles_abstracts_from_appln_id(directory: str, action: str, pat_sc: pd.D
     return _titles
 
 
-def main():
+def tit_abst():
     # load application ID for French persons post 2010 - output from p01
     patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
     titles = get_titles_abstracts_from_appln_id("tls202", "titles", patent_scope, "appln_id", DICT)
@@ -48,6 +48,3 @@ def main():
 
     return titles, abstracts
 
-
-if __name__ == "__main__":
-    main()

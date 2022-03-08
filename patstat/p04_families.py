@@ -296,7 +296,7 @@ def unify(pat: pd.DataFrame, cpc_cat_names: pd.DataFrame) -> pd.DataFrame:
     return fam_tech_codes
 
 
-def main():
+def getfam():
     patent = pd.read_csv("patent.csv", sep="|",
                          parse_dates=["appln_filing_date", "earliest_filing_date", "earliest_publn_date",
                                       "appln_publn_date", "grant_publn_date"], dtype=types.patent_types)
@@ -313,7 +313,3 @@ def main():
     family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
 
     return families, family_technos_codes
-
-
-if __name__ == "__main__":
-    main()

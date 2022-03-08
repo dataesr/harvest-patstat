@@ -15,7 +15,7 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 os.chdir(DATA_PATH)
 
 
-def main():
+def part_final():
     # load part_init, part, part_entp and part_individuals to merge them and create a single file with all participants
     part_init = pd.read_csv('part_init.csv', sep='|', dtype=types.part_init_types)
     part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)

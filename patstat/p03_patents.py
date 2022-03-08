@@ -144,7 +144,7 @@ def get_ispriority_byfamily(_priority_table: pd.DataFrame, patent_table: pd.Data
     return _ispriority
 
 
-def main():
+def get_pubpat():
     patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
     titles = pd.read_csv("titles.csv", sep="|", dtype={"appln_id": np.int64})
     abstracts = pd.read_csv("abstracts.csv", sep="|", dtype={"appln_id": np.int64})
@@ -171,7 +171,3 @@ def main():
     patent.to_csv("patent.csv", sep="|", index=False)
 
     return publications, patent
-
-
-if __name__ == "__main__":
-    main()

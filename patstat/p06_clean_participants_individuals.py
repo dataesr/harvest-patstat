@@ -193,7 +193,7 @@ def get_sex_from_name_set(set_nom: set) -> pd.DataFrame:
     return sex_table
 
 
-def main():
+def get_clean_ind():
     part_ind = pd.read_csv('part_ind.csv', sep='|', dtype=types.part_init_types)
 
     part_ind_name_nice = select_nice_name(part_ind[part_ind['new_name'] != ''], 'inpadoc_family_id', 'name_source',

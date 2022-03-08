@@ -95,7 +95,7 @@ def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_t
     return table_extrapol
 
 
-def main():
+def get_clean_entp():
     part_entp = pd.read_csv('part_entp.csv', sep='|', dtype=types.part_entp_types)
 
     for col in part_entp.columns:
@@ -181,6 +181,3 @@ def main():
 
     return part_entp_final
 
-
-if __name__ == '__main__':
-    main()

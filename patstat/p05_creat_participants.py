@@ -203,7 +203,7 @@ def isascii(part_ds: pd.DataFrame) -> pd.DataFrame:
     return part_ds2
 
 
-def main():
+def start_part():
     # file which served to create part_init: old_part_key.csv
     # old_part = pd.read_csv("old_part_key.csv",
     #                            sep='|',
@@ -229,7 +229,3 @@ def main():
     part_init3.to_csv("part.csv", sep="|", index=False)
 
     return part_init2, part_init3
-
-
-if __name__ == "__main__":
-    main()

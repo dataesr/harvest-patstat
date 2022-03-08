@@ -64,7 +64,7 @@ def parse_one_file(file_path: str) -> list:
     return l_obj
 
 
-def main():
+def unzip_inpi():
     dossiers_zip = glob.glob(inpi_path + "2017_2020/*.zip")
 
     for dos in dossiers_zip:
@@ -141,7 +141,3 @@ def main():
     inpi_first_and_last_names.to_csv('inpi_first_and_last_names.csv', sep='|', index=False)
 
     return adresses_inpi2, inpi_first_and_last_names
-
-
-if __name__ == '__main__':
-    main()

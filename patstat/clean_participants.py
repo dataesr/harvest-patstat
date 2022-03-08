@@ -380,7 +380,7 @@ def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict
     return part_ind
 
 
-def main():
+def get_clean_part():
     part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
 
     for col in part.columns:
@@ -401,6 +401,3 @@ def main():
 
     return part_ind, part_entp
 
-
-if __name__ == '__main__':
-    main()

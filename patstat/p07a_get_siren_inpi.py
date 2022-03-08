@@ -174,7 +174,7 @@ def creat_general_siren_table(siren_table: pd.DataFrame, siren_var: str, name_va
     return general_siren_table
 
 
-def main():
+def get_siren():
     # Dans le dossier 'inpi_path', on met tous les nouveaux zip de l'INPI, téléchargés sur le serveur ftp :
     # Bfrbibli@www.inpi.net
     # le mot de passe est sur azendoo
@@ -208,6 +208,3 @@ def main():
 
     return siren_inpi_brevet, siren_inpi_generale
 
-
-if __name__ == '__main__':
-    main()
