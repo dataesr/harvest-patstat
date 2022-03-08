@@ -65,7 +65,7 @@ def parse_one_file(file_path: str) -> list:
 
 
 def unzip_inpi():
-    dossiers_zip = glob.glob(inpi_path + "2017_2020/*.zip")
+    dossiers_zip = glob.glob(inpi_path + "2017_2020/2021/*.zip")
 
     for dos in dossiers_zip:
         with zipfile.ZipFile(dos, 'r') as zip_ref:
@@ -74,7 +74,7 @@ def unzip_inpi():
     for dos in dossiers_zip:
         os.remove(dos)
 
-    dossiers = glob.glob(inpi_path + "2017_2020/*")
+    dossiers = glob.glob(inpi_path + "2017_2020/2021/*")
     for dos in dossiers:
         l_to_dezip = glob.glob(dos + '/doc/*')
         for file_to_dezip in l_to_dezip:
