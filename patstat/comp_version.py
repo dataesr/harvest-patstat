@@ -3,9 +3,11 @@
 
 # Ce programme permet de créer le fichier au format JSON qui va alimenter ScanR
 
-import dtypes_patstat_declaration as types
+
 import os
 import pandas as pd
+
+from patstat import dtypes_patstat_declaration as types
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
