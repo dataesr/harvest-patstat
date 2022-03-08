@@ -51,26 +51,26 @@ def run_task_harvest():
     return jsonify(response_object), 202
 
 
-# @main_blueprint.route('/process', methods=['GET'])
-# def run_task_process():
-#     """
-#     Processing PATSTAT data
-#     """
-#     pat, fam, fam_tech_codes, particip, role = create_task_process_patstat()
-#     pat_json = pat.to_json(orient="records", lines=True)
-#     fam_json = fam.to_json(orient="records", lines=True)
-#     fam_tech_codes_json = fam_tech_codes.to_json(orient="records", lines=True)
-#     particip_json = particip.to_json(orient="records", lines=True)
-#     role_json = role.to_json(orient="records", lines=True)
-#     response_object = {
-#         'status': 'success',
-#         'patents': pat_json,
-#         'families': fam_json,
-#         'family_technology_codes': fam_tech_codes_json,
-#         'part': particip_json,
-#         'role': role_json
-#     }
-#     return jsonify(response_object), 202
+@main_blueprint.route('/process', methods=['GET'])
+def run_task_process():
+    """
+    Processing PATSTAT data
+    """
+    pat, fam, fam_tech_codes, particip, role = create_task_process_patstat()
+    pat_json = pat.to_json(orient="records", lines=True)
+    fam_json = fam.to_json(orient="records", lines=True)
+    fam_tech_codes_json = fam_tech_codes.to_json(orient="records", lines=True)
+    particip_json = particip.to_json(orient="records", lines=True)
+    role_json = role.to_json(orient="records", lines=True)
+    response_object = {
+        'status': 'success',
+        'patents': pat_json,
+        'families': fam_json,
+        'family_technology_codes': fam_tech_codes_json,
+        'part': particip_json,
+        'role': role_json
+    }
+    return jsonify(response_object), 202
 
 
 
