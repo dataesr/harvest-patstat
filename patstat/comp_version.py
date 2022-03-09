@@ -42,7 +42,7 @@ def get_json():
 
     fam_techno = pd.read_csv("families_technologies.csv", sep="|", encoding="utf-8", dtype=types.patent_types)
 
-    part = pd.read_csv("part.csv", sep="|", encoding="utf-8", dtype=types.partfin_types)
+    part = pd.read_csv("part.csv", sep="|", encoding="utf-8", dtype=types.partfin_types, engine="python")
     part["key_appln_nr"] = part["key_appln_nr"].apply(lambda a: a.strip())
     part["key_appln_nr_person"] = part["key_appln_nr_person"].replace(r"\s+", "", regex=True)
     part["id_personne"] = part["id_personne"].replace(r"\s+", "", regex=True)

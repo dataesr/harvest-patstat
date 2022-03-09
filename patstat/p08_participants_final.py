@@ -17,7 +17,7 @@ os.chdir(DATA_PATH)
 
 def part_final():
     # load part_init, part, part_entp and part_individuals to merge them and create a single file with all participants
-    part_init = pd.read_csv('part_init.csv', sep='|', dtype=types.part_init_types)
+    part_init = pd.read_csv('part_init.csv', sep='|', dtype=types.part_init_types, engine="python")
     part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
 
     part_entp = pd.read_csv('part_entp_final.csv', sep='|',

@@ -214,7 +214,8 @@ def start_part():
     old_part = pd.read_csv("part_init.csv",
                            sep='|',
                            dtype=types.part_init_types,
-                           encoding="utf-8")
+                           encoding="utf-8",
+                           engine="python")
 
     tls207 = cfq.filtering("tls207", patents, "appln_id", DICT["tls207"])
     tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
