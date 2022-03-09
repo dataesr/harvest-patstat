@@ -2,7 +2,7 @@ import sys
 
 import pandas as pd
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
-    p04_families, p05_creat_participants, p07_clean_participants, p06_clean_participants_individuals, \
+    p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, p09_geoloc, comp_version
 from application.server.main.logger import get_logger
 
@@ -39,7 +39,7 @@ def create_task_process_patstat():
         p03_patents.get_pubpat()
         p04_families.getfam()
         p05_creat_participants.start_part()
-        p07_clean_participants.get_clean_part()
+        p05b_clean_participants.get_clean_part()
         p06_clean_participants_individuals.get_clean_ind()
         p07a_get_siren_inpi.get_siren()
         p07b_clean_participants_entp.get_clean_entp()
