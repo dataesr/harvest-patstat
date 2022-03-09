@@ -75,7 +75,7 @@ oslo.i18n==5.1.0
 oslo.serialization==4.2.0
 oslo.utils==4.12.1
 packaging==21.3
-pandas==0.25.3
+pandas==1.1.5
 pbr==5.8.1
 pluggy==0.13.1
 py==1.11.0
