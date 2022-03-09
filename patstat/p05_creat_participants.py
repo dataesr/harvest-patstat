@@ -228,4 +228,3 @@ def start_part():
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
     part_init3.to_csv("part.csv", sep="|", index=False)
 
-    return part_init2, part_init3

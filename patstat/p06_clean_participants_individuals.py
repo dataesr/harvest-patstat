@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from patstat import clean_participants as cp
+from patstat import p07_clean_participants as cp
 from patstat import config
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
@@ -237,8 +237,3 @@ def get_clean_ind():
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
 
-    return sex_table, part_individuals_fin
-
-
-if __name__ == '__main__':
-    main()

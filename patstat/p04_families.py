@@ -312,4 +312,3 @@ def getfam():
 
     family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
 
-    return families, family_technos_codes

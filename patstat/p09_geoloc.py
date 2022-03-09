@@ -16,7 +16,7 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 os.chdir(DATA_PATH)
 
 
-def main():
+def geoloc():
     # geolocalisation of participants
     part_init = pd.read_csv('part.csv', sep='|',
                             dtype={'id_participant': str, 'id_patent': str, 'docdb_family_id': str,
@@ -151,8 +151,3 @@ def main():
 
     best_geocod.to_csv('best_geocod.csv', sep='|', index=False, encoding="utf-8")
 
-    return best_scores_b, best_geocod
-
-
-if __name__ == '__main__':
-    main()

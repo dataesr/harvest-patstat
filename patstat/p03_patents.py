@@ -170,4 +170,3 @@ def get_pubpat():
 
     patent.to_csv("patent.csv", sep="|", index=False)
 
-    return publications, patent

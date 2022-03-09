@@ -206,5 +206,4 @@ def get_siren():
 
     siren_inpi_generale.to_csv('siren_inpi_generale.csv', sep='|', index=False)
 
-    return siren_inpi_brevet, siren_inpi_generale
 

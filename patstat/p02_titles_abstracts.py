@@ -46,5 +46,4 @@ def tit_abst():
     abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts", patent_scope, "appln_id", DICT)
     abstracts.to_csv("abstracts.csv", sep="|", index=False)
 
-    return titles, abstracts
 

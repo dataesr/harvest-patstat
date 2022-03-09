@@ -179,5 +179,4 @@ def get_clean_entp():
 
     part_entp_final.to_csv('part_entp_final.csv', sep='|', index=False)
 
-    return part_entp_final
 
