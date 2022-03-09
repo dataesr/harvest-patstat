@@ -35,15 +35,25 @@ def create_task_harvest_patstat():
 def create_task_process_patstat():
     try:
         p01_family_scope.get_patentscope()
+        print("p01: success")
         p02_titles_abstracts.tit_abst()
+        print("p02: success")
         p03_patents.get_pubpat()
+        print("p03: success")
         p04_families.getfam()
+        print("p04: success")
         p05_creat_participants.start_part()
+        print("p05: success")
         p05b_clean_participants.get_clean_part()
+        print("p05b: success")
         p06_clean_participants_individuals.get_clean_ind()
+        print("p06: success")
         p07a_get_siren_inpi.get_siren()
+        print("p07a: success")
         p07b_clean_participants_entp.get_clean_entp()
+        print("p07b: success")
         p08_participants_final.part_final()
+        print("p08: success")
     except:
         error = sys.exc_info()[0]
         logger.error(f'Process PATSTAT caused an error : {error}')
