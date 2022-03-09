@@ -399,5 +399,4 @@ def get_clean_part():
 
     part_entp.to_csv("part_entp.csv", sep="|", index=False, encoding="utf-8")
 
-    return part_ind, part_entp
 
