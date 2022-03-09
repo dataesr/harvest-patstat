@@ -8,7 +8,7 @@ import numpy as np
 import pandas as pd
 import requests
 
-from patstat import p07_clean_participants as cp
+from patstat import p05b_clean_participants as cp
 from patstat import config
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
