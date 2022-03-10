@@ -6,8 +6,9 @@ import redis
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
-from application.server.main.tasks import create_task_inpi, create_task_harvest_patstat, create_task_process_patstat, \
-    create_task_geo, create_json_patent_scanr
+from application.server.main.tasks import create_task_inpi, create_task_harvest_patstat, create_task_p01_p04_patstat, \
+    create_task_p05_patstat, create_task_p05b_patstat, create_task_p06_indiv_patstat, create_task_p07_entp_patstat, \
+    create_task_p08_part_final_patstat, create_task_geo, create_json_patent_scanr
 
 default_timeout = 43200000
 
@@ -49,17 +50,73 @@ def run_task_harvest():
     return jsonify(response_object), 202
 
 
-@main_blueprint.route('/process', methods=['GET'])
-def run_task_process():
+@main_blueprint.route('/p01p04', methods=['GET'])
+def run_task_p01p04():
     """
     Processing PATSTAT data
     """
-    create_task_process_patstat()
+    create_task_p01_p04_patstat()
     response_object = {
         'status': 'success'
     }
     return jsonify(response_object), 202
 
+@main_blueprint.route('/p05', methods=['GET'])
+def run_task_p05():
+    """
+    Processing PATSTAT data
+    """
+    create_task_p05_patstat()
+    response_object = {
+        'status': 'success'
+    }
+    return jsonify(response_object), 202
+
+
+@main_blueprint.route('/p05b', methods=['GET'])
+def run_task_p05b():
+    """
+    Processing PATSTAT data
+    """
+    create_task_p05b_patstat()
+    response_object = {
+        'status': 'success'
+    }
+    return jsonify(response_object), 202
+
+@main_blueprint.route('/p06', methods=['GET'])
+def run_task_p06():
+    """
+    Processing PATSTAT data
+    """
+    create_task_p06_indiv_patstat()
+    response_object = {
+        'status': 'success'
+    }
+    return jsonify(response_object), 202
+
+@main_blueprint.route('/p07', methods=['GET'])
+def run_task_p07():
+    """
+    Processing PATSTAT data
+    """
+    create_task_p07_entp_patstat()
+    response_object = {
+        'status': 'success'
+    }
+    return jsonify(response_object), 202
+
+
+@main_blueprint.route('/p08', methods=['GET'])
+def run_task_p08():
+    """
+    Processing PATSTAT data
+    """
+    create_task_p08_part_final_patstat()
+    response_object = {
+        'status': 'success'
+    }
+    return jsonify(response_object), 202
 
 
 @main_blueprint.route('/json', methods=['GET'])
