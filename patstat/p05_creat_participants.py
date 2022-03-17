@@ -4,6 +4,7 @@
 import os
 import re
 
+import datatable as dt
 import fasttext
 import numpy as np
 import pandas as pd
@@ -32,35 +33,83 @@ os.chdir(DATA_PATH)
 
 
 def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
-    key_dict = {}
-    for row in part_table.itertuples():
-        current_key = f'{row.doc_std_name};;;{row.doc_std_name_id};;;{row.name_source}'
-        if current_key not in key_dict:
-            key_dict[current_key] = {'types': [], 'seq_nr': []}
-        if lbl == "label":
-            key_dict[current_key]['types'].append(row.label)
-        elif lbl == "type":
-            key_dict[current_key]['types'].append(row.type)
-        else:
-            assert(False)
-        key_dict[current_key]['seq_nr'].append(row.invt_seq_nr)
-    for current_key in key_dict:
-        if len(set(key_dict[current_key]['types'])) == 1:
-            key_dict[current_key]['type_final'] = key_dict[current_key]['types'][0]
-        else:
-            seq_nr_sum = np.sum(key_dict[current_key]['seq_nr'])
-            if seq_nr_sum > 0:
-                key_dict[current_key]['type_final'] = 'pp'
-            else:
-                key_dict[current_key]['type_final'] = 'pm'
+    part = part_table.copy()
 
-    ix = 0
-    for row in part_table.itertuples():
-        current_key = f'{row.doc_std_name};;;{row.doc_std_name_id};;;{row.name_source}'
-        part_table.at[ix, lbl] = key_dict[current_key]['type_final']
-        ix += 1
+    for col in list(part.columns):
+        if str(part[col].dtypes) == "Int64":
+            part[col] = part[col].astype(int)
+    part_dt = dt.Frame(part)
+    part_count = part[["doc_std_name", "doc_std_name_id", "name_source", lbl]].drop_duplicates()
+    part_count_dt = dt.Frame(part_count)
+    part_count_dt[:, dt.update(count_label=dt.count()), dt.by("doc_std_name", "doc_std_name_id", "name_source")]
+    part_count_dt = part_count_dt[dt.f.count_label > 1, :]
+    print(f"9 : ne garde que les cas où les types de {lbl} sont supérieurs à 1", flush=True)
 
-    return part_table
+    part_count_dt.key = ("doc_std_name", "doc_std_name_id", "name_source", lbl)
+
+    part_dt = part_dt[:, :, dt.join(part_count_dt)]
+    print("10 : jointure left part_dt et part_count_dt", flush=True)
+
+    part_dt2 = part_dt[dt.f.count_label != None, :]
+    part_dt2_autre = part_dt[dt.f.count_label == None, :]
+    part_dt2_autre = part_dt2_autre[:, dt.f[:].remove(dt.f.count_label)]
+    print("11 : séparation de part_dt en 2 selon que count_label est vide ou non", flush=True)
+
+    part_dt2[:, dt.update(seq_nr=dt.sum(dt.f.invt_seq_nr)), dt.by("doc_std_name_id", "doc_std_name", "name_source")]
+    print("12-1 : calcul seq_nr", flush=True)
+
+    part_dt2[:, dt.update(label2=dt.ifelse(dt.f.seq_nr > 0, "pp", "pm")),
+    dt.by("doc_std_name", "doc_std_name_id", "name_source")]
+    print(f"12-2 : correction {lbl} pour ceux dédupliqués", flush=True)
+
+    part_dt2 = part_dt2[:, dt.f[:].remove([dt.f.label, dt.f.count_label, dt.f.seq_nr])]
+    part_dt2.names = {"label2": lbl}
+
+    concat_dt = dt.rbind(part_dt2, part_dt2_autre)
+    print("12-3 : concaténation des 2 tables part_dt2 et part_dt2_autre", flush=True)
+
+    concat_df = concat_dt.to_pandas()
+    print("12-4 : transformation dt en df", flush=True)
+
+    for col in list(concat_df.columns):
+        if str(concat_df[col].dtypes) == "int64":
+            concat_df[col] = concat_df[col].astype(pd.Int64Dtype())
+
+    print("12-5 : pd.Int64Dtype()", flush=True)
+
+    return concat_df
+
+
+# def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
+#     key_dict = {}
+#     for row in part_table.itertuples():
+#         current_key = f'{row.doc_std_name};;;{row.doc_std_name_id};;;{row.name_source}'
+#         if current_key not in key_dict:
+#             key_dict[current_key] = {'types': [], 'seq_nr': []}
+#         if lbl == "label":
+#             key_dict[current_key]['types'].append(row.label)
+#         elif lbl == "type":
+#             key_dict[current_key]['types'].append(row.type)
+#         else:
+#             assert (False)
+#         key_dict[current_key]['seq_nr'].append(row.invt_seq_nr)
+#     for current_key in key_dict:
+#         if len(set(key_dict[current_key]['types'])) == 1:
+#             key_dict[current_key]['type_final'] = key_dict[current_key]['types'][0]
+#         else:
+#             seq_nr_sum = np.sum(key_dict[current_key]['seq_nr'])
+#             if seq_nr_sum > 0:
+#                 key_dict[current_key]['type_final'] = 'pp'
+#             else:
+#                 key_dict[current_key]['type_final'] = 'pm'
+#
+#     ix = 0
+#     for row in part_table.itertuples():
+#         current_key = f'{row.doc_std_name};;;{row.doc_std_name_id};;;{row.name_source}'
+#         part_table.at[ix, lbl] = key_dict[current_key]['type_final']
+#         ix += 1
+#
+#     return part_table
 
 
 # def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
@@ -190,6 +239,8 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     # make sure that label info are the complete and the same for each combinaison of doc_std_name, doc_std_name_id
     # and name_source
     part2 = add_type_to_part(part, "label")
+    print("8-2 : add_type_to_part réussi", flush=True)
+
 
     return part
 
