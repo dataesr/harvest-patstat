@@ -62,7 +62,7 @@ def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
     dt.by("doc_std_name", "doc_std_name_id", "name_source")]
     print(f"12-2 : correction {lbl} pour ceux dédupliqués", flush=True)
 
-    part_dt2 = part_dt2[:, dt.f[:].remove([dt.f.label, dt.f.count_label, dt.f.seq_nr])]
+    del part_dt2[:, [lbl, "count_label", "seq_nr"]]
     part_dt2.names = {"label2": lbl}
 
     concat_dt = dt.rbind(part_dt2, part_dt2_autre)
