@@ -75,9 +75,9 @@ def create_task_p06_indiv_patstat():
 def create_task_p07_entp_patstat():
     try:
         p07a_get_siren_inpi.get_siren()
-        print("p07a: success")
+        print("p07a: success", flush=True)
         p07b_clean_participants_entp.get_clean_entp()
-        print("p07b: success")
+        print("p07b: success", flush=True)
     except:
         error = sys.exc_info()[0]
         logger.error(f'Process PATSTAT caused an error : {error}')
