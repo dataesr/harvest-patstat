@@ -17,8 +17,8 @@ os.chdir(DATA_PATH)
 
 def part_final():
     # load part_init, part, part_entp and part_individuals to merge them and create a single file with all participants
-    part_init = pd.read_csv('part_init.csv', sep='|', dtype=types.part_init_types, engine="python")
-    part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
+    part_init = pd.read_csv('part_init_p05.csv', sep='|', dtype=types.part_init_types, engine="python")
+    part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types)
 
     part_entp = pd.read_csv('part_entp_final.csv', sep='|',
                             dtype=types.part_entp_types)[
@@ -54,7 +54,7 @@ def part_final():
     particip['name_corrected'] = np.where(particip['name_corrected'] == '', particip['name_source'],
                                           particip['name_corrected'])
 
-    particip.to_csv('part.csv', sep='|', index=False, encoding="utf-8")
+    particip.to_csv('part_p08.csv', sep='|', index=False, encoding="utf-8")
 
     # création de la table participants
 

@@ -323,7 +323,7 @@ def start_part():
     # old_part = old_part.rename(columns={"name_corrected": "old_name"})
     patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
     print("1 : chargement patents", flush=True)
-    old_part = pd.read_csv("part_init.csv",
+    old_part = pd.read_csv("part_init_p05.csv",
                            sep='|',
                            dtype=types.part_init_types,
                            encoding="utf-8",
@@ -342,7 +342,8 @@ def start_part():
     part_init2 = isascii(part_init)
     print("23 : fin isascii", flush=True)
 
-    part_init2.to_csv("part_init.csv", sep="|", index=False)
+    part_init2.to_csv("part_init_p05.csv", sep="|", index=False)
+    part_init2.to_csv("part_init_backup.csv", sep="|", index=False)
 
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
-    part_init3.to_csv("part.csv", sep="|", index=False)
+    part_init3.to_csv("part_p05.csv", sep="|", index=False)
