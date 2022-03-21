@@ -14,8 +14,6 @@ from patstat import text_functions as tf
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-# todo : change with env path
-inpi_path = os.getenv('MOUNTED_VOLUM_INPI_PATH')
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -65,7 +63,7 @@ def parse_one_file(file_path: str) -> list:
 
 
 def unzip_inpi():
-    dossiers_zip = glob.glob(inpi_path + "2017_2020/2021/*.zip")
+    dossiers_zip = glob.glob("2017_2020/2021/*.zip")
 
     for dos in dossiers_zip:
         with zipfile.ZipFile(dos, 'r') as zip_ref:
@@ -74,7 +72,7 @@ def unzip_inpi():
     for dos in dossiers_zip:
         os.remove(dos)
 
-    dossiers = glob.glob(inpi_path + "2017_2020/2021/*")
+    dossiers = glob.glob("2017_2020/2021/*")
     for dos in dossiers:
         l_to_dezip = glob.glob(dos + '/doc/*')
         for file_to_dezip in l_to_dezip:
@@ -85,7 +83,7 @@ def unzip_inpi():
     # qu'on transforme ensuite en tableau
 
     listxml = []
-    for (dirpath, dirnames, filenames) in os.walk(inpi_path + "2017_2020/2021"):
+    for (dirpath, dirnames, filenames) in os.walk("2017_2020/2021"):
         listxml += glob.glob(dirpath + '/*.xml')
 
     l_objets = []

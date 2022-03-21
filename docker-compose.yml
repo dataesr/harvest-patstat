@@ -23,14 +23,8 @@ services:
     environment:
       APP_SETTINGS: application.server.config.DevelopmentConfig
       MOUNTED_VOLUME_TEST: '/volume_test/'
-      MOUNTED_VOLUME_TEST_FALL2021: '/volume_test_fall2021/'
-      MOUNTED_VOLUM_INPI_PATH: '/volume_inpi_path/'
-      MOUNTED_VOLUM_INPI_DATA: '/volume_inpi_data/'
     volumes:
       - /run/media/julia/DATA/test/:/volume_test
-      - /run/media/julia/DATA/test/2021_Autumn/:/volume_test_fall2021
-      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/:/volume_inpi_path
-      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2021/:/volume_inpi_data
     networks:
       - patstat-network
     depends_on:
@@ -46,14 +40,8 @@ services:
       FLASK_DEBUG: 1
       APP_SETTINGS: application.server.config.DevelopmentConfig
       MOUNTED_VOLUME_TEST: '/volume_test/'
-      MOUNTED_VOLUME_TEST_FALL2021: '/volume_test_fall2021/'
-      MOUNTED_VOLUM_INPI_PATH: '/volume_inpi_path/'
-      MOUNTED_VOLUM_INPI_DATA: '/volume_inpi_data/'
     volumes:
       - /run/media/julia/DATA/test/:/volume_test
-      - /run/media/julia/DATA/test/2021_Autumn/:/volume_test_fall2021
-      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/:/volume_inpi_path
-      - /run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2021/:/volume_inpi_data
     networks:
       - patstat-network
     depends_on:
@@ -65,5 +53,4 @@ networks:
 
 volumes:
   volume_test:
-  volume_test_fall2021:
-  volume_inpi_path:
+

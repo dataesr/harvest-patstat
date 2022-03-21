@@ -183,13 +183,13 @@ def get_siren():
 
     # On commence par dézipper tous les fichiers nouveaux, puis on supprime les zip
 
-    dezip_inpi_dos(DATA_INPI_PATH)
+    dezip_inpi_dos(DATA_PATH + "2017_2020/2021/")
     print("dezip_inpi_dos fini", flush=True)
 
     # Ensuite on parcourt tous les XML pour récupérer les SIREN et noms des entreprises dans une liste l_objets,
     # qu'on transforme ensuite en tableau
 
-    siren_inpi = get_siren_inpi(DATA_INPI_PATH)
+    siren_inpi = get_siren_inpi(DATA_PATH + "2017_2020/2021/")
     print("get_siren_inpi terminé", flush=True)
 
     # On enlève les SIREN erronés (suppression des espaces et sélection des suites de 9 numéros seulement)
