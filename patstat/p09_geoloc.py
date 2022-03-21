@@ -18,7 +18,7 @@ os.chdir(DATA_PATH)
 
 def geoloc():
     # geolocalisation of participants
-    part_init = pd.read_csv('part.csv', sep='|',
+    part_init = pd.read_csv('part_p08.csv', sep='|',
                             dtype={'id_participant': str, 'id_patent': str, 'docdb_family_id': str,
                                    'inpadoc_family_id': str, 'siren': str, 'siret': str, 'id_paysage': str, 'rnsr': str,
                                    'id_personne': str, 'grid': str, 'idref': str, 'oc': str, 'ror': str})
