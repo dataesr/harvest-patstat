@@ -9,6 +9,30 @@ from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
+def create_task_all(args):
+    if args.get('harvest_inpi', True):
+        # TODO !
+        pass
+    if args.get('unzip_inpi', True):
+        create_task_inpi()
+    if args.get('harvest_patstat', True):
+        create_task_harvest_patstat()
+    if args.get('p01_p04', True):
+        create_task_p01_p04_patstat()
+    if args.get('p05', True):
+        create_task_p05_patstat()
+    if args.get('p05b', True):
+        create_task_p05b_patstat()
+    if args.get('p06', True):
+        create_task_p06_indiv_patstat()
+    if args.get('p07', True):
+        create_task_p07_entp_patstat()
+    if args.get('p08', True):
+        create_task_p08_part_final_patstat()
+    if args.get('geo', True):
+        create_task_geo()
+    if args.get('export_scanr', True):
+        create_json_patent_scanr()
 
 def create_task_inpi():
     try:

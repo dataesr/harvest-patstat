@@ -10,6 +10,8 @@ import pandas as pd
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
+from utils import swift
+
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
@@ -153,6 +155,7 @@ def get_clean_entp():
     # - on extrapole mais on ne prend en compte les changements que pour les
     # psn_id dans la liste
 
+    swift.download_object('patstat', 'psn_id_valids.txt', 'psn_id_valids.txt')
     psn_id_valids = pd.read_csv('psn_id_valids.txt', sep='|',
                                 dtype={'psn_id': str}).drop_duplicates()
     set_psn_id_valids = set(psn_id_valids['psn_id'])

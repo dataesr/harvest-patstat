@@ -3,6 +3,7 @@
 
 from patstat import csv_files_querying as cfq
 from patstat import dtypes_patstat_declaration as types
+from utils import swift
 import os
 import pandas as pd
 
@@ -29,7 +30,9 @@ os.chdir(DATA_PATH)
 # in order to add the alternate key from tls 201 (appln_auth, appln_nr, appln_king and receiving_office).
 
 # load old_part file
-old_part = pd.read_csv("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/DATAESR/partfin.csv",
+
+swift.download_object('patstat', 'partfin.csv', 'partfin.csv')
+old_part = pd.read_csv("partfin.csv",
                        sep='|',
                        dtype=types.partfin_types)
 
