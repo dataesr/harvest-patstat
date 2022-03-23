@@ -114,4 +114,5 @@ Werkzeug==2.0.3
 wrapt==1.13.3
 xlrd==2.0.1
 zipp==3.6.0
+datatable==1.0.0
 

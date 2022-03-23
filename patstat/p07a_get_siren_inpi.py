@@ -13,6 +13,7 @@ from patstat import text_functions as tf
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_INPI_PATH = os.getenv("MOUNTED_VOLUM_INPI_DATA")
 
 COOKIE_NAME = "JSESSIONID"
 
@@ -41,7 +42,7 @@ def dezip_inpi_dos(inpi_path: str) -> str:
 
 
 def get_siren_inpi(inpi_path: str) -> pd.DataFrame:
-    """   This function reads all the xml files in 'inpi_path' in input gets some informations and return it in a
+    """   This function reads all the xml files in 'inpi_path' in input gets some information and return it in a
     dataframe
 
     param inpi_path: the path where the inpi zip are
@@ -57,7 +58,7 @@ def get_siren_inpi(inpi_path: str) -> pd.DataFrame:
     dossiers_amd = glob.glob(inpi_path + '*AMD*')
     l_objets = []
     nbxml = 0
-    print('Nombre de fichiers xml lus')
+    print('Nombre de fichiers xml lus', flush=True)
     # il y a un dossier par semaine
     for typedos in [dossiers_new, dossiers_amd]:
         for dossier in typedos:
@@ -68,7 +69,7 @@ def get_siren_inpi(inpi_path: str) -> pd.DataFrame:
             for fichier in glob.glob(dos + '*.xml'):
                 nbxml += 1
                 if nbxml % 10000 == 0:
-                    print(nbxml, end=',')
+                    print(nbxml, end=',', flush=True)
                 try:
                     # on parse le xml, et à l'aide des path on se rend directement dans l'arbre à l'endroit contenant
                     # les variables voulues
@@ -86,7 +87,7 @@ def get_siren_inpi(inpi_path: str) -> pd.DataFrame:
                             objet["kind"] = arbre.getroot().get("kind")
                             l_objets.append(objet)
                 except:
-                    print("erreur pour le fichier" + fichier + "dans le dossier" + dossier)
+                    print("erreur pour le fichier" + fichier + "dans le dossier" + dossier, flush=True)
     siren_inpi = pd.DataFrame(l_objets).drop_duplicates()
     result = siren_inpi[~pd.isna(siren_inpi['siren'])]
 
@@ -182,28 +183,33 @@ def get_siren():
 
     # On commence par dézipper tous les fichiers nouveaux, puis on supprime les zip
 
-    dezip_inpi_dos("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2021/")
+    dezip_inpi_dos(DATA_PATH + "2017_2020/2021/")
+    print("dezip_inpi_dos fini", flush=True)
 
     # Ensuite on parcourt tous les XML pour récupérer les SIREN et noms des entreprises dans une liste l_objets,
     # qu'on transforme ensuite en tableau
 
-    siren_inpi = get_siren_inpi("/run/media/julia/DATA/DONNEES/PATENTS/SOURCES/INPI/2017_2020/2021/")
+    siren_inpi = get_siren_inpi(DATA_PATH + "2017_2020/2021/")
+    print("get_siren_inpi terminé", flush=True)
 
     # On enlève les SIREN erronés (suppression des espaces et sélection des suites de 9 numéros seulement)
 
     siren_inpi2 = clean_siren_table(siren_inpi, 'siren', 'nom').drop(columns={'kind'}).drop_duplicates()
+    print("clean_siren_table terminé", flush=True)
 
     # on enlève les doublons par couple numpubli/nom
 
     siren_inpi_brevet = creat_patent_siren_table(siren_inpi2, 'siren', 'nom', 'numpubli')
+    print("creat_patent_siren_table terminé", flush=True)
 
     siren_inpi_brevet.to_csv('siren_inpi_brevet.csv', sep='|', index=False)
+    print("siren_inpi_brevet to csv terminé", flush=True)
 
     # on crée une autre table avec les correspondances de nom et siren sans les numéros de brevets
     # on enlève donc les correspondances multiples : noms avec plusieurs siren différents attribués
 
     siren_inpi_generale = creat_general_siren_table(siren_inpi_brevet, 'siren', 'nom')
+    print("creat_general_siren_table terminé", flush=True)
 
     siren_inpi_generale.to_csv('siren_inpi_generale.csv', sep='|', index=False)
-
-
+    print("siren_inpi_generale to csv terminé", flush=True)

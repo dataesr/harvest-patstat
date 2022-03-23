@@ -62,7 +62,7 @@ def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
     dt.by("doc_std_name", "doc_std_name_id", "name_source")]
     print(f"12-2 : correction {lbl} pour ceux dédupliqués", flush=True)
 
-    part_dt2 = part_dt2[:, dt.f[:].remove([dt.f.label, dt.f.count_label, dt.f.seq_nr])]
+    del part_dt2[:, [lbl, "count_label", "seq_nr"]]
     part_dt2.names = {"label2": lbl}
 
     concat_dt = dt.rbind(part_dt2, part_dt2_autre)
@@ -185,12 +185,8 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     tbl207 = pat.merge(t207, how="inner", on="appln_id")
     print("5 : tbl207 : jointure patents et tls207", flush=True)
 
-    del [pat]
-
     new_participants = pd.merge(tbl207, t206, how="inner", on="person_id")
     print("6 : new parts jointure tbl207 tls206", flush=True)
-
-    del [[tbl207], [t206], [t207]]
 
     # we create a unique participant ID "key_appln_nr_person"
     # before "id_participant" but "appln_nr_epodoc" is deprecated and will be removed at some point
@@ -222,8 +218,6 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
 
     print("7 : jointure part_init new parts", flush=True)
 
-    del [[new_participants], [part_history]]
-
     # remove records where name is missing
     part = part.dropna(subset=["name_source"])
 
@@ -242,7 +236,7 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     print("8-2 : add_type_to_part réussi", flush=True)
 
 
-    return part
+    return part2
 
 
 def fasttext_learning(part_record: pd.DataFrame) -> pd.DataFrame:
@@ -278,8 +272,6 @@ def fasttext_learning(part_record: pd.DataFrame) -> pd.DataFrame:
     # join datasets dataset with predicted types with dataset with known types
     part_concat = pd.concat([part_na, part_known]).drop(columns="label")
     print("17 : concat part_na et part_known", flush=True)
-
-    del [[part_na], [part_known]]
 
     # "clean" country code: empty string if country_source consists of 2 blank spaces or nan
     # there is also a country code "75" which must correspond to FR but receiving office is US
@@ -331,7 +323,7 @@ def start_part():
     # old_part = old_part.rename(columns={"name_corrected": "old_name"})
     patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
     print("1 : chargement patents", flush=True)
-    old_part = pd.read_csv("part_init.csv",
+    old_part = pd.read_csv("part_init_p05.csv",
                            sep='|',
                            dtype=types.part_init_types,
                            encoding="utf-8",
@@ -350,7 +342,8 @@ def start_part():
     part_init2 = isascii(part_init)
     print("23 : fin isascii", flush=True)
 
-    part_init2.to_csv("part_init.csv", sep="|", index=False)
+    part_init2.to_csv("part_init_p05.csv", sep="|", index=False)
+    part_init2.to_csv("part_init_backup.csv", sep="|", index=False)
 
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
-    part_init3.to_csv("part.csv", sep="|", index=False)
+    part_init3.to_csv("part_p05.csv", sep="|", index=False)

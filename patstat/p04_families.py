@@ -3,6 +3,7 @@
 
 from patstat import csv_files_querying as cfq
 from patstat import dtypes_patstat_declaration as types
+from utils import swift
 
 import numpy as np
 import os
@@ -301,6 +302,7 @@ def getfam():
                          parse_dates=["appln_filing_date", "earliest_filing_date", "earliest_publn_date",
                                       "appln_publn_date", "grant_publn_date"], dtype=types.patent_types)
 
+    swift.download_object('patstat', 'lib_cpc.csv', 'lib_cpc.csv')
     cpc_category_names = pd.read_csv("lib_cpc.csv",
                                      sep=",").rename(columns={"symbol": "code"}).drop(columns=["level", "ref"])
 

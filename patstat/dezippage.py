@@ -17,7 +17,10 @@ import shutil
 import zipfile
 
 # directory where the folders are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST_FALL2021')
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+
+# set working directory
+os.chdir(DATA_PATH + "2021_Autumn/")
 
 
 # function to unzip the folders
@@ -38,9 +41,6 @@ def select_files(pattern: str) -> list:
 
 
 def main():
-    # set working directory
-    os.chdir(DATA_PATH)
-
     # selects the zipped folders to unzip (everything except the documentation)
     zipped_folders = select_files(r"data_PATSTAT_Global_\d+_.+\.zip")
     # unzips the folders
