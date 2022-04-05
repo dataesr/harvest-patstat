@@ -13,7 +13,6 @@ from patstat import text_functions as tf
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-DATA_INPI_PATH = os.getenv("MOUNTED_VOLUM_INPI_DATA")
 
 COOKIE_NAME = "JSESSIONID"
 
@@ -182,14 +181,20 @@ def get_siren():
     # Inutile de tout récupérer, ne prendre que la dernière année, tout mettre au même endroit
 
     # On commence par dézipper tous les fichiers nouveaux, puis on supprime les zip
+    list_dir = os.listdir(f"{DATA_PATH}/inpi/")
 
-    dezip_inpi_dos(DATA_PATH + "2017_2020/2021/")
+    list_dir.sort(reverse=True)
+
+    dir = list_dir[0]
+
+
+    dezip_inpi_dos(f"{DATA_PATH}/inpi/{dir}/")
     print("dezip_inpi_dos fini", flush=True)
 
     # Ensuite on parcourt tous les XML pour récupérer les SIREN et noms des entreprises dans une liste l_objets,
     # qu'on transforme ensuite en tableau
 
-    siren_inpi = get_siren_inpi(DATA_PATH + "2017_2020/2021/")
+    siren_inpi = get_siren_inpi(f"{DATA_PATH}/inpi/{dir}/")
     print("get_siren_inpi terminé", flush=True)
 
     # On enlève les SIREN erronés (suppression des espaces et sélection des suites de 9 numéros seulement)

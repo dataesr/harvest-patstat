@@ -63,7 +63,13 @@ def parse_one_file(file_path: str) -> list:
 
 
 def unzip_inpi():
-    dossiers_zip = glob.glob("2017_2020/2021/*.zip")
+    list_dir = os.listdir(f"{DATA_PATH}/inpi/")
+
+    list_dir.sort(reverse=True)
+
+    dir = list_dir[0]
+
+    dossiers_zip = glob.glob(f"inpi/{dir}/*.zip")
 
     for dos in dossiers_zip:
         with zipfile.ZipFile(dos, 'r') as zip_ref:
@@ -72,7 +78,7 @@ def unzip_inpi():
     for dos in dossiers_zip:
         os.remove(dos)
 
-    dossiers = glob.glob("2017_2020/2021/*")
+    dossiers = glob.glob(f"inpi/{dir}/*.zip")
     for dos in dossiers:
         l_to_dezip = glob.glob(dos + '/doc/*')
         for file_to_dezip in l_to_dezip:
@@ -83,7 +89,7 @@ def unzip_inpi():
     # qu'on transforme ensuite en tableau
 
     listxml = []
-    for (dirpath, dirnames, filenames) in os.walk("2017_2020/2021"):
+    for (dirpath, dirnames, filenames) in os.walk(f"inpi/{dir}"):
         listxml += glob.glob(dirpath + '/*.xml')
 
     l_objets = []
