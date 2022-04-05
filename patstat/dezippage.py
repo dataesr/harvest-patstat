@@ -40,7 +40,7 @@ def select_files(pattern: str) -> list:
     return list_folds
 
 
-def main():
+def unzip():
     # selects the zipped folders to unzip (everything except the documentation)
     zipped_folders = select_files(r"data_PATSTAT_Global_\d+_.+\.zip")
     # unzips the folders
@@ -62,9 +62,3 @@ def main():
     for item in range(len(file_names["subfolders"])):
         os.makedirs(file_names["table_names"][item], exist_ok=True)
         shutil.move(file_names["file_names"][item], file_names["table_names"][item])
-
-    return file_names
-
-
-if __name__ == '__main__':
-    main()
