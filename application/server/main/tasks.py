@@ -4,15 +4,15 @@ import pandas as pd
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, p09_geoloc, \
-    comp_version
+    comp_version, ftp_inpi
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 def create_task_all(args):
     if args.get('harvest_inpi', True):
-        # TODO !
-        pass
+        harvest_inpi()
     if args.get('unzip_inpi', True):
         create_task_inpi()
     if args.get('harvest_patstat', True):
@@ -34,6 +34,7 @@ def create_task_all(args):
     if args.get('export_scanr', True):
         create_json_patent_scanr()
 
+
 def create_task_inpi():
     try:
         ad, nme = p00_outils_inpi_adress.unzip_inpi()
@@ -48,16 +49,27 @@ def create_task_inpi():
 
 def create_task_harvest_patstat():
     try:
-        ls_fl = collectePatstatComplete.main()
+        collectePatstatComplete.harvest_patstat()
         print("Collecte PATSTAT complete : success", flush=True)
-        dezippage.main()
+        dezippage.unzip()
         print("dezippage : success", flush=True)
     except:
-        ls_fl = []
         error = sys.exc_info()[0]
         logger.error(f'Harvest PATSTAT caused an error : {error}')
 
     return ls_fl
+
+
+def create_task_harvest_patstat():
+    print("début create task harvest patstat", flush=True)
+    # try:
+    collectePatstatComplete.harvest_patstat()
+    print("Collecte PATSTAT complete : success", flush=True)
+    dezippage.unzip()
+    print("dezippage : success", flush=True)
+# except:
+#     error = sys.exc_info()[0]
+#     logger.error(f'Harvest PATSTAT caused an error : {error}')
 
 
 def create_task_p01_p04_patstat():
@@ -72,7 +84,7 @@ def create_task_p01_p04_patstat():
         print("p04: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'p01-p04 PATSTAT caused an error : {error}')
 
 
 def create_task_p05_patstat():
@@ -81,7 +93,7 @@ def create_task_p05_patstat():
         print("p05: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'p05 PATSTAT caused an error : {error}')
 
 
 def create_task_p05b_patstat():
@@ -90,7 +102,7 @@ def create_task_p05b_patstat():
         print("p05b: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'p05b PATSTAT caused an error : {error}')
 
 
 def create_task_p06_indiv_patstat():
@@ -99,7 +111,7 @@ def create_task_p06_indiv_patstat():
         print("p06: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'p06 PATSTAT caused an error : {error}')
 
 
 def create_task_p07_entp_patstat():
@@ -110,7 +122,7 @@ def create_task_p07_entp_patstat():
         print("p07b: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'p07 PATSTAT caused an error : {error}')
 
 
 def create_task_p08_part_final_patstat():
@@ -119,7 +131,7 @@ def create_task_p08_part_final_patstat():
         print("p08: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'p08 PATSTAT caused an error : {error}')
 
 
 def create_json_patent_scanr():
@@ -127,7 +139,7 @@ def create_json_patent_scanr():
         comp_version.get_json()
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Process PATSTAT caused an error : {error}')
+        logger.error(f'creation json for scanr PATSTAT caused an error : {error}')
 
 
 def create_task_geo():
@@ -136,4 +148,13 @@ def create_task_geo():
         print("p09: success", flush=True)
     except:
         error = sys.exc_info()[0]
-        logger.error(f'Harvest PATSTAT caused an error : {error}')
+        logger.error(f'geoloc PATSTAT caused an error : {error}')
+
+
+def harvest_inpi():
+    try:
+        ftp_inpi.loading()
+        print("chargement de la dernière version complète de la DB de l'INPI", flush=True)
+    except:
+        error = sys.exc_info()[0]
+        logger.error(f'Harvest INPI caused an error : {error}')
