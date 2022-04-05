@@ -24,7 +24,7 @@ def get_url(url, _session):
     if status != 200:
         raise ConnectionError("Failed while trying to access the URL")
     else:
-        print("URL successfully accessed")
+        print("URL successfully accessed", flush=True)
     return response
 
 
@@ -64,7 +64,7 @@ def name_list(listurl, nb):
     return namelist
 
 
-@retry(tries=3, delay=2)
+@retry(tries=3, delay=5, backoff=5)
 # fonction pour télécharger les fichiers zip et les enregistrer en local
 # function to dowload, name and write the zipped folders
 def download_write(listurl, _session, namelist):
@@ -74,7 +74,7 @@ def download_write(listurl, _session, namelist):
             code.write(req.content)
 
 
-def main():
+def harvest_patstat():
     # adresse authentifiction
     # authentication address
     url_id = f"{URL_PATSTAT}/authentication?login={config.USER}&pwd={config.PWD}&action=1&format=1"
@@ -109,9 +109,3 @@ def main():
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
     download_write(list_url, session, list_name)
-
-    return list_url
-
-
-if __name__ == '__main__':
-    main()
