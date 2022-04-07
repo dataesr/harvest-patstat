@@ -18,21 +18,20 @@ import zipfile
 
 # directory where the folders are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-
-# set working directory
-os.chdir(DATA_PATH + "2021_Autumn/")
+# VERSION = "2021_Autumn/"
 
 
 # function to unzip the folders
-def unzip_folders(folders: list):
+def unzip_folders(pth: str, folders: list):
+    os.chdir(pth)
     for folder in folders:
         zipfile.ZipFile(folder).extractall()
 
 
 # function to select the files to unzip based on their names
-def select_files(pattern: str) -> list:
-    zip_folds = glob.glob(r"*.zip")
-    list_folds = [_zip for _zip in zip_folds if re.match(pattern, _zip)]
+def select_files(pth: str, pattern: str) -> list:
+    zip_folds = glob.glob(pth+r"*.zip")
+    list_folds = [_zip for _zip in zip_folds if re.match(pth+pattern, _zip)]
     if len(list_folds) < 1:
         raise ValueError("There are no zipped files in the folder")
     else:
@@ -41,15 +40,16 @@ def select_files(pattern: str) -> list:
 
 
 def unzip():
+    path = DATA_PATH
     # selects the zipped folders to unzip (everything except the documentation)
-    zipped_folders = select_files(r"data_PATSTAT_Global_\d+_.+\.zip")
+    zipped_folders = select_files(path, r"data_PATSTAT_Global_\d+_.+\.zip")
     # unzips the folders
-    unzip_folders(zipped_folders)
+    unzip_folders(path, zipped_folders)
 
     # selects the subfolders
-    subfolders = select_files(r"tls\d{3}_part\d{2}\.zip")
+    subfolders = select_files(path, r"tls\d{3}_part\d{2}\.zip")
     # unzips the subfolders
-    unzip_folders(subfolders)
+    unzip_folders(path, subfolders)
 
     # removes the end of the subfolders to get table names from PATSTAT Global database
     table_names = list(map(lambda a: re.sub(r"_part\d+.zip", "", a), subfolders))
