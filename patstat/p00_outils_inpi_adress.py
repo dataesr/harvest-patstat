@@ -143,5 +143,3 @@ def unzip_inpi():
         ['name', 'firstname', 'lastname']].drop_duplicates()
 
     inpi_first_and_last_names.to_csv('inpi_first_and_last_names.csv', sep='|', index=False)
-
-    return adresses_inpi2, inpi_first_and_last_names
