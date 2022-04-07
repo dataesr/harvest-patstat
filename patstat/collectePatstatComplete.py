@@ -97,14 +97,14 @@ def harvest_patstat():
     # files name extraction
     list_name = name_list(list_url, ed_nr)
 
-    edition = re.search(r"\d{4}_\w+", list_name[0]).group(0)
+    # edition = re.search(r"\d{4}_\w+", list_name[0]).group(0)
 
-    path = DATA_PATH + edition
-
-    os.makedirs(path, exist_ok=True)
+    # path = DATA_PATH + edition
+    #
+    # os.makedirs(path, exist_ok=True)
 
     # set working directory
-    os.chdir(path)
+    os.chdir(DATA_PATH)
 
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
