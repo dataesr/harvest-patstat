@@ -1,6 +1,5 @@
 import sys
 
-import pandas as pd
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, p09_geoloc, \
@@ -35,19 +34,26 @@ def create_task_all(args):
         create_json_patent_scanr()
 
 
+def harvest_inpi():
+    try:
+        ftp_inpi.loading()
+        print("chargement de la dernière version complète de la DB de l'INPI", flush=True)
+    except:
+        error = sys.exc_info()[0]
+        logger.error(f'Harvest INPI caused an error : {error}')
+
+
 def create_task_inpi():
     try:
-        ad, nme = p00_outils_inpi_adress.unzip_inpi()
+        p00_outils_inpi_adress.unzip_inpi()
         print("p00: success", flush=True)
     except:
-        ad, nme = pd.DataFrame()
         error = sys.exc_info()[0]
         logger.error(f'Unzipping of INPI files caused an error : {error}')
 
-    return ad, nme
-
 
 def create_task_harvest_patstat():
+    print("début create task harvest patstat", flush=True)
     try:
         collectePatstatComplete.harvest_patstat()
         print("Collecte PATSTAT complete : success", flush=True)
@@ -56,20 +62,6 @@ def create_task_harvest_patstat():
     except:
         error = sys.exc_info()[0]
         logger.error(f'Harvest PATSTAT caused an error : {error}')
-
-    return ls_fl
-
-
-def create_task_harvest_patstat():
-    print("début create task harvest patstat", flush=True)
-    # try:
-    collectePatstatComplete.harvest_patstat()
-    print("Collecte PATSTAT complete : success", flush=True)
-    dezippage.unzip()
-    print("dezippage : success", flush=True)
-# except:
-#     error = sys.exc_info()[0]
-#     logger.error(f'Harvest PATSTAT caused an error : {error}')
 
 
 def create_task_p01_p04_patstat():
@@ -149,12 +141,3 @@ def create_task_geo():
     except:
         error = sys.exc_info()[0]
         logger.error(f'geoloc PATSTAT caused an error : {error}')
-
-
-def harvest_inpi():
-    try:
-        ftp_inpi.loading()
-        print("chargement de la dernière version complète de la DB de l'INPI", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'Harvest INPI caused an error : {error}')
