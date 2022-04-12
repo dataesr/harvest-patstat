@@ -6,13 +6,12 @@ Ce fichier collecte les URLs de tous les jeux de données PATSTAT Global après 
 
 from bs4 import BeautifulSoup
 import requests
-import config
 
 # ouverture de la session de requête
 s = requests.session()
 
 # identification sur Patstat
-s.get(f'https://publication.epo.org/raw-data/authentication?login={config.USER }&pwd={config.PWD}&action=1&format=1')
+s.get(f"https://publication.epo.org/raw-data/authentication?login={os.getenv('USER')}&pwd={os.getenv('PWD')}&action=1&format=1")
 
 # requête pour accéder au XML de la page contenant les liens vers tous les fichiers zippés
 r = s.get("https://publication.epo.org/raw-data/products/86/editions/6891/files")

@@ -5,8 +5,6 @@ import ftplib
 import os
 import re
 
-from patstat import config
-
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
@@ -113,7 +111,7 @@ def download_ftp_tree(ftp_handle, path, destination, pattern=None, overwrite=Fal
 
 
 def loading():
-    ftp_server = ftplib.FTP(config.HOSTNAME_INPI, config.USERNAME_INPI, config.PWD_INPI)
+    ftp_server = ftplib.FTP('www.inpi.net', os.getenv('USERNAME_INPI'), os.getenv('PWD_INPI'))
 
     liste = []
     ftp_server.retrlines('LIST', liste.append)

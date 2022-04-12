@@ -5,7 +5,6 @@
 # This script collects PATSTAT Global data from EPO's API, download and write zipped folders
 
 from bs4 import BeautifulSoup
-from patstat import config
 
 import os
 import re
@@ -77,7 +76,7 @@ def download_write(listurl, _session, namelist):
 def harvest_patstat():
     # adresse authentifiction
     # authentication address
-    url_id = f"{URL_PATSTAT}/authentication?login={config.USER}&pwd={config.PWD}&action=1&format=1"
+    url_id = f"{URL_PATSTAT}/authentication?login={os.getenv('USER')}&pwd={os.getenv('PWD')}&action=1&format=1"
 
     # authentification
     # authentication
