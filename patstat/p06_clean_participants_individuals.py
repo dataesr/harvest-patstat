@@ -15,9 +15,6 @@ from patstat import text_functions as tf
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 # Ensuite on va choisir pour chaque cluster mis en avant dans chaque famille,
 # le nom qu'on va garder. On ne fait la sélection que sur les nouveaux clusters
@@ -193,6 +190,8 @@ def get_sex_from_name_set(set_nom: set) -> pd.DataFrame:
 
 
 def get_clean_ind():
+    # set working directory
+    os.chdir(DATA_PATH)
     part_ind = pd.read_csv('part_ind.csv', sep='|', dtype=types.part_init_types)
 
     part_ind_name_nice = select_nice_name(part_ind[part_ind['new_name'] != ''], 'inpadoc_family_id', 'name_source',
@@ -235,4 +234,3 @@ def get_clean_ind():
                                             part_individuals_fin['sexe'])
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
-

@@ -16,9 +16,6 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 COOKIE_NAME = "JSESSIONID"
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def dezip_inpi_dos(inpi_path: str) -> str:
     """   This function dezip inpi repertories and removes the original zip
@@ -175,6 +172,8 @@ def creat_general_siren_table(siren_table: pd.DataFrame, siren_var: str, name_va
 
 
 def get_siren():
+    # set working directory
+    os.chdir(DATA_PATH)
     # Dans le dossier 'inpi_path', on met tous les nouveaux zip de l'INPI, téléchargés sur le serveur ftp :
     # Bfrbibli@www.inpi.net
     # le mot de passe est sur azendoo
@@ -186,7 +185,6 @@ def get_siren():
     list_dir.sort(reverse=True)
 
     dir = list_dir[0]
-
 
     dezip_inpi_dos(f"{DATA_PATH}/inpi/{dir}/")
     print("dezip_inpi_dos fini", flush=True)

@@ -16,9 +16,6 @@ DICT = {"patstat": {"sep": ",", "chunksize": 5000000},
         "get_cpc_family_codes": {"sep": ",", "chunksize": 5000000, "dtype": types.tls225_types}
         }
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def get_earliest_in_family(patent_table: pd.DataFrame, col: str) -> pd.DataFrame:
     """
@@ -298,6 +295,9 @@ def unify(pat: pd.DataFrame, cpc_cat_names: pd.DataFrame) -> pd.DataFrame:
 
 
 def getfam():
+    # set working directory
+    os.chdir(DATA_PATH)
+
     patent = pd.read_csv("patent.csv", sep="|",
                          parse_dates=["appln_filing_date", "earliest_filing_date", "earliest_publn_date",
                                       "appln_publn_date", "grant_publn_date"], dtype=types.patent_types)
@@ -313,4 +313,3 @@ def getfam():
     family_technos_codes = unify(patent, cpc_category_names)
 
     family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
-

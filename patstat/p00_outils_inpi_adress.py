@@ -15,9 +15,6 @@ from patstat import text_functions as tf
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def parse_one_file(file_path: str) -> list:
     arbre = etree.parse(file_path)
@@ -63,6 +60,9 @@ def parse_one_file(file_path: str) -> list:
 
 
 def unzip_inpi():
+    # set working directory
+    os.chdir(DATA_PATH)
+
     list_dir = os.listdir(f"{DATA_PATH}/inpi/")
 
     list_dir.sort(reverse=True)

@@ -28,9 +28,6 @@ PM = ["COMPANY",
       "COMPANY UNIVERSITY",
       "COMPANY HOSPITAL"]
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def add_type_to_part(part_table: pd.DataFrame, lbl: str) -> pd.DataFrame:
     part = part_table.copy()
@@ -235,7 +232,6 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     part2 = add_type_to_part(part, "label")
     print("8-2 : add_type_to_part réussi", flush=True)
 
-
     return part2
 
 
@@ -315,6 +311,8 @@ def isascii(part_ds: pd.DataFrame) -> pd.DataFrame:
 
 
 def start_part():
+    # set working directory
+    os.chdir(DATA_PATH)
     # file which served to create part_init: old_part_key.csv
     # old_part = pd.read_csv("old_part_key.csv",
     #                            sep='|',

@@ -14,9 +14,6 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 DICT = {"tls204": {"sep": ",", "chunksize": 5000000, "dtype": types.tls204_types},
         "tls211": {"sep": ",", "chunksize": 5000000, "dtype": types.tls211_types}}
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def add_application_phases(patent_table: pd.DataFrame) -> pd.DataFrame:
     """
@@ -145,6 +142,8 @@ def get_ispriority_byfamily(_priority_table: pd.DataFrame, patent_table: pd.Data
 
 
 def get_pubpat():
+    # set working directory
+    os.chdir(DATA_PATH)
     patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
     titles = pd.read_csv("titles.csv", sep="|", dtype={"appln_id": np.int64})
     abstracts = pd.read_csv("abstracts.csv", sep="|", dtype={"appln_id": np.int64})
@@ -169,4 +168,3 @@ def get_pubpat():
                                                                                                           on="appln_id")
 
     patent.to_csv("patent.csv", sep="|", index=False)
-

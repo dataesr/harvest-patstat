@@ -8,9 +8,6 @@ import re
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def _is_ftp_dir(ftp_handle, name, guess_by_extension=True):
     """ simply determines if an item listed on the ftp server is a valid directory or not """
@@ -121,6 +118,9 @@ def loading():
     year_files = [re.findall(r"^\d{4}$", item) for item in files]
     year_files = [item for item in year_files if item]
     year_list = list(map(lambda a: a[0], year_files))
+
+    # set working directory
+    os.chdir(DATA_PATH)
 
     for i in reversed(year_list):
         download_ftp_tree(ftp_server, i, f"{DATA_PATH}/inpi", pattern=None, overwrite=False,

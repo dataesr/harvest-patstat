@@ -14,9 +14,6 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 # dictionary with pd.read_csv parameters
 DICT = {"sep": ",", "chunksize": 5000000, "dtype": {"appln_id": np.int64}}
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def get_titles_abstracts_from_appln_id(directory: str, action: str, pat_sc: pd.DataFrame, colfilter: str,
                                        dict_param_load: dict) -> pd.DataFrame:
@@ -40,10 +37,11 @@ def get_titles_abstracts_from_appln_id(directory: str, action: str, pat_sc: pd.D
 
 def tit_abst():
     # load application ID for French persons post 2010 - output from p01
+
+    # set working directory
+    os.chdir(DATA_PATH)
     patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
     titles = get_titles_abstracts_from_appln_id("tls202", "titles", patent_scope, "appln_id", DICT)
     titles.to_csv("titles.csv", sep="|", index=False)
     abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts", patent_scope, "appln_id", DICT)
     abstracts.to_csv("abstracts.csv", sep="|", index=False)
-
-

@@ -15,9 +15,6 @@ from utils import swift
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def clean_siren(string: str) -> object:
     """   This function verify if the SIREN in input has 9 characters with digits after cleaning (spaces, punctuations)
@@ -98,6 +95,9 @@ def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_t
 
 
 def get_clean_entp():
+    # set working directory
+    os.chdir(DATA_PATH)
+
     part_entp = pd.read_csv('part_entp.csv', sep='|', dtype=types.part_entp_types)
 
     for col in part_entp.columns:
@@ -181,5 +181,3 @@ def get_clean_entp():
                                         part_entp_final['siren'], '')
 
     part_entp_final.to_csv('part_entp_final.csv', sep='|', index=False)
-
-

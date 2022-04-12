@@ -11,11 +11,11 @@ from patstat import dtypes_patstat_declaration as types
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def part_final():
+    # set working directory
+    os.chdir(DATA_PATH)
+
     # load part_init, part, part_entp and part_individuals to merge them and create a single file with all participants
     part_init = pd.read_csv('part_init_p05.csv', sep='|', dtype=types.part_init_types, engine="python")
     part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types)
@@ -87,4 +87,3 @@ def part_final():
     role = role1[role1['value'] > 0].drop(columns={'value'})
 
     role.to_csv('role.csv', sep='|', index=False)
-

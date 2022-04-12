@@ -11,9 +11,6 @@ from patstat import dtypes_patstat_declaration as types
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def jointure(fm, df):
     fm2 = pd.merge(fm, df, left_on="docdb_family_id", right_on="family_id", how="left").drop(columns="family_id")
@@ -21,6 +18,8 @@ def jointure(fm, df):
 
 
 def get_json():
+    # set working directory
+    os.chdir(DATA_PATH)
     patent = pd.read_csv("patent.csv", sep="|", encoding="utf-8", dtype=types.patent_types,
                          usecols=["appln_auth", "appln_publn_number", "internat_appln_id", "publn_kind", "key_appln_nr",
                                   "docdb_family_id", "ispriority", "ipr_type", "appln_filing_date", "appln_publn_date",

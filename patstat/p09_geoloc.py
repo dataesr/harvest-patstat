@@ -12,11 +12,10 @@ from patstat import text_functions as tf
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 def geoloc():
+    # set working directory
+    os.chdir(DATA_PATH)
     # geolocalisation of participants
     part_init = pd.read_csv('part_p08.csv', sep='|',
                             dtype={'id_participant': str, 'id_patent': str, 'docdb_family_id': str,
@@ -150,4 +149,3 @@ def geoloc():
     geocod.sample(6)
 
     best_geocod.to_csv('best_geocod.csv', sep='|', index=False, encoding="utf-8")
-

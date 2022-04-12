@@ -26,9 +26,6 @@ DICT = {
     "tls201_patent_from_set_family": {'sep': ',', 'chunksize': 2000000, 'dtype': types.tls201_types}
 }
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 # tls 201 : get ID from only patent post 2010 (9999 is for missing date)
 def get_patent_post2010_appln_id(t201directory: str) -> pd.DataFrame:
@@ -156,6 +153,9 @@ def get_patent_from_set_family(t201directory: str, fam_sc: pd.DataFrame, colfilt
 
 
 def get_patentscope():
+    # set working directory
+    os.chdir(DATA_PATH)
+
     patent_appln_id = get_patent_post2010_appln_id("tls201")
     french_person_id = get_french_person_id("tls206")
     scope_applications = get_scope_applications("tls207", patent_appln_id, french_person_id)

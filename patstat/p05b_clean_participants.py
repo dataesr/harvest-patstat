@@ -15,9 +15,6 @@ from patstat import text_functions as tf
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# set working directory
-os.chdir(DATA_PATH)
-
 
 # Par famille élargie, on rapproche les noms des participants (individus).
 # Pour cela, on commence par sélectionner les participants à grouper :
@@ -381,6 +378,8 @@ def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict
 
 
 def get_clean_part():
+    # set working directory
+    os.chdir(DATA_PATH)
     part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
 
     for col in part.columns:
@@ -398,5 +397,3 @@ def get_clean_part():
     part_entp['name_corrected'] = part_entp['name_corrected'].apply(tf.put_title_format)
 
     part_entp.to_csv("part_entp.csv", sep="|", index=False, encoding="utf-8")
-
-
