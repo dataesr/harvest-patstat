@@ -254,6 +254,7 @@ def fasttext_learning(part_record: pd.DataFrame) -> pd.DataFrame:
     part_known.loc[:, "type"] = part_known.loc[:, "label"]
 
     # predict label with fasttext model
+    swift.download_object('patstat', 'model_test', 'model_test')
     mod = fasttext.load_model("model_test")
     print("14 : chargement du modèle fasttext", flush=True)
 
