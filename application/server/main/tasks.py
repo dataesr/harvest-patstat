@@ -33,111 +33,56 @@ def create_task_all(args):
     if args.get('export_scanr', True):
         create_json_patent_scanr()
 
-
 def harvest_inpi():
-    try:
-        ftp_inpi.loading()
-        print("chargement de la dernière version complète de la DB de l'INPI", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'Harvest INPI caused an error : {error}')
-
+    ftp_inpi.loading()
+    logger.debug("chargement de la dernière version complète de la DB de l'INPI")
 
 def create_task_inpi():
-    try:
-        p00_outils_inpi_adress.unzip_inpi()
-        print("p00: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'Unzipping of INPI files caused an error : {error}')
-
+    p00_outils_inpi_adress.unzip_inpi()
+    logger.debug("p00: success")
 
 def create_task_harvest_patstat():
-    print("début create task harvest patstat", flush=True)
-    try:
-        collectePatstatComplete.harvest_patstat()
-        print("Collecte PATSTAT complete : success", flush=True)
-        dezippage.unzip()
-        print("dezippage : success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'Harvest PATSTAT caused an error : {error}')
-
+    logger.debug("début create task harvest patstat")
+    collectePatstatComplete.harvest_patstat()
+    logger.debug("Collecte PATSTAT complete : success")
+    dezippage.unzip()
+    logger.debug("dezippage : success")
 
 def create_task_p01_p04_patstat():
-    try:
-        p01_family_scope.get_patentscope()
-        print("p01: success", flush=True)
-        p02_titles_abstracts.tit_abst()
-        print("p02: success", flush=True)
-        p03_patents.get_pubpat()
-        print("p03: success", flush=True)
-        p04_families.getfam()
-        print("p04: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'p01-p04 PATSTAT caused an error : {error}')
-
+    p01_family_scope.get_patentscope()
+    logger.debug("p01: success")
+    p02_titles_abstracts.tit_abst()
+    logger.debug("p02: success")
+    p03_patents.get_pubpat()
+    logger.debug("p03: success")
+    p04_families.getfam()
+    logger.debug("p04: success")
 
 def create_task_p05_patstat():
-    try:
-        p05_creat_participants.start_part()
-        print("p05: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'p05 PATSTAT caused an error : {error}')
-
+    p05_creat_participants.start_part()
+    logger.debug("p05: success")
 
 def create_task_p05b_patstat():
-    try:
-        p05b_clean_participants.get_clean_part()
-        print("p05b: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'p05b PATSTAT caused an error : {error}')
-
+    p05b_clean_participants.get_clean_part()
+    logger.debug("p05b: success")
 
 def create_task_p06_indiv_patstat():
-    try:
-        p06_clean_participants_individuals.get_clean_ind()
-        print("p06: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'p06 PATSTAT caused an error : {error}')
-
+    p06_clean_participants_individuals.get_clean_ind()
+    logger.debug("p06: success")
 
 def create_task_p07_entp_patstat():
-    try:
-        p07a_get_siren_inpi.get_siren()
-        print("p07a: success", flush=True)
-        p07b_clean_participants_entp.get_clean_entp()
-        print("p07b: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'p07 PATSTAT caused an error : {error}')
-
+    p07a_get_siren_inpi.get_siren()
+    logger.debug("p07a: success")
+    p07b_clean_participants_entp.get_clean_entp()
+    logger.debug("p07b: success")
 
 def create_task_p08_part_final_patstat():
-    try:
-        p08_participants_final.part_final()
-        print("p08: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'p08 PATSTAT caused an error : {error}')
-
+    p08_participants_final.part_final()
+    logger.debug("p08: success")
 
 def create_json_patent_scanr():
-    try:
-        comp_version.get_json()
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'creation json for scanr PATSTAT caused an error : {error}')
-
+    comp_version.get_json()
 
 def create_task_geo():
-    try:
-        p09_geoloc.geoloc()
-        print("p09: success", flush=True)
-    except:
-        error = sys.exc_info()[0]
-        logger.error(f'geoloc PATSTAT caused an error : {error}')
+    p09_geoloc.geoloc()
+    logger.debug("p09: success")
