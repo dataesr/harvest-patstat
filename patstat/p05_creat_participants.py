@@ -9,6 +9,8 @@ import fasttext
 import numpy as np
 import pandas as pd
 
+from utils import swift
+
 from patstat import csv_files_querying as cfq
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
@@ -321,6 +323,7 @@ def start_part():
     # old_part = old_part.rename(columns={"name_corrected": "old_name"})
     patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
     print("1 : chargement patents", flush=True)
+    swift.download_object('patstat', 'part_init_p05.csv', 'part_init_p05.csv')
     old_part = pd.read_csv("part_init_p05.csv",
                            sep='|',
                            dtype=types.part_init_types,
@@ -341,6 +344,7 @@ def start_part():
     print("23 : fin isascii", flush=True)
 
     part_init2.to_csv("part_init_p05.csv", sep="|", index=False)
+    swift.upload_object('patstat', 'part_init_p05.csv')
     part_init2.to_csv("part_init_backup.csv", sep="|", index=False)
 
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
