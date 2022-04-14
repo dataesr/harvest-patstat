@@ -1,4 +1,5 @@
 import sys
+import os
 
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
@@ -8,6 +9,12 @@ from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+
+def create_task_clean(args):
+    os.system(f'rm -rf {DATA_PATH}/data_PATSTAT_Global_*')
+    os.system(f'rm -rf {DATA_PATH}/index_documentation_scripts_PATSTAT*')
+    os.system(f'rm -rf {DATA_PATH}/tls*')
 
 def create_task_all(args):
     if args.get('harvest_inpi', True):
