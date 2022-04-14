@@ -34,7 +34,7 @@ def run_task_all():
     return jsonify(response_object), 202
 
 @main_blueprint.route('/clean', methods=['POST'])
-def run_task_all():
+def run_task_clean():
     """
     All processes for patents
     """
