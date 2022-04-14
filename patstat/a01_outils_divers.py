@@ -92,51 +92,51 @@ def get_score_initials(name1, name2):
     return score
 
 
-"""   fonction pour récupérer le label des entreprises (que celles qui sont dans scanR) avec le SIREN
-"""
+#"""   fonction pour récupérer le label des entreprises (que celles qui sont dans scanR) avec le SIREN
+#"""
+#
+#
+#def get_label_organization_siren(siren):
+#    headers = {'Authorization': f"Basic {os.getenv('DATAESR')}"}
+#    url_address_request = 'http://185.161.45.213/organizations/organizations/'
+#    r = requests.get(url_address_request + str(siren), headers=headers)
+#    if r.status_code != 200:
+#        print("Error in getting label of {}".format(siren))
+#        return None
+#    elif json.loads(r.text.replace("'", ''))['names'][0]:
+#        premier_nom = json.loads(r.text.replace("'", ''))['names'][0]
+#        nom_fr = tf.put_title_format(premier_nom['name_fr'])
+#        return nom_fr
 
 
-def get_label_organization_siren(siren):
-    headers = {'Authorization': f"Basic {os.getenv('DATAESR')}"}
-    url_address_request = 'http://185.161.45.213/organizations/organizations/'
-    r = requests.get(url_address_request + str(siren), headers=headers)
-    if r.status_code != 200:
-        print("Error in getting label of {}".format(siren))
-        return None
-    elif json.loads(r.text.replace("'", ''))['names'][0]:
-        premier_nom = json.loads(r.text.replace("'", ''))['names'][0]
-        nom_fr = tf.put_title_format(premier_nom['name_fr'])
-        return nom_fr
-
-
-"""    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   FONCTIONS GEOLOCALISATION
-
-"""
-
-
-def get_geocod_from_address(adresse):
-    headers = {'Authorization': f"Basic {os.getenv('DATAESR')}"}
-    url_address_request = 'http://185.161.45.213/geocoder/address/'
-    r = requests.get(url_address_request + adresse, headers=headers)
-    if r.status_code != 200:
-        print("Error in getting adresse {}".format(adresse))
-        return None
-    return r.text
-
-
-def get_list_geocod_adresses(list_of_adresses):
-    liste_adresses_completed = []
-    count = 0
-    start_time = time.time()
-    for adresse in list_of_adresses:
-        count += 1
-        liste_adresses_completed.append(get_geocod_from_address(adresse))
-        if count % 200 == 0:
-            print("Nombre de requêtes d'adresse effectuées : " + str(count) + " --  ")
-            print("--- %s seconds ---" % (time.time() - start_time))
-        if count % 3000 == 0:
-            save_object(liste_adresses_completed, 'liste_adresses_completed.p')
-    return liste_adresses_completed
+#"""    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!   FONCTIONS GEOLOCALISATION
+#
+#"""
+#
+#
+#def get_geocod_from_address(adresse):
+#    headers = {'Authorization': f"Basic {os.getenv('DATAESR')}"}
+#    url_address_request = 'http://185.161.45.213/geocoder/address/'
+#    r = requests.get(url_address_request + adresse, headers=headers)
+#    if r.status_code != 200:
+#        print("Error in getting adresse {}".format(adresse))
+#        return None
+#    return r.text
+#
+#
+#def get_list_geocod_adresses(list_of_adresses):
+#    liste_adresses_completed = []
+#    count = 0
+#    start_time = time.time()
+#    for adresse in list_of_adresses:
+#        count += 1
+#        liste_adresses_completed.append(get_geocod_from_address(adresse))
+#        if count % 200 == 0:
+#            print("Nombre de requêtes d'adresse effectuées : " + str(count) + " --  ")
+#            print("--- %s seconds ---" % (time.time() - start_time))
+#        if count % 3000 == 0:
+#            save_object(liste_adresses_completed, 'liste_adresses_completed.p')
+#    return liste_adresses_completed
 
 
 def transform_address(address):

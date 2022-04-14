@@ -126,67 +126,67 @@ def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_t
     return table_extrapol
 
 
-def get_sex_proba_from_name(name: str):
-    """   This function uses a dataesr API to get sex from name : it can be a first name or complete name. It gets the
-    first occurence : best result
-
-    param name: the name to get sex from
-    type name: string
-
-    :return:  4 variables : 'sexe', 'proba' (vaut entre 0 et 1), 'occurences' (le nombre d'occurences dans la base de
-    référence du prénom identifié dans la chaîne) et en dernier le résultat de l'appel API. (erreur, détecté,
-    non détecté)
-
-    """
-
-    url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
-    headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
-    proba = 0.0
-    r = requests.get(url_sexe_request + name, headers=headers)
-    if r.status_code != 200:
-        raise ConnectionError("Failed while trying to access the URL")
-    else:
-        if (r.json()['status']) == 'detected':
-            prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
-            sexe = prem_occurr['gender']
-            if sexe == 'M':
-                proba = round(prem_occurr['proportion_M'])
-            if sexe == 'F':
-                proba = prem_occurr['proportion_F']
-            occurrences = prem_occurr['nb_occurrences_with_gender']
-            return sexe, proba, occurrences, 'detected'
-        else:
-            return "", "", "", "not_detected"
-
-
-def get_sex_from_name_set(set_nom: set) -> pd.DataFrame:
-    """   This function uses a dataesr API to get sex from name. It takes a set of names and returns a dataframe with
-    API variables results for each name in the set
-
-    param name: the set of names to get sex from
-    type name: set
-
-    :return:  a dataframe with the original name, and the results of sex API
-
-    """
-
-    dict_nom = {}
-    set_nom = set_nom.difference(set(dict_nom))
-    count = 0
-    start_time = time.time()
-    for name in set_nom:
-        dict_tmp = {'sex': (get_sex_proba_from_name(name))[0], 'proba': (get_sex_proba_from_name(name))[1],
-                    'occurence': (get_sex_proba_from_name(name))[2], 'error': (get_sex_proba_from_name(name))[3]}
-        dict_nom[name] = dict_tmp
-        count += 1
-        if count % 1000 == 0:
-            print("Nombre de requêtes de nom effectuées : " + str(count) + " --  ")
-            print("--- %s seconds ---" % (time.time() - start_time))
-        if count % 5000 == 0:
-            pd.DataFrame.from_dict(dict_nom, orient='index').reset_index() \
-                .rename(columns={'index': 'name'}).to_csv('sex_names.csv', sep='|', index=False)
-    sex_table = pd.DataFrame.from_dict(dict_nom, orient='index').reset_index().rename(columns={'index': 'name'})
-    return sex_table
+#def get_sex_proba_from_name(name: str):
+#    """   This function uses a dataesr API to get sex from name : it can be a first name or complete name. It gets the
+#    first occurence : best result
+#
+#    param name: the name to get sex from
+#    type name: string
+#
+#    :return:  4 variables : 'sexe', 'proba' (vaut entre 0 et 1), 'occurences' (le nombre d'occurences dans la base de
+#    référence du prénom identifié dans la chaîne) et en dernier le résultat de l'appel API. (erreur, détecté,
+#    non détecté)
+#
+#    """
+#
+#    url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
+#    headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
+#    proba = 0.0
+#    r = requests.get(url_sexe_request + name, headers=headers)
+#    if r.status_code != 200:
+#        raise ConnectionError("Failed while trying to access the URL")
+#    else:
+#        if (r.json()['status']) == 'detected':
+#            prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
+#            sexe = prem_occurr['gender']
+#            if sexe == 'M':
+#                proba = round(prem_occurr['proportion_M'])
+#            if sexe == 'F':
+#                proba = prem_occurr['proportion_F']
+#            occurrences = prem_occurr['nb_occurrences_with_gender']
+#            return sexe, proba, occurrences, 'detected'
+#        else:
+#            return "", "", "", "not_detected"
+#
+#
+#def get_sex_from_name_set(set_nom: set) -> pd.DataFrame:
+#    """   This function uses a dataesr API to get sex from name. It takes a set of names and returns a dataframe with
+#    API variables results for each name in the set
+#
+#    param name: the set of names to get sex from
+#    type name: set
+#
+#    :return:  a dataframe with the original name, and the results of sex API
+#
+#    """
+#
+#    dict_nom = {}
+#    set_nom = set_nom.difference(set(dict_nom))
+#    count = 0
+#    start_time = time.time()
+#    for name in set_nom:
+#        dict_tmp = {'sex': (get_sex_proba_from_name(name))[0], 'proba': (get_sex_proba_from_name(name))[1],
+#                    'occurence': (get_sex_proba_from_name(name))[2], 'error': (get_sex_proba_from_name(name))[3]}
+#        dict_nom[name] = dict_tmp
+#        count += 1
+#        if count % 1000 == 0:
+#            print("Nombre de requêtes de nom effectuées : " + str(count) + " --  ")
+#            print("--- %s seconds ---" % (time.time() - start_time))
+#        if count % 5000 == 0:
+#            pd.DataFrame.from_dict(dict_nom, orient='index').reset_index() \
+#                .rename(columns={'index': 'name'}).to_csv('sex_names.csv', sep='|', index=False)
+#    sex_table = pd.DataFrame.from_dict(dict_nom, orient='index').reset_index().rename(columns={'index': 'name'})
+#    return sex_table
 
 
 def get_clean_ind():
@@ -212,25 +212,26 @@ def get_clean_ind():
     part_individuals = affectation_most_occurences(part_individuals, 'inpadoc_family_id', 'country_corrected',
                                                    'name_corrected')
 
-    # Enfin on récupère le sexe par API pour les nouvelles personnes
-
-    table_to_get_sex = part_individuals[
-        (part_individuals['isascii']) & (part_individuals['new_name'] != '')].copy()
-    set_to_get_sex = set(table_to_get_sex['name_corrected'])
-
-    sex_table = get_sex_from_name_set(set_to_get_sex)
-
-    sex_table.to_csv('sex_table.csv', sep='|', index=False)
-
-    sex_table = pd.read_csv('sex_table.csv', sep='|')
-
-    part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrected', right_on='name', how='left')
+    part_individuals_fin = part_individuals
+#    # Enfin on récupère le sexe par API pour les nouvelles personnes
+#
+#    table_to_get_sex = part_individuals[
+#        (part_individuals['isascii']) & (part_individuals['new_name'] != '')].copy()
+#    set_to_get_sex = set(table_to_get_sex['name_corrected'])
+#
+#    sex_table = get_sex_from_name_set(set_to_get_sex)
+#
+#    sex_table.to_csv('sex_table.csv', sep='|', index=False)
+#
+#    sex_table = pd.read_csv('sex_table.csv', sep='|')
+#
+#    part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrected', right_on='name', how='left')
 
     for col in part_individuals_fin.columns:
         part_individuals_fin[col] = part_individuals_fin[col].fillna('')
         part_individuals_fin[col] = part_individuals_fin[col].astype(str)
 
-    part_individuals_fin['sexe'] = np.where(part_individuals_fin['sexe'] == '', part_individuals_fin['sex'],
-                                            part_individuals_fin['sexe'])
+    #part_individuals_fin['sexe'] = np.where(part_individuals_fin['sexe'] == '', part_individuals_fin['sex'],
+    #                                        part_individuals_fin['sexe'])
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)

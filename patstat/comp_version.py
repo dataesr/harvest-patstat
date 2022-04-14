@@ -6,6 +6,7 @@
 
 import os
 import pandas as pd
+from utils import swift
 
 from patstat import dtypes_patstat_declaration as types
 
@@ -175,7 +176,7 @@ def get_json():
         if family_id not in affiliation_dict:
             affiliation_dict[family_id] = []
         elt = row.siren
-        if elt not in affiliation_dict[family_id]:
+        if elt and elt not in affiliation_dict[family_id]:
             affiliation_dict[family_id].append(elt)
 
     res = []
@@ -195,7 +196,7 @@ def get_json():
             authors_dict[family_id] = []
         elt = {"typeParticipant": row.type, "fullName": row.name_corrected, "country": row.country_corrected,
                "rolePatent": row.rolePatent, "affiliations": row.affiliations}
-        if elt not in authors_dict[family_id]:
+        if elt and elt not in authors_dict[family_id]:
             authors_dict[family_id].append(elt)
 
     res = []
@@ -217,7 +218,7 @@ def get_json():
         if family_id not in affiliation_dict2:
             affiliation_dict2[family_id] = []
         elt = row.siren
-        if elt not in affiliation_dict2[family_id]:
+        if elt and elt not in affiliation_dict2[family_id]:
             affiliation_dict2[family_id].append(elt)
 
     res = []
@@ -245,5 +246,5 @@ def get_json():
                  "date_first_granted": "grantedDate"})
 
     fam_final_json = fam_final.to_json(orient="records", lines=True)
-    fam_final.to_json("fam_final_json.json", orient="records", lines=True)
-    return fam_final_json
+    fam_final.to_json("fam_final_json.jsonl", orient="records", lines=True)
+    swift.upload_object('patstat', 'fam_final_json.jsonl')
