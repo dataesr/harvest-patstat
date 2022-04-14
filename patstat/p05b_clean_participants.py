@@ -380,7 +380,7 @@ def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict
 def get_clean_part():
     # set working directory
     os.chdir(DATA_PATH)
-    part = pd.read_csv('part.csv', sep='|', dtype=types.part_init_types)
+    part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types)
 
     for col in part.columns:
         part[col] = part[col].replace(np.nan, '')
