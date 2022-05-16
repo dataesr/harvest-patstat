@@ -91,7 +91,6 @@ def lib_cpc():
     # set working directory
     os.chdir(DATA_PATH)
 
-
     # /!\ CPC Scheme XML file changes often. Check the current file and URL /!\
 
     url_scheme = f"{CPC}sites/default/files/cpc/bulk/CPCSchemeXML202205.zip"
@@ -113,10 +112,8 @@ def lib_cpc():
 
     df_scheme = pd.concat(tmp_scheme)
 
-
     # Levels "3" and "6" correspond to "general category" titles and are not to be kept
     df_scheme = df_scheme.loc[~df_scheme["level"].isin(["3", "6"])]
-
 
     # turns titleParts lists into strings
     df_scheme["texte"] = df_scheme["titleParts"].apply(lambda a: " ".join(a))
@@ -125,7 +122,6 @@ def lib_cpc():
     df_scheme = df_scheme.drop(
         columns=["breakdown-code", "not-allocatable", "additional-only", "date-revised", "status", "link-file",
                  "definition-exists", "c-set-base-allowed", "c-set-subsequent-allowed", "titleParts"]).drop_duplicates()
-
 
     # splits symbol into its different components: section, class, subclass, group and subgroup
     # in order to sort the dataframe and match the corresponding higher level symbols to symbols deeper in the tree
@@ -137,7 +133,6 @@ def lib_cpc():
     df_scheme["subgroup"] = df_scheme["sort-key"].str.replace(r"[A-Z]\d{0,2}[A-Z]{0,1}\d{0,}\/?", "", regex=True)
     df_scheme = df_scheme.fillna("")
     df_scheme = df_scheme.sort_values(["section", "class", "subclass", "group", "subgroup"])
-
 
     # get the higher level symbol for symbols from level "8" and upwards
     # with these, we can pick the first part of the title which indicates the hierarchy
