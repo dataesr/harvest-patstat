@@ -17,6 +17,17 @@ def jointure(fm, df):
     fm2 = pd.merge(fm, df, left_on="docdb_family_id", right_on="family_id", how="left").drop(columns="family_id")
     return fm2
 
+def to_date_str(x):
+    res = str(x)[0:10]
+    if len(res)==10:
+        res = res+"T00:00:00"
+        return res
+    return None
+
+def get_year(x):
+    if isinstance(x, str):
+        return int(x[0:4])
+    return None
 
 def get_json():
     # set working directory
@@ -26,12 +37,18 @@ def get_json():
                                   "docdb_family_id", "ispriority", "ipr_type", "appln_filing_date", "appln_publn_date",
                                   "grant_publn_date", "appln_nr"])
     patent["key_appln_nr"] = patent["key_appln_nr"].apply(lambda a: a.strip())
-    patent[["appln_filing_date", "appln_publn_date", "grant_publn_date"]] = patent[
-        ["appln_filing_date", "appln_publn_date", "grant_publn_date"]].apply(pd.to_datetime)
+    for f_date in ["appln_filing_date", "appln_publn_date", "grant_publn_date"]:
+        patent[f_date] = patent[f_date].apply(to_date_str)
+
+    #patent[["appln_filing_date", "appln_publn_date", "grant_publn_date"]] = patent[
+    #    ["appln_filing_date", "appln_publn_date", "grant_publn_date"]].apply(pd.to_datetime)
 
     fam = pd.read_csv("families.csv", sep="|", encoding="utf-8", dtype=types.patent_types)
-    fam[["earliest_publn_date", "earliest_application_date", "date_first_granted"]] = fam[
-        ["earliest_publn_date", "earliest_application_date", "date_first_granted"]].apply(pd.to_datetime)
+    for f_date in ["earliest_publn_date", "earliest_application_date", "date_first_granted"]:
+        fam[f_date] = fam[f_date].apply(to_date_str)
+
+    #fam[["earliest_publn_date", "earliest_application_date", "date_first_granted"]] = fam[
+    #    ["earliest_publn_date", "earliest_application_date", "date_first_granted"]].apply(pd.to_datetime)
     fam[["title_en", "title_fr", "title_default", "title_default_language", "abstract_en", "abstract_fr",
          "abstract_default_language", "abstract_default"]] = fam[
         ["title_en", "title_fr", "title_default", "title_default_language", "abstract_en", "abstract_fr",
@@ -143,14 +160,11 @@ def get_json():
         elt = {"fr": row.abstract_fr, "en": row.abstract_en, "default": row.abstract_default}
         if elt not in abstract_dict[family_id]:
             abstract_dict[family_id].append(elt)
-
     res = []
     for family_id in abstract_dict:
-        new_elt = {'family_id': family_id, 'abstract': abstract_dict[family_id]}
+        new_elt = {'family_id': family_id, 'summary': abstract_dict[family_id]}
         res.append(new_elt)
-
     df_abstract = pd.DataFrame(res)
-
     role_dict = {}
     for row in role.itertuples():
         family_id = row.key_appln_nr_person
@@ -159,17 +173,13 @@ def get_json():
         elt = {"role": row.role, "description": row.role}
         if elt not in role_dict[family_id]:
             role_dict[family_id].append(elt)
-
     res = []
     for family_id in role_dict:
         new_elt = {'family_id': family_id, 'rolePatent': role_dict[family_id]}
         res.append(new_elt)
-
     df_role = pd.DataFrame(res)
-
     part2 = pd.merge(part, df_role, left_on="key_appln_nr_person", right_on="family_id", how="left").drop(
         columns="family_id")
-
     affiliation_dict = {}
     for row in part2.itertuples():
         family_id = row.key_appln_nr_person
@@ -178,17 +188,13 @@ def get_json():
         elt = row.siren
         if elt and elt not in affiliation_dict[family_id]:
             affiliation_dict[family_id].append(elt)
-
     res = []
     for family_id in affiliation_dict:
         new_elt = {'family_id': family_id, 'affiliations': affiliation_dict[family_id]}
         res.append(new_elt)
-
     df_affiliation = pd.DataFrame(res)
-
     part3 = pd.merge(part2, df_affiliation, left_on="key_appln_nr_person", right_on="family_id", how="left").drop(
         columns="family_id")
-
     authors_dict = {}
     for row in part3.itertuples():
         family_id = row.docdb_family_id
@@ -198,20 +204,16 @@ def get_json():
                "rolePatent": row.rolePatent, "affiliations": row.affiliations}
         if elt and elt not in authors_dict[family_id]:
             authors_dict[family_id].append(elt)
-
     res = []
     for family_id in authors_dict:
         new_elt = {'family_id': family_id, 'authors': authors_dict[family_id]}
         res.append(new_elt)
-
     df_authors = pd.DataFrame(res)
-
     fam_authors = jointure(fam, df_authors)
     fam_titles = jointure(fam_authors, df_title)
     fam_sum = jointure(fam_titles, df_abstract)
     fam_domains = jointure(fam_sum, df_fam)
     fam_pat = jointure(fam_domains, df_pat)
-
     affiliation_dict2 = {}
     for row in part2.itertuples():
         family_id = row.docdb_family_id
@@ -220,31 +222,27 @@ def get_json():
         elt = row.siren
         if elt and elt not in affiliation_dict2[family_id]:
             affiliation_dict2[family_id].append(elt)
-
     res = []
     for family_id in affiliation_dict2:
         new_elt = {'family_id': family_id, 'affiliations': affiliation_dict2[family_id]}
         res.append(new_elt)
-
     df_affiliation2 = pd.DataFrame(res)
-
     fam_affiliations = jointure(fam_pat, df_affiliation2)
-
     fam_final = fam_affiliations.drop(
         columns=["design_patents_count", "patents_count", "utility_models_count", "is_granted", "title_en", "title_fr",
                  "title_default_language", "title_default", "abstract_en", "abstract_fr", "abstract_default_language",
                  "abstract_default"])
-
-    fam_final["year"] = fam_final["earliest_application_date"].apply(lambda a: a.year)
+    fam_final["year"] = fam_final["earliest_application_date"].apply(get_year)
     fam_final["productionType"] = "patent"
     fam_final["inventionKind"] = "brevet"
+    fam_final['isOa'] = False
     fam_final = fam_final.rename(
         columns={"docdb_family_id": "id", "inpadoc_family_id": "inpadocFamily",
                  "earliest_publn_date": "publicationDate",
                  "earliest_application_date": "submissionDate", "is_oeb": "isOeb",
                  "is_international": "isInternational",
                  "date_first_granted": "grantedDate"})
-
-    fam_final_json = fam_final.to_json(orient="records", lines=True)
+    for str_field in ["id", "inpadocFamily"]:
+        fam_final[str_field] = fam_final[str_field].apply(lambda x:str(x))
     fam_final.to_json("fam_final_json.jsonl", orient="records", lines=True)
     swift.upload_object('patstat', 'fam_final_json.jsonl')
