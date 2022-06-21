@@ -15,3 +15,5 @@ clean_participants_localhost.localdomain_Jan-10-094217-2022_Conflict.py
 /doc.tex
 !application/server/config.py
 .env
+check_output_json.py
+get_json.py
