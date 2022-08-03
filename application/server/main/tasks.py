@@ -4,7 +4,7 @@ import os
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc
+    comp_version, ftp_inpi, p000_lib_cpc, comp_version_y02y04s
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
@@ -91,6 +91,7 @@ def create_task_p08_part_final_patstat():
 
 def create_json_patent_scanr():
     comp_version.get_json()
+    comp_version_y02y04s.get_json_env()
 
 
 def create_lib_cpc():
