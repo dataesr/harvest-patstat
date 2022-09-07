@@ -27,7 +27,7 @@ def part_final():
          'siret', 'id_paysage', 'rnsr',
          'grid', 'idref', 'oc', 'ror', 'sexe']].copy()
 
-    part_indiv = pd.read_csv('part_individuals.csv', sep='|',
+    part_indiv = pd.read_csv('part_individuals_p06b.csv', sep='|',
                              dtype=types.part_entp_types)[
         ['key_appln_nr_person', 'country_corrected', 'doc_std_name', "doc_std_name_id", 'name_corrected', 'sexe',
          'siren',
