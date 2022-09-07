@@ -1,20 +1,22 @@
-import sys
 import os
 
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc, comp_version_y02y04s
+    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef
+# comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
+
 def create_task_clean(args):
     os.system(f'rm -rf {DATA_PATH}/data_PATSTAT_Global_*')
     os.system(f'rm -rf {DATA_PATH}/index_documentation_scripts_PATSTAT*')
     os.system(f'rm -rf {DATA_PATH}/tls*')
+
 
 def create_task_all(args):
     if args.get('harvest_inpi', True):
@@ -37,18 +39,21 @@ def create_task_all(args):
         create_task_p07_entp_patstat()
     if args.get('p08', True):
         create_task_p08_part_final_patstat()
-    #if args.get('geo', True):
+    # if args.get('geo', True):
     #    create_task_geo()
     if args.get('export_scanr', True):
         create_json_patent_scanr()
+
 
 def harvest_inpi():
     ftp_inpi.loading()
     logger.debug("chargement de la dernière version complète de la DB de l'INPI")
 
+
 def create_task_inpi():
     p00_outils_inpi_adress.unzip_inpi()
     logger.debug("p00: success")
+
 
 def create_task_harvest_patstat():
     logger.debug("début create task harvest patstat")
@@ -56,6 +61,7 @@ def create_task_harvest_patstat():
     logger.debug("Collecte PATSTAT complete : success")
     dezippage.unzip()
     logger.debug("dezippage : success")
+
 
 def create_task_p01_p04_patstat():
     p01_family_scope.get_patentscope()
@@ -67,17 +73,23 @@ def create_task_p01_p04_patstat():
     p04_families.getfam()
     logger.debug("p04: success")
 
+
 def create_task_p05_patstat():
     p05_creat_participants.start_part()
     logger.debug("p05: success")
+
 
 def create_task_p05b_patstat():
     p05b_clean_participants.get_clean_part()
     logger.debug("p05b: success")
 
+
 def create_task_p06_indiv_patstat():
     p06_clean_participants_individuals.get_clean_ind()
     logger.debug("p06: success")
+    p06b_collecteIdRef.collecte()
+    logger.debug("p06b: success")
+
 
 def create_task_p07_entp_patstat():
     p07a_get_siren_inpi.get_siren()
@@ -85,18 +97,20 @@ def create_task_p07_entp_patstat():
     p07b_clean_participants_entp.get_clean_entp()
     logger.debug("p07b: success")
 
+
 def create_task_p08_part_final_patstat():
     p08_participants_final.part_final()
     logger.debug("p08: success")
 
+
 def create_json_patent_scanr():
     comp_version.get_json()
-    comp_version_y02y04s.get_json_env()
+    # comp_version_y02y04s.get_json_env()
 
 
 def create_lib_cpc():
     p000_lib_cpc.lib_cpc()
 
-#def create_task_geo():
+# def create_task_geo():
 #    p09_geoloc.geoloc()
 #    logger.debug("p09: success")
