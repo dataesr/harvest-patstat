@@ -3,7 +3,7 @@ import os
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef
+    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -43,6 +43,8 @@ def create_task_all(args):
     #    create_task_geo()
     if args.get('export_scanr', True):
         create_json_patent_scanr()
+    if args.get('create_dataesr', True):
+        create_dataesr()
 
 
 def harvest_inpi():
@@ -105,11 +107,18 @@ def create_task_p08_part_final_patstat():
 
 def create_json_patent_scanr():
     comp_version.get_json()
+    logger.debug("final json scanr created.")
     # comp_version_y02y04s.get_json_env()
 
 
 def create_lib_cpc():
     p000_lib_cpc.lib_cpc()
+    logger.debug("file CPC codes created.")
+
+
+def create_dataesr():
+    files_dataesr.get_dataesr()
+    logger.debug("files dataESR created.")
 
 # def create_task_geo():
 #    p09_geoloc.geoloc()
