@@ -25,7 +25,7 @@ def create_task_all(args):
         create_task_inpi()
     if args.get('harvest_patstat', True):
         create_task_harvest_patstat()
-    if args.get('harvest_patstat', True):
+    if args.get('lib_cpc', True):
         create_lib_cpc()
     if args.get('p01_p04', True):
         create_task_p01_p04_patstat()
