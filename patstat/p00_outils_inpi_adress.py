@@ -68,8 +68,10 @@ def unzip_inpi():
     list_dir.sort(reverse=True)
 
     dir = list_dir[0]
+    print(dir, flush=True)
 
     dossiers_zip = glob.glob(f"inpi/{dir}/*.zip")
+
 
     for dos in dossiers_zip:
         with zipfile.ZipFile(dos, 'r') as zip_ref:

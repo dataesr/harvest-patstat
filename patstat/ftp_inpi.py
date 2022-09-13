@@ -123,6 +123,10 @@ def loading():
     # set working directory
     os.chdir(DATA_PATH)
     shutil.rmtree(f"{DATA_PATH}/inpi")
+
+    list_dir = os.listdir(DATA_PATH)
+    print(list_dir, flush=True)
+
     os.system(f'mkdir -p {DATA_PATH}/inpi')
 
     for i in reversed(year_list):
