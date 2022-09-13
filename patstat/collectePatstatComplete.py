@@ -5,9 +5,11 @@
 # This script collects PATSTAT Global data from EPO's API, download and write zipped folders
 
 from bs4 import BeautifulSoup
+import glob
 
 import os
 import re
+import shutil
 import requests
 from retry import retry
 
@@ -73,6 +75,11 @@ def download_write(listurl, _session, namelist):
             code.write(req.content)
 
 
+def delete_folders(pth, reg):
+    folds = glob.glob(pth + reg)
+    for fld in folds:
+        shutil.rmtree(fld)
+
 def harvest_patstat():
     # adresse authentifiction
     # authentication address
@@ -104,6 +111,8 @@ def harvest_patstat():
 
     # set working directory
     os.chdir(DATA_PATH)
+    delete_folders(DATA_PATH, r"tls*")
+    delete_folders(DATA_PATH, r"data_PATSTAT_Global_*")
 
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files

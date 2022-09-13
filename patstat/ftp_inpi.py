@@ -4,6 +4,7 @@
 import ftplib
 import os
 import re
+import shutil
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -121,7 +122,9 @@ def loading():
 
     # set working directory
     os.chdir(DATA_PATH)
+    shutil.rmtree(f"{DATA_PATH}/inpi")
     os.system(f'mkdir -p {DATA_PATH}/inpi')
+
     for i in reversed(year_list):
         download_ftp_tree(ftp_server, i, f"{DATA_PATH}/inpi", pattern=None, overwrite=False,
                           guess_by_extension=True)
