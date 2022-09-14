@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding: utf-8
+
 import os
 import pandas as pd
 from retry import retry
@@ -11,8 +14,13 @@ from patstat import dtypes_patstat_declaration as types
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
+# This program harvests inventors' IdRef based on their names via the ABES API.
+
 
 def get_logger(name):
+    """
+    This function helps to follow the execution of the parallel computation.
+    """
     loggers = {}
     if name in loggers:
         return loggers[name]
@@ -29,7 +37,12 @@ def get_logger(name):
     return loggers[name]
 
 
-def res_futures(dict_nb):
+def res_futures(dict_nb: dict) -> pd.DataFrame:
+    """
+    This function applies the query function on each subset of the original df in a parallel way
+    It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
+    It returns a df with the IdRef.
+    """
     res = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
         # Start the load operations and mark each future with its URL
@@ -47,7 +60,12 @@ def res_futures(dict_nb):
 
 
 @retry(tries=3, delay=5, backoff=5)
-def query(df):
+def query(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    This function queries the ABES API.
+    It takes a df and, for each row, it matches the name to the names in the ABES API.
+    It returns a df with the person ID, name and IdRef.
+    """
     pydref = pdref.Pydref()
     logger = get_logger(threading.current_thread().name)
     logger.info("start")
@@ -69,7 +87,12 @@ def query(df):
     return df
 
 
-def subset_df(df):
+def subset_df(df: pd.DataFrame) -> dict:
+    """
+    This function divides the initial df into subsets which represent ca. 10 % of the original df.
+    The subsets are put into a dictionary with 10-11 pairs key-value.
+    Each key is the df subset name and each value is the df subset.
+    """
     prct10 = int(round(len(df) * 10 / 100, 0))
     dict_nb = {}
     deb = 0
