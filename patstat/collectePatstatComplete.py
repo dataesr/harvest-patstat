@@ -111,7 +111,7 @@ def harvest_patstat():
 
     # set working directory
     os.chdir(DATA_PATH)
-    delete_folders(DATA_PATH, r"tls*")
+    delete_folders(DATA_PATH, r"tls\d{3}$")
     delete_folders(DATA_PATH, r"data_PATSTAT_Global_*")
 
     # # téléchargement et écriture des fichiers zip

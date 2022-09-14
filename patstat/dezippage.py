@@ -39,6 +39,12 @@ def select_files(pth: str, pattern: str) -> list:
     return list_folds
 
 
+def delete_files(pth, reg):
+    files = glob.glob(pth + reg)
+    for file in files:
+        os.remove(file)
+
+
 def unzip():
     path = DATA_PATH
     # selects the zipped folders to unzip (everything except the documentation)
@@ -47,7 +53,7 @@ def unzip():
     unzip_folders(path, zipped_folders)
 
     # selects the subfolders
-    subfolders = select_files(path, r"tls\d{3}_part\d{2}\.zip")
+    subfolders = select_files(path, r"tls(204|211|201|206|207|209|225|224|203|202)_part\d{2}\.zip")
     # unzips the subfolders
     unzip_folders(path, subfolders)
 
@@ -62,3 +68,7 @@ def unzip():
     for item in range(len(file_names["subfolders"])):
         os.makedirs(file_names["table_names"][item], exist_ok=True)
         shutil.move(file_names["file_names"][item], file_names["table_names"][item])
+
+    os.remove(DATA_PATH + r"index_documentation_scripts_PATSTAT_Global_\d{4}_(Autumn|Spring)\.zip")
+
+    delete_files(DATA_PATH, r"data_PATSTAT_Global_\d+_.+\.zip")
