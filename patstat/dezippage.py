@@ -41,8 +41,11 @@ def select_files(pth: str, pattern: str) -> list:
 
 def delete_files(pth, reg):
     files = glob.glob(pth + reg)
-    for file in files:
-        os.remove(file)
+    print(files, flush=True)
+    if files:
+        for file in files:
+            print(file, flush=True)
+            os.remove(file)
 
 
 def unzip():
@@ -69,6 +72,6 @@ def unzip():
         os.makedirs(file_names["table_names"][item], exist_ok=True)
         shutil.move(file_names["file_names"][item], file_names["table_names"][item])
 
-    os.remove(DATA_PATH + r"index_documentation_scripts_PATSTAT_Global_\d{4}_(Autumn|Spring)\.zip")
+    delete_files(DATA_PATH, r"index_documentation_scripts_PATSTAT_Global_\d{4}_(Autumn|Spring)\.zip")
 
     delete_files(DATA_PATH, r"data_PATSTAT_Global_\d+_.+\.zip")

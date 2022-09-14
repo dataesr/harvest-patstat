@@ -77,8 +77,20 @@ def download_write(listurl, _session, namelist):
 
 def delete_folders(pth, reg):
     folds = glob.glob(pth + reg)
-    for fld in folds:
-        shutil.rmtree(fld)
+    if folds:
+        print(folds, flush=True)
+        for fld in folds:
+            shutil.rmtree(fld)
+
+
+def delete_files(pth, reg):
+    files = glob.glob(pth + reg)
+    print(files, flush=True)
+    if files:
+        for file in files:
+            print(file, flush=True)
+            os.remove(file)
+
 
 def harvest_patstat():
     # adresse authentifiction
@@ -104,15 +116,16 @@ def harvest_patstat():
     list_name = name_list(list_url, ed_nr)
 
     # edition = re.search(r"\d{4}_\w+", list_name[0]).group(0)
-
+    #
     # path = DATA_PATH + edition
     #
     # os.makedirs(path, exist_ok=True)
 
     # set working directory
     os.chdir(DATA_PATH)
-    delete_folders(DATA_PATH, r"tls\d{3}$")
-    delete_folders(DATA_PATH, r"data_PATSTAT_Global_*")
+    delete_folders(DATA_PATH, r"^tls\d{3}$")
+    delete_files(DATA_PATH, r"index_documentation_scripts_PATSTAT_Global_.+")
+    delete_files(DATA_PATH, r"data_PATSTAT_Global_.+")
 
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
