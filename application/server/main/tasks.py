@@ -61,6 +61,7 @@ def create_task_harvest_patstat():
     logger.debug("début create task harvest patstat")
     collectePatstatComplete.harvest_patstat()
     logger.debug("Collecte PATSTAT complete : success")
+    logger.debug("Début dezippage")
     dezippage.unzip()
     logger.debug("dezippage : success")
 
