@@ -1,7 +1,8 @@
 # !/usr/bin/env python
 # coding: utf-8
 
-# Ce programme permet de créer le fichier au format JSON qui va alimenter ScanR
+# Ce programme permet de créer les fichiers au format CSV qui vont alimenter dataESR.
+# This program creates the CSV files to publish on dataESR.
 
 
 import os
@@ -15,8 +16,13 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 def get_dataesr():
     # set working directory
+    """
+    This function selects a subset of columns and, for the families technologies, a subset of categories to avoid
+    too large files as an output.
+    It returns CSV files.
+    """
     os.chdir(DATA_PATH)
-    patent = pd.read_csv("/home/julia/Bureau/patent.csv", sep="|", encoding="utf-8", dtype=types.patent_types,
+    patent = pd.read_csv("patent.csv", sep="|", encoding="utf-8", dtype=types.patent_types,
                          engine="python")
 
     patent = patent[['appln_nr_epodoc',
@@ -52,7 +58,7 @@ def get_dataesr():
                                     'appln_title_lg': 'langue_titre_demande',
                                     'appln_title': 'titre_demande', })
 
-    fam = pd.read_csv("/home/julia/Bureau/families.csv", sep="|", encoding="utf-8", dtype=types.patent_types)
+    fam = pd.read_csv("families.csv", sep="|", encoding="utf-8", dtype=types.patent_types)
 
     fam = fam[['docdb_family_id',
                'inpadoc_family_id',
@@ -97,7 +103,7 @@ def get_dataesr():
                               'abstract_default_language': "langue_originale_resume",
                               'abstract_default': "resume_langue_originale"})
 
-    fam_techno = pd.read_csv("/home/julia/Bureau/families_technologies.csv", sep="|", encoding="utf-8",
+    fam_techno = pd.read_csv("families_technologies.csv", sep="|", encoding="utf-8",
                              dtype=types.patent_types)
 
     fam_techno = fam_techno.loc[fam_techno["level"].isin(["section", "classe", "ss_classe"])]
