@@ -76,3 +76,11 @@ def unzip():
     delete_files(DATA_PATH, r"index_documentation_scripts_PATSTAT_Global_*")
 
     delete_files(DATA_PATH, r"data_PATSTAT_Global_*")
+
+    fichiers = os.listdir(DATA_PATH)
+    fichiers_zip = [fl for fl in fichiers if re.match(r".+tls\d{3}_part\d{2}\.zip", fl)]
+    for fichier in fichiers_zip:
+        print(fichier, flush=True)
+        os.remove(fichier)
+
+
