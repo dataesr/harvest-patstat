@@ -97,25 +97,25 @@ def delete_files(pth, reg):
 def harvest_patstat():
     # adresse authentifiction
     # authentication address
-    # url_id = f"{URL_PATSTAT}/authentication?login={os.getenv('USER')}&pwd={os.getenv('PWD')}&action=1&format=1"
+    url_id = f"{URL_PATSTAT}/authentication?login={os.getenv('USER')}&pwd={os.getenv('PWD')}&action=1&format=1"
 
     # authentification
     # authentication
-    # session = connexion_api(url_id)
+    session = connexion_api(url_id)
 
-    # ed_nr = ed_number(f"{URL_PATSTAT}/products/86/editions/", session)
+    ed_nr = ed_number(f"{URL_PATSTAT}/products/86/editions/", session)
 
     # requête API Patstat pour accéder à liste de tous les URLs des fichiers zip à télécharger
     # API request on Patstat to access the list of all the zipped folders URLs to download
-    # requete = get_url(f"{URL_PATSTAT}/products/86/editions/{ed_nr}/files", session)
+    requete = get_url(f"{URL_PATSTAT}/products/86/editions/{ed_nr}/files", session)
 
     # extraction des URLs
     # URLs extraction
-    # list_url = extraction_url(requete)
+    list_url = extraction_url(requete)
 
     # extraction des noms de fichier
     # files name extraction
-    # list_name = name_list(list_url, ed_nr)
+    list_name = name_list(list_url, ed_nr)
 
     # edition = re.search(r"\d{4}_\w+", list_name[0]).group(0)
     #
@@ -137,4 +137,4 @@ def harvest_patstat():
 
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
-    # download_write(list_url, session, list_name)
+    download_write(list_url, session, list_name)
