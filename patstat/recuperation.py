@@ -57,37 +57,40 @@ def get_appln_id_eopdoc(t201directory: str) -> pd.DataFrame:
     print("End get ID application & application nr EPODOC")
     return patent_appln_chunk
 
-tls201 = get_appln_id_eopdoc("tls201")
 
-# rename old_part columns to make merging easier
-old_part.rename(columns={"id_patent": "appln_nr_epodoc", "name_source": "person_name"}, inplace=True)
+def recuperation():
 
-# merge old_part and data from tls201
-# left join because we want to keep only the ID corresponding to the ones in old_part
-df = pd.merge(old_part,
-              tls201[["appln_id", "appln_nr_epodoc"]], on="appln_nr_epodoc",
-              how="left")
+    tls201 = get_appln_id_eopdoc("tls201")
 
-# turn appln_id into pandas' Int64 because common int can't handle NAs
-df["appln_id"] = df["appln_id"].astype(pd.Int64Dtype())
+    # rename old_part columns to make merging easier
+    old_part.rename(columns={"id_patent": "appln_nr_epodoc", "name_source": "person_name"}, inplace=True)
 
-# select appln_id with missing values : 32 cases where no corresponding appln_nr_epodoc in tls201 and so no appln_id
-nas = df["appln_id"][df["appln_id"].isna()==True]
-nas = list(nas.index)
-epodoc = df["appln_nr_epodoc"].loc[nas]
+    # merge old_part and data from tls201
+    # left join because we want to keep only the ID corresponding to the ones in old_part
+    df = pd.merge(old_part,
+                  tls201[["appln_id", "appln_nr_epodoc"]], on="appln_nr_epodoc",
+                  how="left")
 
-# we keep only the rows where appln_id is not missing
-df2 = df[df["appln_id"].isna()==False]
+    # turn appln_id into pandas' Int64 because common int can't handle NAs
+    df["appln_id"] = df["appln_id"].astype(pd.Int64Dtype())
 
-tls201_id = cfq.filtering("tls201", df2, "appln_id", DICT["tls201_id"])
+    # select appln_id with missing values : 32 cases where no corresponding appln_nr_epodoc in tls201 and so no appln_id
+    nas = df["appln_id"][df["appln_id"].isna()==True]
+    nas = list(nas.index)
+    epodoc = df["appln_nr_epodoc"].loc[nas]
 
-final = pd.merge(df2,
-                 tls201_id,
-                 on=["appln_id", "appln_nr_epodoc", "appln_auth"],
-                 how="left")
+    # we keep only the rows where appln_id is not missing
+    df2 = df[df["appln_id"].isna()==False]
 
-final["key_appln_nr"] = final["appln_auth"] + final["appln_nr"] + final["appln_kind"] + final["receiving_office"]
-final["key_appln_nr_person"] = final["key_appln_nr"] + "_" + final["person_id"].astype(str)
-final.rename(columns={"appln_nr_epodoc": "id_patent", "person_name": "name_source"}, inplace=True)
-final.to_csv("old_part_key.csv", sep="|", index=False, encoding="utf-8")
+    tls201_id = cfq.filtering("tls201", df2, "appln_id", DICT["tls201_id"])
+
+    final = pd.merge(df2,
+                     tls201_id,
+                     on=["appln_id", "appln_nr_epodoc", "appln_auth"],
+                     how="left")
+
+    final["key_appln_nr"] = final["appln_auth"] + final["appln_nr"] + final["appln_kind"] + final["receiving_office"]
+    final["key_appln_nr_person"] = final["key_appln_nr"] + "_" + final["person_id"].astype(str)
+    final.rename(columns={"appln_nr_epodoc": "id_patent", "person_name": "name_source"}, inplace=True)
+    final.to_csv("old_part_key.csv", sep="|", index=False, encoding="utf-8")
 

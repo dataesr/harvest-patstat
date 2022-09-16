@@ -3,7 +3,7 @@ import os
 from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr
+    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recuperation
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -19,6 +19,8 @@ def create_task_clean(args):
 
 
 def create_task_all(args):
+    if args.get('recuperation', True):
+        create_recuperation()
     if args.get('harvest_inpi', True):
         harvest_inpi()
     if args.get('unzip_inpi', True):
@@ -120,6 +122,11 @@ def create_lib_cpc():
 def create_dataesr():
     files_dataesr.get_dataesr()
     logger.debug("files dataESR created.")
+
+
+def create_recuperation():
+    recuperation.recuperation()
+    logger.debug("Fichier old_part recupéré")
 
 # def create_task_geo():
 #    p09_geoloc.geoloc()
