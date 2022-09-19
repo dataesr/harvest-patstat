@@ -330,6 +330,8 @@ def start_part():
                            dtype=types.part_init_types,
                            encoding="utf-8",
                            engine="python")
+    old_part = old_part.drop_duplicates()
+    old_part.to_csv("part_init_backup.csv", sep="|", index=False)
     print("2 : chargement part_init", flush=True)
 
     tls207 = cfq.filtering("tls207", patents, "appln_id", DICT["tls207"])
@@ -346,7 +348,6 @@ def start_part():
 
     part_init2.to_csv("part_init_p05.csv", sep="|", index=False)
     swift.upload_object('patstat', 'part_init_p05.csv')
-    part_init2.to_csv("part_init_backup.csv", sep="|", index=False)
 
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
     part_init3.to_csv("part_p05.csv", sep="|", index=False)
