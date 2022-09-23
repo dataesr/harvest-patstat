@@ -3,7 +3,7 @@
 
 from patstat import csv_files_querying as cfq
 from patstat import dtypes_patstat_declaration as types
-# from utils import swift
+from utils import swift
 
 import numpy as np
 import os
@@ -309,7 +309,9 @@ def getfam():
     families = fam(patent)
 
     families.to_csv("families.csv", sep="|", index=False)
+    swift.upload_object('patstat', 'families.csv')
 
     family_technos_codes = unify(patent, cpc_category_names)
 
     family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
+    swift.upload_object('patstat', 'families_technologies.csv')

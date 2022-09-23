@@ -6,6 +6,7 @@ from patstat import dtypes_patstat_declaration as types
 import numpy as np
 import os
 import pandas as pd
+from utils import swift
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
