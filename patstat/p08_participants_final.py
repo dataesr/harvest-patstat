@@ -2,6 +2,8 @@
 # coding: utf-8
 
 import os
+import re
+from utils import swift
 
 import numpy as np
 import pandas as pd
@@ -54,7 +56,44 @@ def part_final():
     particip['name_corrected'] = np.where(particip['name_corrected'] == '', particip['name_source'],
                                           particip['name_corrected'])
 
+    particip.loc[(particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret2"] = particip.loc[
+        (particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret"].replace(r"\(\'|\'|\)", "",
+                                                                                                 regex=True).str.split(
+        ",")
+
+    siret = {"key_appln_nr_person": [], "siret": [], "siret3": []}
+
+    for _, r in particip.loc[particip["siret2"].notna()].iterrows():
+        key = r.key_appln_nr_person
+        sir = r.siret
+        s2 = []
+        for i in r.siret2:
+            res = re.sub("\s+", "", i)
+            s2.append(res)
+        siret["key_appln_nr_person"].append(key)
+        siret["siret"].append(sir)
+        siret["siret3"].append(s2)
+
+    sup_esp = pd.DataFrame(data=siret)
+
+    particip = pd.merge(particip, sup_esp, on=["key_appln_nr_person", "siret"], how="left")
+
+    particip = particip.drop(columns="siret2").rename(columns={"siret3": "siret2"})
+
+    particip.loc[particip["siret2"].notna(), "siren2"] = particip.loc[particip["siret2"].notna(), "siret2"].apply(
+        lambda a: ", ".join([item[0:9] for item in a]))
+
+    particip.loc[particip["siret2"].notna(), "siret2"] = particip.loc[particip["siret2"].notna(), "siret2"].apply(
+        lambda a: ", ".join(a))
+
+    particip.loc[particip["siret2"].notna(), "siret"] = particip.loc[particip["siret2"].notna(), "siret2"]
+
+    particip.loc[particip["siren2"].notna(), "siren"] = particip.loc[particip["siren2"].notna(), "siren2"]
+
+    particip = particip.drop(columns=["siret2", "siren2"])
+
     particip.to_csv('part_p08.csv', sep='|', index=False, encoding="utf-8")
+    swift.upload_object('patstat', 'part_p08.csv')
 
     # création de la table participants
 
@@ -87,3 +126,4 @@ def part_final():
     role = role1[role1['value'] > 0].drop(columns={'value'})
 
     role.to_csv('role.csv', sep='|', index=False)
+    swift.upload_object('patstat', 'role.csv')
