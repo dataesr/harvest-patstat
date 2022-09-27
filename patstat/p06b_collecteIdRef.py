@@ -10,6 +10,7 @@ import threading
 import sys
 from patstat import pydref as pdref
 from patstat import dtypes_patstat_declaration as types
+from utils import swift
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -98,7 +99,7 @@ def subset_df(df: pd.DataFrame) -> dict:
     deb = 0
     fin = prct10
     dict_nb["df1"] = df.iloc[deb:fin, :]
-    deb = fin + 1
+    deb = fin
     dixieme = 10 * prct10
     reste = (len(df) - dixieme)
     fin_reste = len(df) + 1
@@ -112,10 +113,29 @@ def subset_df(df: pd.DataFrame) -> dict:
     return dict_nb
 
 
+def merge_idref(ori, dfref):
+    ori2 = ori.rename(columns={"idref": "idref_original"})
+    ori2 = pd.merge(ori2, dfref, on=["person_id", "name_corrected"], how="left")
+
+    ori2.loc[(ori2["idref_original"].isna()) & (ori2["idref"].notna()), "idref2"] = ori2.loc[
+        (ori2["idref_original"].isna()) & (ori2["idref"].notna()), "idref"]
+
+    ori2.loc[ori2["idref_original"].notna(), "idref2"] = ori2.loc[
+        ori2["idref_original"].notna(), "idref_original"]
+
+    ori2 = ori2.drop(columns=["idref_original", "idref"]).rename(columns={"idref2": "idref"})
+
+    return ori2
+
+
 def collecte():
     os.chdir(DATA_PATH)
+    part = pd.read_csv('part_individuals.csv', sep='|', encoding="utf-8", engine="python", dtype=types.part_entp_types)
 
-    part = pd.read_csv('part_individuals.csv', sep='|', encoding="utf-8", dtype=types.part_entp_types)
+    if os.path.isfile("IdRef_identifies.csv"):
+        idref = pd.read_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", engine="python",
+                            dtype=types.part_entp_types)
+        part = merge_idref(part, idref)
 
     names = pd.DataFrame(
         part.loc[
@@ -130,15 +150,9 @@ def collecte():
 
     df_futures = res_futures(dict_subset_df)
 
-    part2 = part.rename(columns={"idref": "idref_original"})
-    part2 = pd.merge(part2, df_futures, on=["person_id", "name_corrected"], how="left")
+    df_futures.to_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'IdRef_identifies.csv')
 
-    part2.loc[(part2["idref_original"].isna()) & (part2["idref"].notna()), "idref2"] = part2.loc[
-        (part2["idref_original"].isna()) & (part2["idref"].notna()), "idref"]
-
-    part2.loc[part2["idref_original"].notna(), "idref2"] = part2.loc[
-        part2["idref_original"].notna(), "idref_original"]
-
-    part2 = part2.drop(columns=["idref_original", "idref"]).rename(columns={"idref2": "idref"})
+    part2 = merge_idref(part, df_futures)
 
     part2.to_csv('part_individuals_p06b.csv', sep='|', index=False)
