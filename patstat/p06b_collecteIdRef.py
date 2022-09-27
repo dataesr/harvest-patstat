@@ -150,9 +150,14 @@ def collecte():
 
     df_futures = res_futures(dict_subset_df)
 
-    df_futures.to_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", index=False)
-    swift.upload_object('patstat', 'IdRef_identifies.csv')
-
     part2 = merge_idref(part, df_futures)
+
+    idref_identifies = pd.DataFrame(
+        part.loc[
+            (part["idref"].notna()) & (part["name_corrected"].notna()), ["name_corrected",
+                                                                        "person_id", "idref"]].drop_duplicates())
+
+    idref_identifies.to_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'IdRef_identifies.csv')
 
     part2.to_csv('part_individuals_p06b.csv', sep='|', index=False)
