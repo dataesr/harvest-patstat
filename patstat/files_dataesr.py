@@ -339,7 +339,7 @@ def get_dataesr():
     multi_siren = pd.DataFrame(data=paysage_id)
 
     for col in ["siren", "paysage"]:
-        multi_siren[col] = multi_siren[col].apply(lambda a: (", ").join(a))
+        multi_siren[col] = multi_siren[col].apply(lambda a: ", ".join(a))
     multi_siren[col] = multi_siren[col].replace(r"^,$", "", regex=True)
     multi_siren[col] = multi_siren[col].replace(r"^\s{0,},\s{0,}|\s{0,},\s{0,}$", "", regex=True)
 
