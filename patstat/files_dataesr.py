@@ -6,13 +6,14 @@
 
 
 import os
-import pandas as pd
-import requests
-from utils import swift
-from retry import retry
 import re
 
+import pandas as pd
+import requests
+from retry import retry
+
 from patstat import dtypes_patstat_declaration as types
+from utils import swift
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
@@ -36,7 +37,7 @@ def requete(ul: str, form: str, ky: str) -> object:
     res = requests.get(adr)
     status = res.status_code
     if status != 200:
-        raise ConnectionError("Failed while trying to access the URL")
+        raise ConnectionError(f"Failed while trying to access the URL with status code {status}")
     else:
         print("URL successfully accessed", flush=True)
     return res
@@ -52,7 +53,12 @@ def df_req(ul: str, frm: str, ky: str) -> pd.DataFrame:
     text = res.text
     with open("structures.csv", "w") as f:
         f.write(text)
-    df = pd.read_csv("structures.csv", sep=";", encoding="utf-8")
+    df = pd.read_csv("structures.csv", sep=";", encoding="utf-8", engine="python",
+                     dtype={"siret": pd.Int64Dtype(), "siren": str,
+                            "identifiant_pic": pd.Int64Dtype(), "identifiant_cti": pd.Int64Dtype(),
+                            "identifiant_rcr": pd.Int64Dtype(), "identifiant_orgref": pd.Int64Dtype(),
+                            "element_fundref": pd.Int64Dtype(), "numero_telephone_uai": pd.Int64Dtype(),
+                            "rce": pd.Int64Dtype(), "dev_immo": pd.Int64Dtype()})
     swift.upload_object('patstat', 'structures.csv')
     return df
 
@@ -183,7 +189,7 @@ def get_dataesr():
     ## STRUCTURES - from dataESR ##
     url = "https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr_esr_paysage_structures_all/download/"
     form = "?format=csv&timezone=Europe/Berlin&lang=fr&use_labels_for_header=true&csv_separator=%3B"
-    key = f"&apikey={os.getenv('API_KEY')}"
+    key = f"&apikey={os.getenv('ODS_API_KEY')}"
 
     structures = df_req(url, form, key)
 
@@ -225,7 +231,7 @@ def get_dataesr():
 
     # from participant df, select only applicants and clean SIRET and SIRET in some cases
 
-    deposant = pd.read_csv("part_p08.csv", sep="|", encoding="utf-8", engine="python")
+    deposant = pd.read_csv("part_p08.csv", sep="|", encoding="utf-8", engine="python", dtype=types.partfin_types)
     deposant["key_appln_nr_person"] = deposant["key_appln_nr_person"].replace(r"\s+", "", regex=True)
     deposant["siren"] = deposant["siren"].replace(r"\(\'", "", regex=True)
 
@@ -275,7 +281,6 @@ def get_dataesr():
 
     deposant = deposant.drop(columns=["siret2", "siren2"])
 
-
     # keep columns final df
 
     deposant2 = deposant[
@@ -302,7 +307,6 @@ def get_dataesr():
                                           'doc_std_name': "nom_demandeur",
                                           'country_corrected': "code_pays",
                                           'id_paysage': "Paysage_id"})
-
 
     # for applicants who don't have a Paysage ID but have a SIREN, match structure and applicant df
 
