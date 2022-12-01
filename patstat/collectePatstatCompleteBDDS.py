@@ -88,7 +88,7 @@ def ed_number(url_17: str, tkn: str, strm: bool) -> dict:
         n = str(i + 1)
         key = "df" + n
         df = pd.DataFrame(
-            data={"nb": [fils[i].get("itemId")], "Name": [fils[i].get("itemName")], "edition": [edit], "tkn": [token]})
+            data={"nb": [fils[i].get("itemId")], "Name": [fils[i].get("itemName")], "edition": [edit], "tkn": [tkn]})
         dict_pal[key] = df
 
     return dict_pal
