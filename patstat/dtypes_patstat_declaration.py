@@ -255,3 +255,14 @@ part_entp_types = {"id_participant": object,
                    "idref": object,
                    "oc": object,
                    "ror": object}
+
+structures_types = {"siret": pd.Int64Dtype(),
+                    "siren": str,
+                    "identifiant_pic": pd.Int64Dtype(),
+                    "identifiant_cti": pd.Int64Dtype(),
+                    "identifiant_rcr": pd.Int64Dtype(),
+                    "identifiant_orgref": pd.Int64Dtype(),
+                    "element_fundref": pd.Int64Dtype(),
+                    "numero_telephone_uai": pd.Int64Dtype(),
+                    "rce": pd.Int64Dtype(),
+                    "dev_immo": pd.Int64Dtype()}
