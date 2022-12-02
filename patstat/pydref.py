@@ -4,6 +4,7 @@ import string
 from bs4 import BeautifulSoup
 import datetime
 
+
 def strip_accents(w: str) -> str:
     """Normalize accents and stuff in string."""
     return ''.join(
@@ -16,15 +17,17 @@ def delete_punct(w: str) -> str:
     return w.lower().translate(
         str.maketrans(string.punctuation, len(string.punctuation) * ' '))
 
+
 def normalize(x):
     return strip_accents(delete_punct(x)).lower().strip()
+
 
 class Pydref(object):
     """ Wrapper around the PubMed API.
     """
 
     def __init__(
-        self: object
+            self: object
     ) -> None:
         """ Initialization of the object.
             Parameters:
@@ -35,7 +38,6 @@ class Pydref(object):
 
         # Store the parameters
         self.timeout = 2
-
 
     def query(self: object, query: str):
         """ Method that executes a query agains the idref Solr
@@ -53,38 +55,37 @@ class Pydref(object):
                   'sort': 'score desc',
                   'version': '2.2'
                   }
-  
+
         r = requests.get(
-                    "https://www.idref.fr/Sru/Solr",
-                    params=params,
-                    headers=None,
-                    timeout=self.timeout)
+            "https://www.idref.fr/Sru/Solr",
+            params=params,
+            headers=None,
+            timeout=self.timeout)
         if r.status_code == 200 and r.text:
             return r.json()
         return {"error": r.text}
-    
+
     def get_idref_notice(self: object, idref: str):
         """ Method that downloads the xml notice of a given idref
         """
-        
+
         r = requests.get("http://www.idref.fr/{}.xml".format(idref))
         if r.status_code != 200:
             print("Error in getting notice {} : {}".format(idref, r.text))
             return {}
         return r.text
-    
-    
-    def get_idref(self: object, query: str, living_scientific = True, exact_fullname = True):
+
+    def get_idref(self: object, query: str, living_scientific=True, exact_fullname=True):
         """ Method that first permorf a query and then parses the main infos of the results
         """
-        
+
         res = self.query(query)
-        
+
         possible_match = []
 
         for d in res.get('response', {}).get('docs', []):
             if 'ppn_z' in d:
-                person = {'idref' : "idref{}".format(d['ppn_z'])}
+                person = {'idref': "idref{}".format(d['ppn_z'])}
                 notice = self.get_idref_notice(d['ppn_z'])
                 soup = BeautifulSoup(notice, 'lxml')
                 person_name = self.get_name_from_idref_notice(soup)
@@ -114,7 +115,8 @@ class Pydref(object):
                 person['description'] = self.get_description_from_idref_notice(soup)
                 if living_scientific:
                     for d in person['description']:
-                        for w in ['theater', 'theatre', 'poet', 'dramaturge']:
+                        for w in ['theater', 'theatre', 'poet', 'dramaturge', 'fotobiografia', "photo", "photgrapher",
+                                  "photographe"]:
                             if w in d.lower():
                                 skip = True
                                 print(f'skipping {d}')
@@ -126,12 +128,12 @@ class Pydref(object):
 
                 possible_match.append(person)
         return possible_match
-    
+
     def identify(self: object, query: str):
         """ Method that try to identify an idref from a simple input
             Return a match only if the solr engine gives exactly one result
         """
-        
+
         all_idref = self.get_idref(query)
         if len(all_idref) == 1:
             res = all_idref[0].copy()
@@ -231,7 +233,7 @@ class Pydref(object):
                     if subfield.text.strip().upper() == 'ORCID':
                         is_ORCID = True
                         break
-                if(is_ORCID):
+                if (is_ORCID):
                     for subfield in datafield.findAll("subfield"):
                         if subfield.attrs['code'] == 'a':
                             identifiers.append({'orcid': subfield.text.strip()})
@@ -243,7 +245,7 @@ class Pydref(object):
                     if subfield.text.strip().upper() == 'SUDOC':
                         is_sudoc = True
                         break
-                if(is_sudoc):
+                if (is_sudoc):
                     for subfield in datafield.findAll("subfield"):
                         if subfield.attrs['code'] == 'a':
                             identifiers.append({'sudoc': subfield.text.strip()})
@@ -259,7 +261,6 @@ class Pydref(object):
                     if subfield.attrs['code'] == 'a':
                         descriptions.append(subfield.text.strip())
         return descriptions
-
 
     def get_gender(self: object, soup):
         """Get gender from notice."""
