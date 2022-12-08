@@ -124,7 +124,7 @@ def get_json():
             pat_dict[family_id] = []
         elt = {'id': row.id, "isPriority": row.isPriority, "ipType": row.ipType, "office": row.office,
                "applicationDate": row.applicationDate, "applicationNumber": row.applicationNumber,
-               "internatApplicationNumber": row.internatApplicationNumber, "pulicationDate": row.publicationDate,
+               "internatApplicationNumber": row.internatApplicationNumber, "publicationDate": row.publicationDate,
                "publicationNumber": row.publicationNumber, "grantedDate": row.grantedDate, "links": row.links}
         if elt not in pat_dict[family_id]:
             pat_dict[family_id].append(elt)
