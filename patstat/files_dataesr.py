@@ -90,8 +90,7 @@ def get_dataesr():
     patent = pd.read_csv("patent.csv", sep="|", encoding="utf-8", dtype=types.patent_types,
                          engine="python")
 
-    patent = patent[['appln_nr_epodoc',
-                     'appln_filing_date',
+    patent = patent[['appln_filing_date',
                      'appln_auth',
                      'ipr_type',
                      'appln_publn_number',
@@ -110,8 +109,7 @@ def get_dataesr():
     patent["ispriority"] = patent["ispriority"].apply(lambda a: "oui" if a == 1 else "non")
     patent["internat_appln_id"] = patent["internat_appln_id"].apply(lambda a: "" if a == 0 else str(a))
 
-    patent = patent.rename(columns={'appln_nr_epodoc': "nr_demande_epodoc",
-                                    'appln_filing_date': "date_demande",
+    patent = patent.rename(columns={'appln_filing_date': "date_demande",
                                     'appln_auth': "autorite_demande",
                                     'ipr_type': "domaine_pi",
                                     'appln_publn_number': "nr_publication_demande",
