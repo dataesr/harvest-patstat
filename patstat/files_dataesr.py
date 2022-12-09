@@ -6,7 +6,6 @@
 
 
 import os
-import re
 
 import pandas as pd
 import requests
@@ -94,7 +93,8 @@ def get_dataesr():
                      'appln_auth',
                      'ipr_type',
                      'appln_publn_number',
-                     'internat_appln_id', 'publn_kind',
+                     'internat_appln_id',
+                     'publn_kind',
                      'docdb_family_id',
                      'ispriority',
                      'appln_publn_date',
@@ -120,7 +120,7 @@ def get_dataesr():
                                     'appln_publn_date': "date_publication_demande",
                                     'grant_publn_date': "date_octroi",
                                     'appln_title_lg': 'langue_titre_demande',
-                                    'appln_title': 'titre_demande', })
+                                    'appln_title': 'titre_demande'})
 
     ### FAMILIES ###
     fam = pd.read_csv("families.csv", sep="|", encoding="utf-8", dtype=types.patent_types)
@@ -197,7 +197,7 @@ def get_dataesr():
     # keep columns final df
 
     deposant2 = deposant[
-        ["id_patent", "docdb_family_id", "inpadoc_family_id", "doc_std_name", "country_corrected",
+        ["key_appln_nr", "docdb_family_id", "inpadoc_family_id", "doc_std_name", "country_corrected",
          "id_paysage", "siren", "key_appln_nr_person"]]
 
     ### OUTPUTS - write all the df and send them to ObjectStorage ###
