@@ -79,9 +79,9 @@ def get_family_pi_types(patent_table: pd.DataFrame) -> pd.DataFrame:
 
     """
 
-    _family_pi_types = patent_table.groupby(["docdb_family_id", "ipr_type"], as_index=True)[["appln_nr_epodoc"]] \
+    _family_pi_types = patent_table.groupby(["docdb_family_id", "ipr_type"], as_index=True)[["key_appln_nr"]] \
         .count() \
-        .pivot_table(index="docdb_family_id", columns="ipr_type", values="appln_nr_epodoc",
+        .pivot_table(index="docdb_family_id", columns="ipr_type", values="key_appln_nr",
                      aggfunc=np.sum, fill_value=0) \
         .rename(columns={"PI": "patents_count", "UM": "utility_models_count", "DP": "design_patents_count"})
 

@@ -190,29 +190,29 @@ def initialization_participants(pat: pd.DataFrame, t207: pd.DataFrame, t206: pd.
     # we create a unique participant ID "key_appln_nr_person"
     # before "id_participant" but "appln_nr_epodoc" is deprecated and will be removed at some point
     # can keep "appln_nr_epodoc" and "id_participant" for now
-    new_participants["id_participant"] = new_participants["appln_nr_epodoc"].astype(str) + "_" + new_participants[
-        "person_id"].astype(str)
+    # new_participants["id_participant"] = new_participants["appln_nr_epodoc"].astype(str) + "_" + new_participants[
+    #     "person_id"].astype(str)
     new_participants["key_appln_nr_person"] = new_participants["key_appln_nr"] + "_" + new_participants[
         "person_id"].astype(str)
 
     # merge previous file with latest PATSTAT data on "id_participant", "key_appln_nr_person", "appln_id", "appln_nr",
     # "appln_kind", "receiving_office" and "key_appln_nr"
     part = pd.merge(new_participants[
-                        ["id_participant", "appln_nr_epodoc", "person_id", "docdb_family_id", "inpadoc_family_id",
+                        ["person_id", "docdb_family_id", "inpadoc_family_id",
                          "applt_seq_nr", "doc_std_name", "doc_std_name_id",
                          "earliest_filing_date", "invt_seq_nr", "person_name", "person_address", "person_ctry_code",
                          "psn_sector", "psn_id",
                          "psn_name", "appln_publn_number", "appln_auth", "appln_id", "appln_nr", "appln_kind",
                          "receiving_office", "key_appln_nr_person", "key_appln_nr"]],
-                    part_history[["id_participant", "old_name", "country_corrected", "siren", "siret",
+                    part_history[["old_name", "country_corrected", "siren", "siret",
                                   "id_paysage", "rnsr", "grid", "sexe", "id_personne", "type", "idref", "oc", "ror",
                                   "appln_id", "appln_nr",
                                   "appln_kind",
                                   "receiving_office", "key_appln_nr", "key_appln_nr_person"]],
-                    on=["id_participant", "key_appln_nr_person", "appln_id", "appln_nr", "appln_kind",
+                    on=["key_appln_nr_person", "appln_id", "appln_nr", "appln_kind",
                         "receiving_office", "key_appln_nr"], how="left") \
         .rename(
-        columns={"appln_nr_epodoc": "id_patent", "person_name": "name_source", "person_address": "address_source",
+        columns={"person_name": "name_source", "person_address": "address_source",
                  "person_ctry_code": "country_source", "appln_publn_number": "publication_number"})
 
     print("7 : jointure part_init new parts", flush=True)
@@ -317,7 +317,7 @@ def start_part():
     # set working directory
     os.chdir(DATA_PATH)
     # file which served to create part_init: old_part_key.csv
-    # old_part = pd.read_csv("old_part_key.csv",
+    # old_part = pd.read_csv("old_part_key2.csv",
     #                            sep='|',
     #                            dtype=types.partfin_types,
     #                            encoding="utf-8")
