@@ -169,3 +169,4 @@ def get_pubpat():
                                                                                                           on="appln_id")
 
     patent.to_csv("patent.csv", sep="|", index=False)
+    swift.upload_object('patstat', 'patent.csv')
