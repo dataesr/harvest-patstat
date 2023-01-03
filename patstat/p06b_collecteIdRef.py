@@ -132,10 +132,10 @@ def collecte():
     os.chdir(DATA_PATH)
     part = pd.read_csv('part_individuals.csv', sep='|', encoding="utf-8", engine="python", dtype=types.part_entp_types)
 
-    if os.path.isfile("IdRef_identifies.csv"):
-        idref = pd.read_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", engine="python",
-                            dtype=types.part_entp_types)
-        part = merge_idref(part, idref)
+    # if os.path.isfile("IdRef_identifies.csv"):
+    #     idref = pd.read_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", engine="python",
+    #                         dtype=types.part_entp_types)
+    #     part = merge_idref(part, idref)
 
     names = pd.DataFrame(
         part.loc[
