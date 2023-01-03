@@ -6,6 +6,7 @@
 
 
 import os
+import re
 
 import pandas as pd
 import requests
@@ -89,7 +90,8 @@ def get_dataesr():
     patent = pd.read_csv("patent.csv", sep="|", encoding="utf-8", dtype=types.patent_types,
                          engine="python")
 
-    patent = patent[['appln_filing_date',
+    patent = patent[["key_appln_nr",
+                     'appln_filing_date',
                      'appln_auth',
                      'ipr_type',
                      'appln_publn_number',
@@ -100,11 +102,12 @@ def get_dataesr():
                      'appln_publn_date',
                      'grant_publn_date',
                      'appln_title_lg',
-                     'appln_title',
-                     "key_appln_nr"]]
+                     'appln_title']]
 
     for f_date in ["appln_filing_date", "appln_publn_date", "grant_publn_date"]:
         patent[f_date] = patent[f_date].apply(to_date_str)
+
+    patent["key_appln_nr"] = patent["key_appln_nr"].replace(r"\s+", "", regex=True)
 
     patent["ispriority"] = patent["ispriority"].apply(lambda a: "oui" if a == 1 else "non")
     patent["internat_appln_id"] = patent["internat_appln_id"].apply(lambda a: "" if a == 0 else str(a))
@@ -184,21 +187,191 @@ def get_dataesr():
     role = pd.read_csv("role.csv", sep="|", encoding="utf-8")
     role["key_appln_nr_person"] = role["key_appln_nr_person"].replace(r"\s+", "", regex=True)
 
+    ## STRUCTURES - from dataESR ##
+    url = "https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr_esr_paysage_structures_all/download/"
+    form = "?format=csv&timezone=Europe/Berlin&lang=fr&use_labels_for_header=true&csv_separator=%3B"
+    key = f"&apikey={os.getenv('ODS_API_KEY')}"
+
+    structures = df_req(url, form, key)
+
+    # select only cases where there is only 1 Paysage ID per SIREN
+
+    compte_structures = cpt_struct(structures)
+
+    compte_structures_uni = compte_structures.loc[compte_structures["identifiant_interne"] == 1]
+
+    compte_structures_multi = compte_structures.loc[compte_structures["identifiant_interne"] > 1]
+
+    siren_uni = set(compte_structures_uni["siren"])
+
+    siren_multi = set(compte_structures_multi["siren"])
+
+    structures_uni = structures.loc[structures["siren"].isin(siren_uni)].reset_index().drop(columns="index")
+
+    # for cases where there are several Paysage ID per SIREN, check if parent structure exists
+
+    # parent : structure which is alone after structures without juridical personhood are removed
+
+    structures_multi = structures.loc[structures["siren"].isin(siren_multi)].reset_index().drop(columns="index")
+
+    structures_multi = structures_multi.loc[~structures_multi["statut_juridique_long"].isin(
+
+        ["Sans personnalité juridique - secteur public", "Sans personnalité juridique - secteur privé"])]
+
+    structures_multi = structures_multi.sort_values("siren").reset_index().drop(columns="index")
+
+    compte_structures_multi2 = cpt_struct(structures_multi)
+
+    compte_structures_multi2_uni = compte_structures_multi2.loc[compte_structures_multi2["identifiant_interne"] == 1]
+
+    siren_multi_parent = set(compte_structures_multi2_uni["siren"])
+
+    structures_multi_uni = structures_multi.loc[structures_multi["siren"].isin(siren_multi_parent)]
+
+    # concatenate df with already one Paysage ID per SIREN ID and df with parents
+
+    structures_uni = pd.concat([structures_uni, structures_multi_uni])
+
     # from participant df, select only applicants and clean SIRET and SIRET in some cases
 
     deposant = pd.read_csv("part_p08.csv", sep="|", encoding="utf-8", engine="python", dtype=types.partfin_types)
     deposant["key_appln_nr_person"] = deposant["key_appln_nr_person"].replace(r"\s+", "", regex=True)
+
+    deposant["siren"] = deposant["siren"].replace(r"\(\'", "", regex=True)
 
     deposant = deposant.loc[deposant["type"] == "pm"]
     role = role.loc[role["key_appln_nr_person"].isin(deposant["key_appln_nr_person"])]
     key_dep = set(role.loc[role["role"] == "dep", "key_appln_nr_person"])
     deposant = deposant.loc[deposant["key_appln_nr_person"].isin(key_dep)]
 
+    deposant.loc[(deposant["siret"].notna()) & (deposant["siret"].str.findall(r"\(\'")), "siret2"] = deposant.loc[
+        (deposant["siret"].notna()) & (deposant["siret"].str.findall(r"\(\'")), "siret"].replace(r"\(\'|\'|\)", "",
+                                                                                                 regex=True).str.split(
+        ",")
+
+    siret = {"key_appln_nr_person": [], "siret": [], "siret3": []}
+
+    for _, r in deposant.loc[deposant["siret2"].notna()].iterrows():
+        key = r.key_appln_nr_person
+        sir = r.siret
+        s2 = []
+
+        for i in r.siret2:
+            res = re.sub(r"\s+", "", i)
+            s2.append(res)
+
+        siret["key_appln_nr_person"].append(key)
+        siret["siret"].append(sir)
+        siret["siret3"].append(s2)
+
+    sup_esp = pd.DataFrame(data=siret)
+
+    # merge applicant df with structure df
+
+    deposant = pd.merge(deposant, sup_esp, on=["key_appln_nr_person", "siret"], how="left")
+
+    # clean SIREN and SIRET in certainn cases
+
+    deposant = deposant.drop(columns="siret2").rename(columns={"siret3": "siret2"})
+
+    deposant.loc[deposant["siret2"].notna(), "siren2"] = deposant.loc[
+        deposant["siret2"].notna(), "siret2"].apply(
+        lambda a: ", ".join([item[0:9] for item in a]))
+
+    deposant.loc[deposant["siret2"].notna(), "siret2"] = deposant.loc[deposant["siret2"].notna(), "siret2"].apply(
+        lambda a: ", ".join(a))
+
+    deposant.loc[deposant["siret2"].notna(), "siret"] = deposant.loc[deposant["siret2"].notna(), "siret2"]
+
+    deposant.loc[deposant["siren2"].notna(), "siren"] = deposant.loc[deposant["siren2"].notna(), "siren2"]
+
+    deposant = deposant.drop(columns=["siret2", "siren2"])
+
     # keep columns final df
 
     deposant2 = deposant[
         ["key_appln_nr", "docdb_family_id", "inpadoc_family_id", "doc_std_name", "country_corrected",
          "id_paysage", "siren", "key_appln_nr_person"]]
+
+    deposant2["key_appln_nr"] = deposant2["key_appln_nr"].replace(r"\s+", "", regex=True)
+
+    # split applicant df between those who alreday have Paysage ID and those who don't
+
+    deposant2_na = deposant2.loc[deposant2["id_paysage"].notna()]
+    deposant2_na = deposant2_na.rename(columns={"docdb_family_id": "nr_famille_docdb",
+                                                'inpadoc_family_id': "nr_famille_inpadoc",
+                                                'doc_std_name': "nom_demandeur",
+                                                'country_corrected': "code_pays",
+                                                'id_paysage': "Paysage_id"})
+
+    deposant2 = deposant2.loc[deposant2["id_paysage"].isna()]
+
+    deposant2 = deposant2.drop_duplicates()
+
+    deposant2 = deposant2.rename(columns={
+        "docdb_family_id": "nr_famille_docdb",
+        'inpadoc_family_id': "nr_famille_inpadoc",
+        'doc_std_name': "nom_demandeur",
+        'country_corrected': "code_pays",
+        'id_paysage': "Paysage_id"})
+
+    # for applicants who don't have a Paysage ID but have a SIREN, match structure and applicant df
+
+    deposant_nna = deposant2.loc[deposant2["siren"].notna()]
+
+    deposant_virgule = deposant_nna.loc[deposant_nna["siren"].str.contains(", ")]
+
+    deposant_nna2 = deposant_nna.loc[~deposant_nna["siren"].isin(deposant_virgule["siren"])]
+
+    deposant_na = deposant2.loc[deposant2["siren"].isna()]
+
+    deposant_nna2 = pd.merge(deposant_nna2, structures_uni[["siren", "identifiant_interne"]], on="siren", how="left")
+
+    deposant_nna2.loc[deposant_nna2["identifiant_interne"].notna(), "Paysage_id"] = deposant_nna2.loc[
+        deposant_nna2["identifiant_interne"].notna(), "identifiant_interne"]
+
+    deposant_nna2 = deposant_nna2.drop(columns="identifiant_interne")
+
+    paysage_id = {"key_appln_nr_person": [], "siren": [], "paysage": []}
+
+    for _, r in deposant_virgule.iterrows():
+        key = r.key_appln_nr_person
+        s = r["siren"].split(", ")
+        p2 = []
+
+        for i in s:
+            res = structures_uni.loc[structures_uni["siren"] == i, "identifiant_interne"].values
+            if res.size == 0:
+                r = ""
+            else:
+                r = res[0]
+            p2.append(r)
+
+        paysage_id["key_appln_nr_person"].append(key)
+
+        paysage_id["siren"].append(s)
+
+        paysage_id["paysage"].append(p2)
+
+    multi_siren = pd.DataFrame(data=paysage_id)
+
+    for col in ["siren", "paysage"]:
+        multi_siren[col] = multi_siren[col].apply(lambda a: ", ".join(a))
+
+    multi_siren[col] = multi_siren[col].replace(r"^,$", "", regex=True)
+
+    multi_siren[col] = multi_siren[col].replace(r"^\s{0,},\s{0,}|\s{0,},\s{0,}$", "", regex=True)
+
+    deposant_virgule2 = pd.merge(deposant_virgule, multi_siren, on=["key_appln_nr_person", "siren"], how="left")
+
+    deposant_virgule2.loc[deposant_virgule2["Paysage_id"].isna(), "Paysage_id"] = deposant_virgule2.loc[
+        deposant_virgule2["Paysage_id"].isna(), "paysage"]
+
+    deposant_virgule2 = deposant_virgule2.drop(columns="paysage")
+
+    deposant3 = pd.concat([deposant_na, deposant_nna2, deposant2_na, deposant_virgule2])
+
+    # concat all the df again
 
     ### OUTPUTS - write all the df and send them to ObjectStorage ###
 
