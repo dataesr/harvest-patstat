@@ -378,7 +378,7 @@ def get_dataesr():
     patent.to_csv("patent_dataesr.csv", sep="|", index=False, encoding="utf-8")
     fam.to_csv("families_dataesr.csv", sep="|", index=False, encoding="utf-8")
     fam_techno.to_csv("families_technologies_dataesr.csv", sep="|", index=False, encoding="utf-8")
-    deposant2.to_csv("deposant_dataesr.csv", sep="|", index=False, encoding="utf-8")
+    deposant3.to_csv("deposant_dataesr.csv", sep="|", index=False, encoding="utf-8")
 
     swift.upload_object('patstat', 'patent_dataesr.csv')
     swift.upload_object('patstat', 'families_dataesr.csv')
