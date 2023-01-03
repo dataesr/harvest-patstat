@@ -1,9 +1,9 @@
 import os
 
-from patstat import collectePatstatComplete, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
+from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr #, recreate_partfin_recuperation
+    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -31,6 +31,8 @@ def create_task_all(args):
         create_lib_cpc()
     if args.get('p01_p04', True):
         create_task_p01_p04_patstat()
+    if args.get('rec', True):
+        create_recuperation()
     if args.get('p05', True):
         create_task_p05_patstat()
     if args.get('p05b', True):
@@ -61,7 +63,7 @@ def create_task_inpi():
 
 def create_task_harvest_patstat():
     logger.debug("début create task harvest patstat")
-    collectePatstatComplete.harvest_patstat()
+    collectePatstatCompleteBDDS.harvest_patstat()
     logger.debug("Collecte PATSTAT complete : success")
     logger.debug("Début dezippage")
     dezippage.unzip()
@@ -124,9 +126,9 @@ def create_dataesr():
     logger.debug("files dataESR created.")
 
 
-# def create_recuperation():
-#     recreate_partfin_recuperation.recreate()
-#     logger.debug("Fichier old_part recupéré")
+def create_recuperation():
+    recreate_partfin_recuperation.recreate()
+    logger.debug("Fichier old_part recupéré")
 
 # def create_task_geo():
 #    p09_geoloc.geoloc()
