@@ -115,7 +115,7 @@ class Pydref(object):
                 person['description'] = self.get_description_from_idref_notice(soup)
                 if living_scientific:
                     for d in person['description']:
-                        for w in ['theater', 'theatre', 'poet', 'dramaturge', 'fotobiografia', "photo", "photgrapher",
+                        for w in ['theater', 'theatre', 'poet', 'dramaturge', 'fotobiografia', "photgrapher",
                                   "photographe"]:
                             if w in d.lower():
                                 skip = True
