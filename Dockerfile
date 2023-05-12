@@ -30,7 +30,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 # Install last version of NodeJS
-RUN curl -fsSL https://deb.nodesource.com/setup_lts.x | bash -
+RUN curl -fsSL https://deb.nodesource.com/setup_14.x | bash -
 RUN apt-get install -y nodejs
 
 WORKDIR /src
