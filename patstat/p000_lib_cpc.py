@@ -93,7 +93,7 @@ def lib_cpc():
 
     # /!\ CPC Scheme XML file changes often. Check the current file and URL /!\
 
-    url_scheme = f"{CPC}sites/default/files/cpc/bulk/CPCSchemeXML202208.zip"
+    url_scheme = f"{CPC}sites/default/files/cpc/bulk/CPCSchemeXML202305.zip"
     zf_scheme = request(url_scheme)
 
     # gets all the filenames in the zipped folder
