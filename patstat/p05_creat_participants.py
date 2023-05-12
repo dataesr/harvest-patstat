@@ -351,3 +351,4 @@ def start_part():
 
     part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
     part_init3.to_csv("part_p05.csv", sep="|", index=False)
+    swift.upload_object('patstat', 'part_p05.csv')
