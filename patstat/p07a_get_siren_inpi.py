@@ -9,6 +9,8 @@ import zipfile
 import pandas as pd
 from lxml import etree
 
+from utils import swift
+
 from patstat import text_functions as tf
 
 # directory where the files are
@@ -207,6 +209,7 @@ def get_siren():
 
     siren_inpi_brevet.to_csv('siren_inpi_brevet.csv', sep='|', index=False)
     print("siren_inpi_brevet to csv terminé", flush=True)
+    swift.upload_object('patstat', 'siren_inpi_brevet.csv')
 
     # on crée une autre table avec les correspondances de nom et siren sans les numéros de brevets
     # on enlève donc les correspondances multiples : noms avec plusieurs siren différents attribués
@@ -216,3 +219,4 @@ def get_siren():
 
     siren_inpi_generale.to_csv('siren_inpi_generale.csv', sep='|', index=False)
     print("siren_inpi_generale to csv terminé", flush=True)
+    swift.upload_object('patstat', 'siren_inpi_generale.csv')

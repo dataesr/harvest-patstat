@@ -105,6 +105,7 @@ def part_final():
          'country_source', 'country_corrected']]
 
     participants.to_csv('participants.csv', sep='|', index=False, encoding="utf-8")
+    swift.upload_object('patstat', 'participants.csv')
 
     # création de la table idext
 
@@ -115,6 +116,7 @@ def part_final():
     idext = idext1[idext1['id_value'] != '']
 
     idext.to_csv('idext.csv', sep='|', index=False)
+    swift.upload_object('patstat', 'idext.csv')
 
     # création de la table role
 

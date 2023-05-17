@@ -181,3 +181,4 @@ def get_clean_entp():
                                         part_entp_final['siren'], '')
 
     part_entp_final.to_csv('part_entp_final.csv', sep='|', index=False)
+    swift.upload_object('patstat', 'part_entp_final.csv')

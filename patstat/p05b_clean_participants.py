@@ -9,6 +9,8 @@ import numpy as np
 import pandas as pd
 from fuzzywuzzy import fuzz
 
+from utils import swift
+
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
@@ -388,6 +390,7 @@ def get_clean_part():
     part_ind = deduplication(part, "pp", "inpadoc_family_id", get_dict_score_individus)
 
     part_ind.to_csv("part_ind.csv", sep="|", index=False, encoding="utf-8")
+    swift.upload_object('patstat', 'part_ind.csv')
 
     part_entp = deduplication(part, "pm", "inpadoc_family_id", get_dict_score_entp_identicals)
     for col in part_entp.columns:
@@ -397,3 +400,4 @@ def get_clean_part():
     part_entp['name_corrected'] = part_entp['name_corrected'].apply(tf.put_title_format)
 
     part_entp.to_csv("part_entp.csv", sep="|", index=False, encoding="utf-8")
+    swift.upload_object('patstat', 'part_entp.csv')

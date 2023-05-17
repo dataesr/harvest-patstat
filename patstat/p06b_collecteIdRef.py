@@ -161,3 +161,4 @@ def collecte():
     swift.upload_object('patstat', 'IdRef_identifies.csv')
 
     part2.to_csv('part_individuals_p06b.csv', sep='|', index=False)
+    swift.upload_object('patstat', 'part_individuals_p06b.csv')

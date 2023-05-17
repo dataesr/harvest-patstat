@@ -8,6 +8,8 @@ import numpy as np
 import pandas as pd
 import requests
 
+from utils import swift
+
 from patstat import p05b_clean_participants as cp
 from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
@@ -235,3 +237,4 @@ def get_clean_ind():
     #                                        part_individuals_fin['sexe'])
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
+    swift.upload_object('patstat', 'part_individuals.csv')
