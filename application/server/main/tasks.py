@@ -3,7 +3,7 @@ import os
 from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation
+    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation, p07c
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -41,6 +41,8 @@ def create_task_all(args):
         create_task_p06_indiv_patstat()
     if args.get('p07', True):
         create_task_p07_entp_patstat()
+    if args.get('p07c', True):
+        create_task_p07c()
     if args.get('p08', True):
         create_task_p08_part_final_patstat()
     # if args.get('geo', True):
@@ -103,6 +105,11 @@ def create_task_p07_entp_patstat():
     logger.debug("p07a: success")
     p07b_clean_participants_entp.get_clean_entp()
     logger.debug("p07b: success")
+
+
+def create_task_p07c():
+    p07c.siren_oeb_bodacc()
+    logger.debug("p07c: success")
 
 
 def create_task_p08_part_final_patstat():
