@@ -16,6 +16,7 @@ import logging
 import threading
 import sys
 import concurrent.futures
+from retry import retry
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -89,7 +90,6 @@ def subset_df(df: pd.DataFrame) -> dict:
         deb = fin
 
     return dict_nb
-
 
 def get_url(ul: str):
     """
@@ -312,7 +312,7 @@ def df_applicant(res_part1) -> pd.DataFrame:
 
     return df1
 
-
+@retry(tries=3, delay=5, backoff=5)
 def get_token_oeb():
     token_url = 'https://ops.epo.org/3.2/auth/accesstoken'
     key = os.getenv("KEY_OPS_OEB")
@@ -328,7 +328,7 @@ def get_token_oeb():
 
     return tken
 
-
+@retry(tries=3, delay=5, backoff=5)
 def get_part(pn: str, tkn: str) -> pd.DataFrame:
     global d_app
     ret1 = requests.get(f"http://ops.epo.org/3.2/rest-services/register/search/biblio?q=pn%3D{pn}",
@@ -373,7 +373,7 @@ def split_hs(a):
             a2 = np.NaN
     return a2
 
-
+@retry(tries=3, delay=5, backoff=5)
 def address_api(t_ad: pd.DataFrame, col: str) -> pd.DataFrame:
     type_insee = {"Allée": "ALL",
                   "Avenue": "AV",
@@ -477,7 +477,7 @@ def req_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
                          endpoint_url=os.getenv("ENDPOINT_URL"))
 
     logger = get_logger(threading.current_thread().name)
-    logger.info("start query scranr structures")
+    logger.info("start query xml aws")
     liste = []
     for _, r in df_path_fr.iterrows():
         data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
@@ -504,6 +504,43 @@ def req_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
     df_inpi = pd.merge(df_path_fr, df_inpi, on=["publication_number", "publication_number_fr"])
 
     logger.info("end query xml aws")
+
+    return df_inpi
+
+
+def parse_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
+    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
+    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
+                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
+                          endpoint_url=os.getenv("ENDPOINT_URL"))
+
+    logger = get_logger(threading.current_thread().name)
+    logger.info("Start parsing files inpi-xmls")
+    liste = []
+    for _, r in df_path_fr.iterrows():
+        data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
+
+        djson = json.dumps(data)
+        djson2 = json.loads(djson)
+        clef_biblio = list(djson2["fr-patent-document"]["fr-bibliographic-data"])
+        clef_parties = list(djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"].keys())
+        djson_app = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["applicants"]["applicant"]
+        if "fr-owners" in clef_parties:
+            djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["fr-owners"]["fr-owner"]
+        elif "fr-owners" in clef_biblio:
+            djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["fr-owners"]["fr-owner"]
+
+        df_app = pd.json_normalize(data=djson_app)
+        df_app["type"] = "applicant"
+        df_own = pd.json_normalize(data=djson_own)
+        df_own["type"] = "owner"
+        df = pd.concat([df_app, df_own])
+        df["publication_number"] = r.publication_number
+        liste.append(df)
+    logger.info("End parsing files inpi-xmls")
+
+    df_inpi = pd.concat(liste)
 
     return df_inpi
 
@@ -607,8 +644,9 @@ def siren_inpi_famille(fam_fr: pd.DataFrame, pths_aws: pd.DataFrame) -> pd.DataF
 
     return df_inpi4_k
 
-
+@retry(tries=3, delay=5, backoff=5)
 def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
+    print("Start get publication numbers in family", flush=True)
     dict3 = {}
 
     pub = set(tst_na["publication_number"])
@@ -634,7 +672,7 @@ def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
             liste = []
             if isinstance(djson3, list):
                 for item in djson3:
-                    print(item)
+                    # print(item)
                     tmp = pd.json_normalize(item['publication-reference'], record_path=["document-id"])
                     liste.append(tmp)
             else:
@@ -657,9 +695,11 @@ def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
     df_fam = pd.concat(liste_famille)
     df_fam = df_fam.rename(columns={"country": "appln_auth", "doc-number": "publication-number"})
 
+    print("End get publication numbers in family", flush=True)
+
     return df_fam
 
-
+@retry(tries=3, delay=5, backoff=5)
 def bodacc(t_address: pd.DataFrame) -> pd.DataFrame:
     logger = get_logger(threading.current_thread().name)
     logger.info("start query bodacc")
@@ -765,7 +805,7 @@ def bodacc(t_address: pd.DataFrame) -> pd.DataFrame:
 
     return df_bo
 
-
+@retry(tries=3, delay=5, backoff=5)
 def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
     # prod scanr
     url_structures = "https://scanr-api.enseignementsup-recherche.gouv.fr/elasticsearch/structures/_search"
@@ -777,7 +817,7 @@ def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
                 "label_fr": [], "address_scanr": []}
 
     logger = get_logger(threading.current_thread().name)
-    logger.info("start query scranr structures")
+    logger.info("start query scanr structures")
 
     df_stru_fuz["address_source"] = df_stru_fuz["address_source"].fillna("")
 
@@ -807,23 +847,48 @@ def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
         if res1.get("status"):
             pass
         elif len(res1.get("hits").get("hits")) > 0:
-            dict_res["person_id"].append(r.person_id)
-            dict_res["name_source"].append(r.name_source)
-            dict_res["name_propre"].append(r.name_propre)
-            dict_res["address_source"].append(r.address_source)
-            dict_res["key_appln_nr_person"].append(r.key_appln_nr_person)
-            dict_res["externalIds"].append(res1.get("hits").get("hits")[0].get("_source").get("externalIds"))
-            dict_res["label_default"].append(res1.get("hits").get("hits")[0].get("_source").get("label").get("default"))
-            dict_res["label_fr"].append(res1.get("hits").get("hits")[0].get("_source").get("label").get("fr"))
-            dict_res["address_scanr"].append(res1.get("hits").get("hits")[0].get("_source").get("address"))
+            res2 = res1.get("hits").get("hits")
+            if isinstance(res2, list):
+                dico_source = res2[0]
+                if isinstance(dico_source, dict):
+                    keys = dico_source.keys()
+                    if "_source" in keys:
+                        dico_items = dico_source.get("_source")
+                        if isinstance(dico_source, dict):
+                            list_k_it = dico_items.keys()
+                            if "externalIds" in list_k_it:
+                                dict_res["person_id"].append(r.person_id)
+                                dict_res["name_source"].append(r.name_source)
+                                dict_res["name_propre"].append(r.name_propre)
+                                dict_res["address_source"].append(r.address_source)
+                                dict_res["key_appln_nr_person"].append(r.key_appln_nr_person)
+                                dict_res["externalIds"].append(dico_items.get("externalIds"))
+                                if "label" in list_k_it:
+                                    dic_lab = dico_items.get("label")
+                                    klab = dic_lab.keys()
+                                    if "default" in klab:
+                                        dict_res["label_default"].append(dic_lab.get("default"))
+                                    else:
+                                        dict_res["label_default"].append("")
+                                    if "fr" in klab:
+                                        dict_res["label_fr"].append(dic_lab.get("fr"))
+                                    else:
+                                        dict_res["label_fr"].append("")
+                                else:
+                                    dict_res["label_default"].append("")
+                                    dict_res["label_fr"].append("")
+                                if "address" in list_k_it:
+                                    dict_res["address_scanr"].append(dico_items.get("address"))
+                                else:
+                                    dict_res["address_scanr"].append("")
 
     df = pd.DataFrame(data=dict_res)
 
-    logger.info("end query scranr structures")
+    logger.info("end query scanr structures")
 
     return df
 
-
+@retry(tries=3, delay=5, backoff=5)
 def siren_oeb_bodacc():
     os.chdir(DATA_PATH)
     # Load files
@@ -887,31 +952,35 @@ def siren_oeb_bodacc():
     df_path_fr = df_path_fr.drop_duplicates()
     print("End paths inpi-xlms", flush=True)
 
-    print("Start parsing files inpi-xmls", flush=True)
-    liste = []
-    for _, r in df_path_fr.iterrows():
-        data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
+    dict_path_fr = subset_df(df_path_fr)
 
-        djson = json.dumps(data)
-        djson2 = json.loads(djson)
-        clef_biblio = list(djson2["fr-patent-document"]["fr-bibliographic-data"])
-        clef_parties = list(djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"].keys())
-        djson_app = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["applicants"]["applicant"]
-        if "fr-owners" in clef_parties:
-            djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["fr-owners"]["fr-owner"]
-        elif "fr-owners" in clef_biblio:
-            djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["fr-owners"]["fr-owner"]
+    df_inpi = res_futures(dict_path_fr, parse_xml_aws)
 
-        df_app = pd.json_normalize(data=djson_app)
-        df_app["type"] = "applicant"
-        df_own = pd.json_normalize(data=djson_own)
-        df_own["type"] = "owner"
-        df = pd.concat([df_app, df_own])
-        df["publication_number"] = r.publication_number
-        liste.append(df)
-    print("End parsing files inpi-xmls", flush=True)
-
-    df_inpi = pd.concat(liste)
+    # print("Start parsing files inpi-xmls", flush=True)
+    # liste = []
+    # for _, r in df_path_fr.iterrows():
+    #     data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
+    #
+    #     djson = json.dumps(data)
+    #     djson2 = json.loads(djson)
+    #     clef_biblio = list(djson2["fr-patent-document"]["fr-bibliographic-data"])
+    #     clef_parties = list(djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"].keys())
+    #     djson_app = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["applicants"]["applicant"]
+    #     if "fr-owners" in clef_parties:
+    #         djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["fr-owners"]["fr-owner"]
+    #     elif "fr-owners" in clef_biblio:
+    #         djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["fr-owners"]["fr-owner"]
+    #
+    #     df_app = pd.json_normalize(data=djson_app)
+    #     df_app["type"] = "applicant"
+    #     df_own = pd.json_normalize(data=djson_own)
+    #     df_own["type"] = "owner"
+    #     df = pd.concat([df_app, df_own])
+    #     df["publication_number"] = r.publication_number
+    #     liste.append(df)
+    # print("End parsing files inpi-xmls", flush=True)
+    #
+    # df_inpi = pd.concat(liste)
 
     df_inpi = df_inpi.drop(
         columns=["@app-type", "@designation", "addressbook.@lang", "@data-format"]).drop_duplicates()
@@ -1548,6 +1617,8 @@ def siren_oeb_bodacc():
     data = {'grant_type': 'client_credentials'}
     headers = {'Authorization': key, 'Content-Type': 'application/x-www-form-urlencoded'}
 
+    print("Start registry OEB publication number family", flush=True)
+
     r = requests.post(token_url, data=data, headers=headers)
 
     rs = r.content.decode()
@@ -1583,6 +1654,8 @@ def siren_oeb_bodacc():
     df_oeb = pd.concat(liste_oeb)
 
     df_oeb = df_oeb.drop(columns="siren")
+
+    print("End get registry OEB publication number family", flush=True)
 
     print("Start requests API adresse.gouv.fr OEB", flush=True)
 
@@ -2148,6 +2221,8 @@ def siren_oeb_bodacc():
     part_entp_final2 = part_entp_final2.drop(columns=["siren2", "siret2", "grid2", "idref2"])
 
     part_entp_final2.to_csv("part_entp_final2.csv", sep="|", encoding="utf-8", index=False)
+
+
 
 
 
