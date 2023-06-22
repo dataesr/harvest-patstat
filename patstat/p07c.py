@@ -18,6 +18,8 @@ import sys
 import concurrent.futures
 from retry import retry
 
+from utils import swift
+
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 URL = 'https://bodacc-datadila.opendatasoft.com/api/records/1.0/search/?dataset=annonces-commerciales&'
@@ -809,7 +811,7 @@ def bodacc(t_address: pd.DataFrame) -> pd.DataFrame:
 def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
     # prod scanr
     url_structures = "https://scanr-api.enseignementsup-recherche.gouv.fr/elasticsearch/structures/_search"
-    headers = os.getenv("HEADERS_API_SCANR")
+    headers = headers = {"Authorization": os.getenv("HEADERS_API_SCANR")}
 
     dict_res = {"person_id": [], "name_source": [], "name_propre": [], "address_source": [], "key_appln_nr_person": [],
                 "externalIds": [],
@@ -2221,6 +2223,7 @@ def siren_oeb_bodacc():
     part_entp_final2 = part_entp_final2.drop(columns=["siren2", "siret2", "grid2", "idref2"])
 
     part_entp_final2.to_csv("part_entp_final2.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'part_entp_final2.csv')
 
 
 
