@@ -111,6 +111,9 @@ def get_url(ul: str):
 
 
 def xml_json(rt):
+    """
+    Get parties from XML result
+    """
     data = xmltodict.parse(rt.content)
     djson = json.dumps(data)
     djson2 = json.loads(djson)
@@ -120,6 +123,9 @@ def xml_json(rt):
 
 
 def r_dict(xjson):
+    """
+    Get applicants from XML results
+    """
     jsn = xml_json(xjson)
     res_part1 = jsn["reg:applicants"]
 
@@ -127,6 +133,9 @@ def r_dict(xjson):
 
 
 def df_applicant(res_part1) -> pd.DataFrame:
+    """
+    Create dataframe with applicants
+    """
     global df1
     if isinstance(res_part1, dict):
         if isinstance(res_part1["reg:applicant"], list):
@@ -316,6 +325,9 @@ def df_applicant(res_part1) -> pd.DataFrame:
 
 @retry(tries=3, delay=5, backoff=5)
 def get_token_oeb():
+    """
+    Get token OEB
+    """
     token_url = 'https://ops.epo.org/3.2/auth/accesstoken'
     key = os.getenv("KEY_OPS_OEB")
     data = {'grant_type': 'client_credentials'}
@@ -332,6 +344,9 @@ def get_token_oeb():
 
 @retry(tries=3, delay=5, backoff=5)
 def get_part(pn: str, tkn: str) -> pd.DataFrame:
+    """
+    Get applicants from EPO query with publication number
+    """
     global d_app
     ret1 = requests.get(f"http://ops.epo.org/3.2/rest-services/register/search/biblio?q=pn%3D{pn}",
                         headers={"Authorization": tkn})
@@ -352,7 +367,10 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
     return d_app
 
 
-def split_hs(a):
+def split_hs(a: str) -> list:
+    """
+    Keep only digits from string
+    """
     global a2
     a = str(a)
     if a.isdigit():
@@ -377,6 +395,10 @@ def split_hs(a):
 
 @retry(tries=3, delay=5, backoff=5)
 def address_api(t_ad: pd.DataFrame, col: str) -> pd.DataFrame:
+    """
+    Clean addresses with api-adresse.data.gouv.fr
+    Keep only cases with housenumber results
+    """
     type_insee = {"Allée": "ALL",
                   "Avenue": "AV",
                   "Boulevard": "BD",
@@ -472,6 +494,9 @@ def address_api(t_ad: pd.DataFrame, col: str) -> pd.DataFrame:
 
 
 def req_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
+    """
+    Read XML from AWS to get parties French patents
+    """
     session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
                             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
     conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
@@ -511,6 +536,9 @@ def req_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
 
 
 def parse_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
+    """
+        Read XML from AWS to get parties French patents
+    """
     session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
                             aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
     conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
@@ -548,6 +576,9 @@ def parse_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
 
 
 def siren_inpi_famille(fam_fr: pd.DataFrame, pths_aws: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get SIREN from INPI patents from te same family
+    """
     pths_aws = pths_aws.rename(columns={"publication_number": "publication_number_fr"})
 
     df_path_fr = pd.merge(fam_fr, pths_aws, on="publication_number_fr", how="inner")
@@ -648,6 +679,9 @@ def siren_inpi_famille(fam_fr: pd.DataFrame, pths_aws: pd.DataFrame) -> pd.DataF
 
 @retry(tries=3, delay=5, backoff=5)
 def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get different publication numbers from patent family from EPO
+    """
     print("Start get publication numbers in family", flush=True)
     dict3 = {}
 
@@ -703,6 +737,9 @@ def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
 
 @retry(tries=3, delay=5, backoff=5)
 def bodacc(t_address: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get SIREN from BODACC
+    """
     logger = get_logger(threading.current_thread().name)
     logger.info("start query bodacc")
     col_drop = ['personne.typePersonne', 'personne.adresseSiegeSocial.pays', 'personne.formeJuridique',
@@ -809,6 +846,9 @@ def bodacc(t_address: pd.DataFrame) -> pd.DataFrame:
 
 @retry(tries=3, delay=5, backoff=5)
 def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
+    """
+    Get SIREN and other ID from ScanR
+    """
     # prod scanr
     url_structures = "https://scanr-api.enseignementsup-recherche.gouv.fr/elasticsearch/structures/_search"
     headers = headers = {"Authorization": os.getenv("HEADERS_API_SCANR")}
