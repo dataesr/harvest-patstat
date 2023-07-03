@@ -2220,6 +2220,10 @@ def siren_oeb_bodacc():
         col] = part_entp_final2.loc[(part_entp_final2[col].isna()) & (part_entp_final2[col2].notna()),
         col2]
 
+    part_entp_final2.loc[(part_entp_final2["siren_psn"].notna()) & (part_entp_final2["siren"].isna()), "siren"] = \
+    part_entp_final2.loc[
+        (part_entp_final2["siren_psn"].notna()) & (part_entp_final2["siren"].isna()), "siren_psn"]
+
     part_entp_final2 = part_entp_final2.drop(columns=["siren2", "siret2", "grid2", "idref2"])
 
     part_entp_final2.to_csv("part_entp_final2.csv", sep="|", encoding="utf-8", index=False)
