@@ -22,7 +22,7 @@ def part_final():
     part_init = pd.read_csv('part_init_p05.csv', sep='|', dtype=types.part_init_types, engine="python")
     part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types)
 
-    part_entp = pd.read_csv('part_entp_final.csv', sep='|',
+    part_entp = pd.read_csv('part_entp_final2.csv', sep='|',
                             dtype=types.part_entp_types)[
         ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'name_corrected',
          'country_corrected', 'siren',
