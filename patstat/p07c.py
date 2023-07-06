@@ -11,7 +11,7 @@ import xmltodict
 import Levenshtein as lev
 import time
 from unidecode import unidecode
-import boto3
+# import boto3
 import logging
 import threading
 import sys
@@ -497,17 +497,12 @@ def req_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
     """
     Read XML from AWS to get parties French patents
     """
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                         aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                         endpoint_url=os.getenv("ENDPOINT_URL"))
-
     logger = get_logger(threading.current_thread().name)
     logger.info("start query xml aws")
     liste = []
     for _, r in df_path_fr.iterrows():
-        data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
+        with open(r.fullpath) as f:
+            data = xmltodict.parse(f.read())
 
         djson = json.dumps(data)
         djson2 = json.loads(djson)
@@ -539,17 +534,12 @@ def parse_xml_aws(df_path_fr: pd.DataFrame) -> pd.DataFrame:
     """
         Read XML from AWS to get parties French patents
     """
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                          endpoint_url=os.getenv("ENDPOINT_URL"))
-
     logger = get_logger(threading.current_thread().name)
     logger.info("Start parsing files inpi-xmls")
     liste = []
     for _, r in df_path_fr.iterrows():
-        data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
+        with open(r.fullpath) as f:
+            data = xmltodict.parse(f.read())
 
         djson = json.dumps(data)
         djson2 = json.loads(djson)
@@ -963,31 +953,26 @@ def siren_oeb_bodacc():
 
     ###################################################################################################################
     # Patents published by INPI
-    # print("Start paths inpi-xlms", flush=True)
-    dirfile = {"fullpath": [], "publication_number": []}
-    session = boto3.Session(region_name='gra', aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                            aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"))
-    conn = session.client("s3", aws_access_key_id=os.getenv("AWS_ACCESS_KEY_ID"),
-                          aws_secret_access_key=os.getenv("AWS_SECRET_ACCESS_KEY"),
-                          endpoint_url=os.getenv("ENDPOINT_URL"))
+    print("Start paths inpi-xlms", flush=True)
 
-    paginator = conn.get_paginator('list_objects')
-    for i in range(2010, 2024):
-        operation_parameters = {'Bucket': 'inpi-xmls',
-                                'Prefix': f'{i}'}
-        print("Start paginator AWS S3", flush=True)
-        page_iterator = paginator.paginate(**operation_parameters)
+    list_dir = os.listdir(f"{DATA_PATH}INPI/")
+    list_dir.sort()
 
-        for page in page_iterator:
-            for item in page["Contents"]:
-                file = item["Key"].split("/")[-1]
-                nf = file.replace(".xml", "")
-                flpath = item["Key"]
-                dirfile["fullpath"].append(flpath)
-                dirfile["publication_number"].append(nf)
-        print("End paginator AWS S3", flush=True)
+    dico = {}
+    dirfile = {"fullpath": []}
+    for dir in list_dir:
+        for dirpath, dirs, files in os.walk(f"{DATA_PATH}INPI/{dir}/", topdown=True):
+            if dirpath != f"{DATA_PATH}INPI/{dir}/":
+                for item in files:
+                    if item not in ["index.xml", "Volumeid"]:
+                        flpath = dirpath + "/" + item
+                        dirfile["fullpath"].append(flpath)
 
     paths_aws = pd.DataFrame(data=dirfile)
+    paths_aws["file"] = paths_aws["fullpath"].str.split("/")
+    paths_aws["publication_number"] = paths_aws["file"].apply(
+        lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
+    paths_aws = paths_aws.drop(columns="file")
 
     df_path_fr = pd.merge(fr, paths_aws, on="publication_number", how="inner")
     df_path_fr = df_path_fr.loc[df_path_fr["applt_seq_nr"] > 0]
@@ -997,32 +982,6 @@ def siren_oeb_bodacc():
     dict_path_fr = subset_df(df_path_fr)
 
     df_inpi = res_futures(dict_path_fr, parse_xml_aws)
-
-    # print("Start parsing files inpi-xmls", flush=True)
-    # liste = []
-    # for _, r in df_path_fr.iterrows():
-    #     data = xmltodict.parse(conn.get_object(Bucket="inpi-xmls", Key=r.fullpath).get("Body").read().decode())
-    #
-    #     djson = json.dumps(data)
-    #     djson2 = json.loads(djson)
-    #     clef_biblio = list(djson2["fr-patent-document"]["fr-bibliographic-data"])
-    #     clef_parties = list(djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"].keys())
-    #     djson_app = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["applicants"]["applicant"]
-    #     if "fr-owners" in clef_parties:
-    #         djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["parties"]["fr-owners"]["fr-owner"]
-    #     elif "fr-owners" in clef_biblio:
-    #         djson_own = djson2["fr-patent-document"]["fr-bibliographic-data"]["fr-owners"]["fr-owner"]
-    #
-    #     df_app = pd.json_normalize(data=djson_app)
-    #     df_app["type"] = "applicant"
-    #     df_own = pd.json_normalize(data=djson_own)
-    #     df_own["type"] = "owner"
-    #     df = pd.concat([df_app, df_own])
-    #     df["publication_number"] = r.publication_number
-    #     liste.append(df)
-    # print("End parsing files inpi-xmls", flush=True)
-    #
-    # df_inpi = pd.concat(liste)
 
     df_inpi = df_inpi.drop(
         columns=["@app-type", "@designation", "addressbook.@lang", "@data-format"]).drop_duplicates()
@@ -1122,7 +1081,7 @@ def siren_oeb_bodacc():
 
     fr2["siren"] = fr2["siren"].str.replace(r"\s", "", regex=True)
     fr2.loc[fr2["siren"].notna(), "len_siren"] = fr2.loc[fr2["siren"].notna(), "siren"].apply(lambda a: len(a))
-    fr2["len_siren"] = fr2["len_siren"].astype(pd.Int64Dtype())
+    fr2 = fr2.astype({"len_siren": pd.Int64Dtype()})
     fr2.loc[fr2["len_siren"] == 14, "siret"] = fr2.loc[fr2["len_siren"] == 14, "siren"]
     fr2.loc[fr2["len_siren"] == 14, "siren"] = fr2.loc[fr2["len_siren"] == 14, "siren"].apply(lambda a: a[0:9])
     fr2.loc[~fr2["len_siren"].isin([9, 14]), "siren"] = np.nan
@@ -1175,11 +1134,11 @@ def siren_oeb_bodacc():
     for clef in set(ep["publication_number"]):
         dpn = get_part(clef, token)
         if len(dpn) > 0:
-            dpn["sequence"] = dpn["sequence"].astype(str)
+            dpn = dpn.astype({"sequence": str})
         liste_appln.append(dpn)
         dd = ep.loc[ep["publication_number"] == clef].reset_index().drop(columns=["index", "siren"]).drop_duplicates()
         dd["pub_ep"] = "EP" + clef
-        dd["applt_seq_nr"] = dd["applt_seq_nr"].astype(str)
+        dd = dd.astype({"applt_seq_nr": str})
         if len(set(dpn["@change-gazette-num"])) == 1:
             dpn3 = pd.merge(dd, dpn, left_on="applt_seq_nr", right_on="sequence", how="inner")
             liste_publn.append(dpn3)
@@ -1193,7 +1152,7 @@ def siren_oeb_bodacc():
                 liste_publn.append(dpn3)
             else:
                 d1 = dd[["name_source", "applt_seq_nr", "pub_ep"]].drop_duplicates()
-                d1["applt_seq_nr"] = d1["applt_seq_nr"].astype(str)
+                d1 = d1.astype({"applt_seq_nr": str})
                 dpn2 = pd.merge(d1, dpn, left_on=["applt_seq_nr", "name_source"], right_on=["sequence", "name"],
                                 how="inner")
                 dpn2 = dpn2.drop(columns=["name_source", "applt_seq_nr", "pub_ep"])
@@ -1223,8 +1182,8 @@ def siren_oeb_bodacc():
         dpn["clef"] = clef
         dd = ep.loc[ep["publication_number"] == clef].reset_index().drop(columns=["index", "siren"]).drop_duplicates()
         dpn2 = dpn.loc[dpn["@change-gazette-num"] != "N/P"]
-        dpn2["sequence"] = dpn2["sequence"].astype(str)
-        dd["applt_seq_nr"] = dd["applt_seq_nr"].astype(str)
+        dpn2 = dpn2.astype({"sequence": str})
+        dd = dd.astype({"applt_seq_nr": str})
         dd["pub_ep"] = "EP" + clef
         dd2 = pd.merge(dd, dpn2, left_on=["pub_ep", "applt_seq_nr"], right_on=["clef", "sequence"],
                        how="inner").drop(columns="clef").drop_duplicates()
@@ -1310,8 +1269,8 @@ def siren_oeb_bodacc():
             publn_bodacc.at[i, "no_min"] = mini2
             publn_bodacc.at[i, "no_max"] = maxi2
 
-    publn_bodacc[["nbr_min", "nbr_max", "no_min", "no_max"]] = publn_bodacc[
-        ["nbr_min", "nbr_max", "no_min", "no_max"]].astype(pd.Int64Dtype())
+    publn_bodacc = publn_bodacc.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
+                                        "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
 
     publn_bodacc.loc[publn_bodacc["housenumber2"].notna(), "nbr_et"] = publn_bodacc.loc[
         publn_bodacc["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
@@ -1333,7 +1292,7 @@ def siren_oeb_bodacc():
     publn_bodacc.loc[publn_bodacc["numeroVoie2"].notna(), "len_no"] = publn_bodacc.loc[
         publn_bodacc["numeroVoie2"].notna(), "numeroVoie2"].apply(lambda a: len(a))
 
-    publn_bodacc[["len_nr", "len_no"]] = publn_bodacc[["len_nr", "len_no"]].astype(pd.Int64Dtype())
+    publn_bodacc = publn_bodacc.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
 
     publn_bodacc.loc[(publn_bodacc["len_nr"] == 1) & (publn_bodacc["len_no"] == 1), "ep"] = \
         publn_bodacc.loc[(publn_bodacc["len_nr"] == 1) & (publn_bodacc["len_no"] == 1), "housenumber"] == \
@@ -1384,7 +1343,7 @@ def siren_oeb_bodacc():
         df = df.loc[df["person_id"].notna()]
         df = df.loc[df["personne.numeroImmatriculation.numeroIdentification"].notna()]
         df = df.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
-        df["applt_seq_nr"] = df["applt_seq_nr"].astype(int)
+        df = df.astype({"applt_seq_nr": int})
         liste_publn_bodacc.append(df)
 
     publn_bodacc2 = pd.concat(liste_publn_bodacc)
@@ -1499,8 +1458,8 @@ def siren_oeb_bodacc():
                 nepfr_address.at[i, "no_min"] = mini2
                 nepfr_address.at[i, "no_max"] = maxi2
 
-        nepfr_address[["nbr_min", "nbr_max", "no_min", "no_max"]] = nepfr_address[
-            ["nbr_min", "nbr_max", "no_min", "no_max"]].astype(pd.Int64Dtype())
+        nepfr_address = nepfr_address.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
+                                              "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
 
         nepfr_address.loc[nepfr_address["housenumber2"].notna(), "nbr_et"] = nepfr_address.loc[
             nepfr_address["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
@@ -1527,7 +1486,7 @@ def siren_oeb_bodacc():
         nepfr_address.loc[nepfr_address["numeroVoie2"].notna(), "len_no"] = nepfr_address.loc[
             nepfr_address["numeroVoie2"].notna(), "numeroVoie2"].apply(lambda a: len(a))
 
-        nepfr_address[["len_nr", "len_no"]] = nepfr_address[["len_nr", "len_no"]].astype(pd.Int64Dtype())
+        nepfr_address = nepfr_address.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
 
         nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1), "ep"] = \
             nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1), "housenumber"] == \
@@ -1571,7 +1530,7 @@ def siren_oeb_bodacc():
             df = df.loc[df["person_id"].notna()]
             df = df.loc[df["personne.numeroImmatriculation.numeroIdentification"].notna()]
             df = df.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
-            df["applt_seq_nr"] = df["applt_seq_nr"].astype(int)
+            df = df.astype({"applt_seq_nr": int})
             liste_publn_nepfr.append(df)
 
         nepfr_address2 = pd.concat(liste_publn_nepfr)
@@ -1676,7 +1635,7 @@ def siren_oeb_bodacc():
         time.sleep(1)
         token = get_token_oeb()
         dpn = get_part(pub, token)
-        dpn["sequence"] = dpn["sequence"].astype(str)
+        dpn = dpn.astype({"sequence": str})
         dpn["pub_ep"] = "EP" + pub
         dpn = dpn.loc[dpn["country"] == "FR"]
         if len(dpn) > 0:
@@ -1745,8 +1704,8 @@ def siren_oeb_bodacc():
             df_address_oeb.at[i, "no_min"] = mini2
             df_address_oeb.at[i, "no_max"] = maxi2
 
-    df_address_oeb[["nbr_min", "nbr_max", "no_min", "no_max"]] = df_address_oeb[
-        ["nbr_min", "nbr_max", "no_min", "no_max"]].astype(pd.Int64Dtype())
+    df_address_oeb = df_address_oeb.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
+                                            "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
 
     df_address_oeb.loc[df_address_oeb["housenumber2"].notna(), "nbr_et"] = df_address_oeb.loc[
         df_address_oeb["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
@@ -1779,8 +1738,7 @@ def siren_oeb_bodacc():
         df_address_oeb["numeroVoie2"].notna(), "numeroVoie2"].apply(
         lambda a: len(a))
 
-    df_address_oeb[["len_nr", "len_no"]] = df_address_oeb[
-        ["len_nr", "len_no"]].astype(pd.Int64Dtype())
+    df_address_oeb = df_address_oeb.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
 
     df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1), "ep"] = \
         df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1), "housenumber"] == \
@@ -1826,7 +1784,7 @@ def siren_oeb_bodacc():
     df_address_oeb = df_address_oeb.loc[df_address_oeb["person_id"].notna()]
     df_address_oeb = df_address_oeb.loc[df_address_oeb["personne.numeroImmatriculation.numeroIdentification"].notna()]
     df_address_oeb = df_address_oeb.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
-    df_address_oeb["applt_seq_nr"] = df_address_oeb["applt_seq_nr"].astype(int)
+    df_address_oeb = df_address_oeb.astype({"applt_seq_nr": int})
     df_address_oeb = df_address_oeb.drop(columns="address_2").drop_duplicates()
     df_address_oeb2 = df_address_oeb[com_col].drop_duplicates()
 
@@ -2088,9 +2046,10 @@ def siren_oeb_bodacc():
 
         ad = r.address_scanr
         if ad is not None:
-            tmp = pd.DataFrame(data=ad)
-            tmp["key_appln_nr_person"] = r.key_appln_nr_person
-            liste_scanr_ad.append(tmp)
+            if ad != "":
+                tmp = pd.DataFrame(data=ad)
+                tmp["key_appln_nr_person"] = r.key_appln_nr_person
+                liste_scanr_ad.append(tmp)
 
     df_ids = pd.DataFrame(data=dict_ids)
     df_ids = df_ids.drop_duplicates()
@@ -2165,10 +2124,7 @@ def siren_oeb_bodacc():
     # INSEE
     res = requests.post("https://api.insee.fr/token",
                         data="grant_type=client_credentials",
-                        auth=(
-                            os.getenv("SIRENE_API_KEY"),
-                            os.getenv("SIRENE_API_SECRET")
-                        ))
+                        auth=(os.getenv("SIRENE_API_KEY"), os.getenv("SIRENE_API_SECRET")))
 
     liste_etab = []
 
