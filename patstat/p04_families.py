@@ -313,5 +313,7 @@ def getfam():
 
     family_technos_codes = unify(patent, cpc_category_names)
 
+    family_technos_codes["libelle"] = family_technos_codes["libelle"].fillna("non disponible")
+
     family_technos_codes.to_csv("families_technologies.csv", sep="|", index=False)
     swift.upload_object('patstat', 'families_technologies.csv')
