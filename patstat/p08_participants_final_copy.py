@@ -505,11 +505,11 @@ def idref(prt):
     df_ids_pp_id = set(df_ids_pp_compte.loc[df_ids_pp_compte["idref_pp"] > 1, "person_id"])
     df_ids_pp2 = df_ids_pp.loc[~df_ids_pp["person_id"].isin(df_ids_pp_id)]
 
-    jointure = pd.merge(prt2, df_ids_pp2, on=["person_id", "name_source"], how="left")
-    jointure["person_id"] = jointure["person_id"].astype(pd.Int64Dtype())
-    jointure = jointure.drop_duplicates()
+    jntre = pd.merge(prt2, df_ids_pp2, on=["person_id", "name_source"], how="left")
+    jntre["person_id"] = jntre["person_id"].astype(pd.Int64Dtype())
+    jntre = jntre.drop_duplicates()
 
-    pp_comp = jointure.loc[(jointure["type"] == "pp") & (jointure["fullName"].notna())]
+    pp_comp = jntre.loc[(jntre["type"] == "pp") & (jntre["fullName"].notna())]
     pp_comp.loc[pp_comp["idref"].isna(), "comp"] = "manquant"
     pp_comp.loc[(pp_comp["idref"].notna()) & (pp_comp["idref"] == pp_comp["idref_pp"]), "comp"] = "identique"
     pp_comp.loc[(pp_comp["idref"].notna()) & (pp_comp["idref"] != pp_comp["idref_pp"]), "comp"] = "différent"
@@ -555,7 +555,7 @@ def idref(prt):
     set_ids = set(pp_correct["person_id"])
     set_autres_ids = set(u_di)
     set_autres_ids.update(m_dm)
-    jointure2 = pd.merge(jointure, pp_correct, on="person_id", how="left")
+    jointure2 = pd.merge(jntre, pp_correct, on="person_id", how="left")
     jointure2.loc[jointure2["person_id"].isin(set_ids), "idref"] = jointure2.loc[
         jointure2["person_id"].isin(set_ids), "idref_correct"]
 
