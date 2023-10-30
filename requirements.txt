@@ -25,3 +25,4 @@ boto3==1.23.10
 xmltodict==0.13.0
 levenshtein==0.21.0
 unidecode==1.3.6
+Werkzeug==2.2.2
