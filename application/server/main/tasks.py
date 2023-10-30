@@ -3,7 +3,8 @@ import os
 from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
-    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation, p07c
+    comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation, p07c, \
+    p08_participants_final_copy
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -113,7 +114,8 @@ def create_task_p07c():
 
 
 def create_task_p08_part_final_patstat():
-    p08_participants_final.part_final()
+    # p08_participants_final.part_final()
+    p08_participants_final_copy.part_final()
     logger.debug("p08: success")
 
 

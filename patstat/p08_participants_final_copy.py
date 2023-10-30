@@ -642,40 +642,40 @@ def part_final():
 
     particip2 = idref(particip)
 
-    particip2.to_csv('part_p08.csv', sep='|', index=False, encoding="utf-8")
-    swift.upload_object('patstat', 'part_p08.csv')
+    particip2.to_csv('part_p08_test.csv', sep='|', index=False, encoding="utf-8")
+    swift.upload_object('patstat', 'part_p08_test.csv')
 
-    # création de la table participants
-
-    participants = particip2[
-        ['key_appln_nr', 'key_appln_nr_person', 'id_personne', 'type', 'sexe', 'doc_std_name',
-         "doc_std_name_id",
-         'name_source', 'name_corrected',
-         'address_source',
-         'country_source', 'country_corrected']]
-
-    participants.to_csv('participants.csv', sep='|', index=False, encoding="utf-8")
-    swift.upload_object('patstat', 'participants.csv')
-
-    # création de la table idext
-
-    part_idext = particip2[['key_appln_nr_person', 'siren', 'siret', 'id_paysage', 'rnsr', 'grid']]
-
-    idext1 = pd.melt(frame=part_idext, id_vars='key_appln_nr_person', var_name='id_type', value_name='id_value')
-
-    idext = idext1[idext1['id_value'] != '']
-
-    idext.to_csv('idext.csv', sep='|', index=False)
-    swift.upload_object('patstat', 'idext.csv')
-
-    # création de la table role
-
-    part_role = part_init[part_init['isascii']][['key_appln_nr_person', 'applt_seq_nr', 'invt_seq_nr']].rename(
-        columns={'applt_seq_nr': 'dep', 'invt_seq_nr': 'inv'})
-
-    role1 = pd.melt(frame=part_role, id_vars='key_appln_nr_person', var_name='role')
-
-    role = role1[role1['value'] > 0].drop(columns={'value'})
-
-    role.to_csv('role.csv', sep='|', index=False)
-    swift.upload_object('patstat', 'role.csv')
+    # # création de la table participants
+    #
+    # participants = particip2[
+    #     ['key_appln_nr', 'key_appln_nr_person', 'id_personne', 'type', 'sexe', 'doc_std_name',
+    #      "doc_std_name_id",
+    #      'name_source', 'name_corrected',
+    #      'address_source',
+    #      'country_source', 'country_corrected']]
+    #
+    # participants.to_csv('participants.csv', sep='|', index=False, encoding="utf-8")
+    # swift.upload_object('patstat', 'participants.csv')
+    #
+    # # création de la table idext
+    #
+    # part_idext = particip2[['key_appln_nr_person', 'siren', 'siret', 'id_paysage', 'rnsr', 'grid']]
+    #
+    # idext1 = pd.melt(frame=part_idext, id_vars='key_appln_nr_person', var_name='id_type', value_name='id_value')
+    #
+    # idext = idext1[idext1['id_value'] != '']
+    #
+    # idext.to_csv('idext.csv', sep='|', index=False)
+    # swift.upload_object('patstat', 'idext.csv')
+    #
+    # # création de la table role
+    #
+    # part_role = part_init[part_init['isascii']][['key_appln_nr_person', 'applt_seq_nr', 'invt_seq_nr']].rename(
+    #     columns={'applt_seq_nr': 'dep', 'invt_seq_nr': 'inv'})
+    #
+    # role1 = pd.melt(frame=part_role, id_vars='key_appln_nr_person', var_name='role')
+    #
+    # role = role1[role1['value'] > 0].drop(columns={'value'})
+    #
+    # role.to_csv('role.csv', sep='|', index=False)
+    # swift.upload_object('patstat', 'role.csv')
