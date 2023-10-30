@@ -23,6 +23,9 @@ from datetime import date
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 
+global jointure
+
+
 def get_logger(name):
     """
     This function helps to follow the execution of the parallel computation.
@@ -49,7 +52,6 @@ def res_futures(dict_nb: dict, query) -> pd.DataFrame:
     It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
     It returns a df with the IdRef.
     """
-    global jointure
     res = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
         # Start the load operations and mark each future with its URL
