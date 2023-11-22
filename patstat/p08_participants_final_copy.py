@@ -23,9 +23,6 @@ from datetime import date
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 
-global jointure
-
-
 def get_logger(name):
     """
     This function helps to follow the execution of the parallel computation.
@@ -96,7 +93,7 @@ def subset_df(df: pd.DataFrame) -> dict:
 @retry(tries=10, delay=5, backoff=5)
 def req_scanr_person(df_pers_fuz: pd.DataFrame) -> pd.DataFrame:
     url_persons = "https://scanr-api.enseignementsup-recherche.gouv.fr/elasticsearch/persons/_search"
-    headers = os.getenv("AUTHORIZATION_SCANR_ES")
+    headers = {"Authorization": os.getenv("AUTHORIZATION_SCANR_ES")}
 
     dict_res = {"person_id": [], "name_source": [], "externalIds": [], "fullName": []}
 
@@ -107,6 +104,7 @@ def req_scanr_person(df_pers_fuz: pd.DataFrame) -> pd.DataFrame:
         df = df_pers_fuz.loc[df_pers_fuz["person_id"] == fam]
         pm = list(df["siren"].unique())
         pers = list(df["name_source"].unique())[0]
+        # print(f"Name_source : {pers}.")
         query2 = {
             "query": {
                 "bool": {
@@ -162,7 +160,7 @@ def idref(prt):
 
     df_docdb = pd.DataFrame(data={"docdb_family_id": docdb})
 
-    pp = list(set(df_pp.loc[df_pp["idref"].isna(), "person_id"]))
+    pp = list(set(df_pp.loc[df_pp["idref"]=="", "person_id"]))
     df_pp2 = pd.DataFrame(data={"person_id": pp})
 
     df_pp2 = pd.merge(df_pp2, part3[["person_id", "name_source", "docdb_family_id"]], on="person_id", how="left")
@@ -300,7 +298,7 @@ def idref(prt):
     prt["year"] = prt["earliest_filing_date"].apply(lambda a: a.year)
     prt = prt.loc[prt["year"] >= 2010]
 
-    url = 'https://docs.google.com/spreadsheet/ccc?key=***REMOVED***&output=xls'
+    url = f'https://docs.google.com/spreadsheet/ccc?key={os.getenv("KEY_GGSHT")}&output=xls'
     CORRECTIFS_dict = {}
     VARS = ['C_ETABLISSEMENTS']
     df_c = pd.read_excel(url, sheet_name=VARS, dtype=str, na_filter=False)
@@ -445,13 +443,15 @@ def idref(prt):
     for key in list(df5.keys()):
         dict_fam[key] = df4.loc[df4["person_id"].isin(df5[key]["person_id"])]
 
+    print(dict_fam, flush=True)
+
     start = timeit.default_timer()
-    print(start)
+    print(f"Début : {start}", flush=True)
     df_req_pers = res_futures(dict_fam, req_scanr_person)
     stop = timeit.default_timer()
     execution_time = stop - start
 
-    print("Program Executed in " + str(execution_time))
+    print("Program Executed in " + str(execution_time), flush=True)
 
     df_req_pers["person_id"] = df_req_pers["person_id"].astype(pd.Int64Dtype())
 
@@ -598,14 +598,15 @@ def part_final():
                                                                    on='key_appln_nr_person',
                                                                    how='left')
 
-    for col in list(particip.columns):
-        particip[col] = particip[col].fillna('')
+    # for col in list(particip.columns):
+    #     particip[col] = particip[col].fillna('')
 
     particip['id_personne'] = particip['key_appln_nr_person']
 
     # fill empty name_corrected with name_source
-    particip['name_corrected'] = np.where(particip['name_corrected'] == '', particip['name_source'],
-                                          particip['name_corrected'])
+    # particip['name_corrected'] = np.where(particip['name_corrected'] == '', particip['name_source'],
+    #                                       particip['name_corrected'])
+    particip.loc[particip["name_corrected"].isna(), "name_corrected"] = particip.loc[particip["name_corrected"].isna(), "name_source"]
 
     particip.loc[(particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret2"] = particip.loc[
         (particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret"].replace(r"\(\'|\'|\)", "",
@@ -643,11 +644,279 @@ def part_final():
 
     particip = particip.drop(columns=["siret2", "siren2"])
 
-    particip2 = idref(particip)
+    part = particip.copy()
 
-    particip2.to_csv('part_p08_test.csv', sep='|', index=False, encoding="utf-8")
+    start = timeit.default_timer()
+
+    df_entp = part.loc[(part["siren"].notna()) & (part["type"] == "pm")]
+    df_pp = part.loc[part["type"] == "pp"]
+    part2 = pd.concat([df_entp, df_pp])
+    part3 = part2[["docdb_family_id", "type", "name_source",
+                   "person_id", "siren"]].drop_duplicates()
+
+    docdb = list(set(part["docdb_family_id"]))
+
+    df_docdb = pd.DataFrame(data={"docdb_family_id": docdb})
+
+    pp = list(set(df_pp.loc[df_pp["idref"].isna(), "person_id"]))
+
+    df_pp2 = pd.DataFrame(data={"person_id": pp})
+
+    df_pp2 = pd.merge(df_pp2, part3[["person_id", "name_source", "docdb_family_id"]], on="person_id", how="left")
+
+    df_docdb2 = pd.merge(df_docdb, part3[["person_id", "docdb_family_id", "type", "siren"]], on="docdb_family_id",
+                         how="left")
+    df_docdb2["person_id"] = df_docdb2["person_id"].astype(pd.Int64Dtype())
+    df_docdb2 = df_docdb2.rename(columns={"person_id": "personnes"})
+    df_docdb2 = df_docdb2.loc[df_docdb2["type"] == "pm"]
+
+    df3 = pd.merge(df_pp2, df_docdb2, on="docdb_family_id", how="right")
+    df3 = df3.drop(columns="docdb_family_id").drop_duplicates()
+    df3["personnes"] = df3["personnes"].astype(pd.Int64Dtype())
+
+    df4 = df3.drop(columns=["type", "personnes"]).drop_duplicates()
+
+    df4 = df4.sort_values("person_id").reset_index().drop(columns="index")
+    df4["person_id"] = df4["person_id"].astype(pd.Int64Dtype())
+    df4 = df4.loc[df4["person_id"].notna()]
+
+    liste_res = []
+    liste_etab = ["mCpLW", "Eg7tX", "2ZdzP", "MTFHZ", "Sv5bb", "J0mQ2", "Dgbe9", "1uQLb", "hg3v5"]
+
+    for etab in liste_etab:
+        res = requests.get(
+            f"https://api.paysage.dataesr.ovh/relations?filters[relationTag]=structure-categorie&filters[relatedObjectId]={etab}&limit=2000",
+            headers={"Content-Type": "application/json", "X-API-KEY": os.getenv("PAYSAGE_API_KEY")}).json()
+        res_data = res.get("data")
+        if len(res_data) > 0:
+            for item in res_data:
+                res_resource = item.get("resource")
+                res_resource["category2"] = etab
+                start = item.get("startDate")
+                end = item.get("endDate")
+                res_resource["startDate"] = start
+                res_resource["endDate"] = end
+                liste_res.append(res_resource)
+
+    liste_res = [item for item in liste_res if len(item) > 0]
+
+    dict_etab = {"Paysage_id": [], "displayName": [], "category": [], "startDate": [], "endDate": []}
+    for item in liste_res:
+        dict_etab["Paysage_id"].append(item.get("id"))
+        dict_etab["displayName"].append(item.get("displayName"))
+        dict_etab["startDate"].append(item.get("startDate"))
+        dict_etab["endDate"].append(item.get("endDate"))
+        cat = item.get("category2")
+        dict_etab["category"].append(cat)
+
+    df = pd.DataFrame(data=dict_etab)
+    df = df.drop_duplicates()
+
+    df[["startDate", "endDate"]] = df[["startDate", "endDate"]].apply(pd.to_datetime)
+    df["startDate"] = df["startDate"].dt.date
+    df["endDate"] = df["endDate"].dt.date
+    today = date.today()
+    df.loc[df["startDate"] > today, "statut"] = "futur"
+    df.loc[(df["startDate"] <= today) & (df["endDate"].isna()), "statut"] = "actuel"
+    df.loc[(df["startDate"] <= today) & (df["endDate"] > today), "statut"] = "actuel"
+    df.loc[(df["startDate"] <= today) & (df["endDate"] <= today), "statut"] = "fermé"
+    df.loc[(df["startDate"].isna()) & (df["endDate"] <= today), "statut"] = "fermé"
+
+    df = df.drop(columns=["startDate", "endDate"])
+
+    libelle = pd.DataFrame(
+        data={"category": ["mCpLW", "Eg7tX", "2ZdzP", "MTFHZ", "Sv5bb", "J0mQ2", "Dgbe9", "1uQLb", "hg3v5"],
+              "category_libelle": ["Université", "Établissement public expérimental",
+                                   "Organisme de recherche",
+                                   "Société d'accélération du transfert de technologies",
+                                   "Tutelle des établissements", "Grand établissement",
+                                   "Grand établissement relevant d'un autre département ministériel",
+                                   "Centre hospitalier", "École d'ingénieurs"]})
+
+    df = pd.merge(df, libelle, on="category", how="left")
+
+    liste_res_id = []
+    liste = []
+
+    for _, r in df.iterrows():
+        res = requests.get(
+            f"https://api.paysage.dataesr.ovh/structures/{r.Paysage_id}/identifiers",
+            headers={"Content-Type": "application/json", "X-API-KEY": os.getenv("PAYSAGE_API_KEY")}).json()
+        res_data = res.get("data")
+        if len(res_data) > 0:
+            liste_res_id.append(res_data)
+            for item in res_data:
+                tmp = pd.json_normalize(item)
+                tmp["Paysage_id"] = r.Paysage_id
+                tmp["displayName"] = r.displayName
+                liste.append(tmp)
+        else:
+            tmp = pd.DataFrame(data={"Paysage_id": [r.Paysage_id], "displayName": [r.displayName]})
+            liste.append(tmp)
+
+    df2 = pd.concat(liste)
+    df2 = df2.loc[df2["type"] == "siret"]
+    df2 = df2.rename(columns={"value": "siret"})
+
+    df2["siren"] = df2["siret"].apply(lambda a: a[0:9])
+    liste_siren = list(df2["siren"].unique())
+
+    noms_df4 = list(df4.loc[df4["siren"].isin(liste_siren), "name_source"].unique())
+    nb_noms_df4 = len(noms_df4)
+
+    df5 = subset_df(pd.DataFrame(data={"person_id": df4["person_id"].unique()}))
+
+    dict_fam = {}
+
+    for key in list(df5.keys()):
+        dict_fam[key] = df4.loc[df4["person_id"].isin(df5[key]["person_id"])]
+
+    start = timeit.default_timer()
+    print(start)
+    df_req_pers = res_futures(dict_fam, req_scanr_person)
+    stop = timeit.default_timer()
+    execution_time = stop - start
+
+    print("Program Executed in " + str(execution_time))
+
+    df_req_pers["person_id"] = df_req_pers["person_id"].astype(pd.Int64Dtype())
+
+    type_ids = list(df_req_pers["externalIds"])
+    list_df = []
+    for item in type_ids:
+        tmp = pd.json_normalize(item)
+        list_df.append(tmp)
+
+    df_type_ids = pd.concat(list_df)
+
+    dict_ids_pp = {"person_id": [], "name_source": [], "idref": [], "id_hal": [], "orcid": [], "fullName": []}
+
+    for _, r in df_req_pers.iterrows():
+        ids = r.externalIds
+        if ids is not None:
+            dict_ids_pp["person_id"].append(r.person_id)
+            dict_ids_pp["name_source"].append(r.name_source)
+            dict_ids_pp["fullName"].append(r.fullName)
+            for item in ids:
+                liste_keys = list(item.keys())
+                for it in liste_keys:
+                    if it not in ["id", "type"]:
+                        ids.remove(item)
+
+            lab_id = [id.get("type") for id in ids]
+            lab_id2 = {}
+            for item in lab_id:
+                lab_id2[item] = lab_id.count(item)
+                if lab_id2[item] > 1:
+                    del lab_id2[item]
+
+            keys = [k for k in list(lab_id2.keys()) if k in ["idref", "id_hal", "orcid"]]
+            not_keys = list({"idref", "id_hal", "orcid"} - set(keys))
+
+            for k in [id.get("type") for id in ids]:
+                if k not in keys:
+                    for item in ids:
+                        if item["type"] == k:
+                            ids.remove(item)
+
+            for item in ids:
+                typ = item.get("type")
+                id = item.get("id")
+                if typ == "idref":
+                    id = "idref" + str(id)
+                dict_ids_pp[typ].append(id)
+
+            for typ in not_keys:
+                dict_ids_pp[typ].append("")
+
+    df_ids_pp = pd.DataFrame(data=dict_ids_pp)
+    df_ids_pp = df_ids_pp.rename(columns={"idref": "idref_pp"})
+    df_ids_pp = df_ids_pp.drop_duplicates()
+    # df_ids_pp = pd.read_csv("/home/julia/Bureau/id_chercheurs.csv", sep="|", encoding="utf-8")
+    df_ids_pp_compte = df_ids_pp[["person_id", "idref_pp"]].groupby("person_id").nunique().reset_index()
+    df_ids_pp_id = set(df_ids_pp_compte.loc[df_ids_pp_compte["idref_pp"] > 1, "person_id"])
+    df_ids_pp2 = df_ids_pp.loc[~df_ids_pp["person_id"].isin(df_ids_pp_id)]
+    # df_ids_pp.to_csv("/home/julia/Bureau/id_chercheurs.csv", sep="|", encoding="utf-8", index=False)
+
+    jointure = pd.merge(part, df_ids_pp2, on=["person_id", "name_source"], how="left")
+    jointure["person_id"] = jointure["person_id"].astype(pd.Int64Dtype())
+    jointure = jointure.drop_duplicates()
+    df_noms_ids_pp = jointure.loc[
+        (jointure["person_id"].isin(df_ids_pp2["person_id"])) & (jointure["idref_pp"].notna())]
+    filtre = list(jointure.loc[
+                      (jointure["docdb_family_id"].isin(df_noms_ids_pp["docdb_family_id"])) & (
+                          jointure["siren"].isin(liste_siren)),
+                      "docdb_family_id"].unique())
+    noms_ids_pp = list(df_noms_ids_pp.loc[df_noms_ids_pp["docdb_family_id"].isin(filtre), "name_source"].unique())
+    nb_noms_ids_pp = len(noms_ids_pp)
+    # nb de noms uniques trouvés sur nb de noms uniques recherchés dans notre champ
+    trouve = round(nb_noms_ids_pp / nb_noms_df4 * 100, 2)
+    pp_comp = jointure.loc[(jointure["type"] == "pp") & (jointure["fullName"].notna())]
+    pp_comp.loc[pp_comp["idref"].isna(), "comp"] = "manquant"
+    pp_comp.loc[(pp_comp["idref"].notna()) & (pp_comp["idref"] == pp_comp["idref_pp"]), "comp"] = "identique"
+    pp_comp.loc[(pp_comp["idref"].notna()) & (pp_comp["idref"] != pp_comp["idref_pp"]), "comp"] = "différent"
+    pp_comp2 = pp_comp[["person_id", "name_source", "idref", "idref_pp", "fullName", "comp"]].drop_duplicates()
+    pp_comp_diff = pp_comp.loc[pp_comp["comp"] == "différent", ["person_id", "name_source", "address_source", "idref",
+                                                                "idref_pp", "fullName", "comp"]].drop_duplicates()
+    compte = {"person_id": [], "différent": [], "identique": [], "manquant": [], "somme": []}
+
+    pp_comp3 = pp_comp2[["person_id", "comp"]].drop_duplicates()
+
+    compte_df = pd.crosstab(pp_comp3['person_id'], pp_comp3['comp'].fillna(0)).reset_index()
+    compte_df["somme"] = compte_df["différent"] + compte_df["identique"] + compte_df["manquant"]
+    unique = compte_df.loc[compte_df["somme"] == 1]
+    u_di = list(unique.loc[unique["différent"] == 1, "person_id"].unique())
+    u_id = list(unique.loc[unique["identique"] == 1, "person_id"].unique())
+    u_man = list(unique.loc[unique["manquant"] == 1, "person_id"].unique())
+    multi = compte_df.loc[compte_df["somme"] > 1]
+    m_tous = list(multi.loc[multi["somme"] == 3, "person_id"].unique())
+    m_di = list(
+        multi.loc[(multi["somme"] == 2) & (multi["différent"] == 1) & (multi["identique"] == 1), "person_id"].unique())
+    m_dm = list(
+        multi.loc[(multi["somme"] == 2) & (multi["différent"] == 1) & (multi["manquant"] == 1), "person_id"].unique())
+    m_im = list(
+        multi.loc[(multi["somme"] == 2) & (multi["identique"] == 1) & (multi["manquant"] == 1), "person_id"].unique())
+
+    pp_comp3 = pp_comp2.copy()
+    pp_udi = pp_comp3.loc[pp_comp3["person_id"].isin(u_di), ["person_id", "idref"]].rename(
+        columns={"idref": "idref_correct"})
+    pp_uid = pp_comp3.loc[pp_comp3["person_id"].isin(u_id), ["person_id", "idref"]].rename(
+        columns={"idref": "idref_correct"})
+    pp_man = pp_comp3.loc[pp_comp3["person_id"].isin(u_man), ["person_id", "idref_pp"]].rename(
+        columns={"idref_pp": "idref_correct"})
+    pp_mtous = pp_comp3.loc[
+        (pp_comp3["person_id"].isin(m_tous)) & (pp_comp3["comp"] == "identique"), ["person_id", "idref"]].rename(
+        columns={"idref": "idref_correct"})
+    pp_mdi = pp_comp3.loc[
+        (pp_comp3["person_id"].isin(m_di)) & (pp_comp3["comp"] == "identique"), ["person_id", "idref"]].rename(
+        columns={"idref": "idref_correct"})
+    pp_mdm = pp_comp3.loc[
+        (pp_comp3["person_id"].isin(m_dm)) & (pp_comp3["comp"] == "différent"), ["person_id", "idref"]].rename(
+        columns={"idref": "idref_correct"})
+    pp_mim = pp_comp3.loc[
+        (pp_comp3["person_id"].isin(m_im)) & (pp_comp3["comp"] == "identique"), ["person_id", "idref"]].rename(
+        columns={"idref": "idref_correct"})
+    pp_correct = pd.concat([pp_udi, pp_uid, pp_man, pp_mtous, pp_mdi, pp_mdm, pp_mim])
+    # pp_correct = pd.concat([pp_udi, pp_uid, pp_mtous, pp_mdi])
+    set_ids = set(pp_correct["person_id"])
+    set_autres_ids = set(u_di)
+    set_autres_ids.update(m_dm)
+    jointure2 = pd.merge(jointure, pp_correct, on="person_id", how="left")
+    jointure2.loc[jointure2["person_id"].isin(set_ids), "idref"] = jointure2.loc[
+        jointure2["person_id"].isin(set_ids), "idref_correct"]
+    jointure2.loc[jointure2["person_id"].isin(set_autres_ids), ["id_hal", "orcid"]] = np.nan
+
+    stop = timeit.default_timer()
+    execution_time = stop - start
+
+    print("Program Executed in " + str(execution_time), flush=True)
+
+    jointure2.to_csv('part_p08_test.csv', sep='|', index=False, encoding="utf-8")
     swift.upload_object('patstat', 'part_p08_test.csv')
 
+    # particip2.to_csv('part_p08_test.csv', sep='|', index=False, encoding="utf-8")
+    # swift.upload_object('patstat', 'part_p08_test.csv')
+    #
     # # création de la table participants
     #
     # participants = particip2[
