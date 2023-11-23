@@ -789,7 +789,7 @@ def part_final():
 
     df_type_ids = pd.concat(list_df)
 
-    dict_ids_pp = {"person_id": [], "name_source": [], "idref": [], "id_hal": [], "orcid": [], "fullName": []}
+    dict_ids_pp = {"person_id": [], "name_source": [], "idref": [], "fullName": []}
 
     for _, r in df_req_pers.iterrows():
         ids = r.externalIds
@@ -810,8 +810,8 @@ def part_final():
                 if lab_id2[item] > 1:
                     del lab_id2[item]
 
-            keys = [k for k in list(lab_id2.keys()) if k in ["idref", "id_hal", "orcid"]]
-            not_keys = list({"idref", "id_hal", "orcid"} - set(keys))
+            keys = [k for k in list(lab_id2.keys()) if k == "idref"]
+            not_keys = list({"idref"} - set(keys))
 
             for k in [id.get("type") for id in ids]:
                 if k not in keys:
@@ -832,11 +832,9 @@ def part_final():
     df_ids_pp = pd.DataFrame(data=dict_ids_pp)
     df_ids_pp = df_ids_pp.rename(columns={"idref": "idref_pp"})
     df_ids_pp = df_ids_pp.drop_duplicates()
-    # df_ids_pp = pd.read_csv("/home/julia/Bureau/id_chercheurs.csv", sep="|", encoding="utf-8")
     df_ids_pp_compte = df_ids_pp[["person_id", "idref_pp"]].groupby("person_id").nunique().reset_index()
     df_ids_pp_id = set(df_ids_pp_compte.loc[df_ids_pp_compte["idref_pp"] > 1, "person_id"])
     df_ids_pp2 = df_ids_pp.loc[~df_ids_pp["person_id"].isin(df_ids_pp_id)]
-    # df_ids_pp.to_csv("/home/julia/Bureau/id_chercheurs.csv", sep="|", encoding="utf-8", index=False)
 
     jointure = pd.merge(part, df_ids_pp2, on=["person_id", "name_source"], how="left")
     jointure["person_id"] = jointure["person_id"].astype(pd.Int64Dtype())
@@ -848,9 +846,6 @@ def part_final():
                           jointure["siren"].isin(liste_siren)),
                       "docdb_family_id"].unique())
     noms_ids_pp = list(df_noms_ids_pp.loc[df_noms_ids_pp["docdb_family_id"].isin(filtre), "name_source"].unique())
-    nb_noms_ids_pp = len(noms_ids_pp)
-    # nb de noms uniques trouvés sur nb de noms uniques recherchés dans notre champ
-    trouve = round(nb_noms_ids_pp / nb_noms_df4 * 100, 2)
     pp_comp = jointure.loc[(jointure["type"] == "pp") & (jointure["fullName"].notna())]
     pp_comp.loc[pp_comp["idref"].isna(), "comp"] = "manquant"
     pp_comp.loc[(pp_comp["idref"].notna()) & (pp_comp["idref"] == pp_comp["idref_pp"]), "comp"] = "identique"
@@ -897,14 +892,12 @@ def part_final():
         (pp_comp3["person_id"].isin(m_im)) & (pp_comp3["comp"] == "identique"), ["person_id", "idref"]].rename(
         columns={"idref": "idref_correct"})
     pp_correct = pd.concat([pp_udi, pp_uid, pp_man, pp_mtous, pp_mdi, pp_mdm, pp_mim])
-    # pp_correct = pd.concat([pp_udi, pp_uid, pp_mtous, pp_mdi])
     set_ids = set(pp_correct["person_id"])
     set_autres_ids = set(u_di)
     set_autres_ids.update(m_dm)
     jointure2 = pd.merge(jointure, pp_correct, on="person_id", how="left")
     jointure2.loc[jointure2["person_id"].isin(set_ids), "idref"] = jointure2.loc[
         jointure2["person_id"].isin(set_ids), "idref_correct"]
-    jointure2.loc[jointure2["person_id"].isin(set_autres_ids), ["id_hal", "orcid"]] = np.nan
 
     stop = timeit.default_timer()
     execution_time = stop - start
