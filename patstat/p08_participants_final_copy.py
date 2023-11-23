@@ -71,18 +71,14 @@ def subset_df(df: pd.DataFrame) -> dict:
     The subsets are put into a dictionary with 10-11 pairs key-value.
     Each key is the df subset name and each value is the df subset.
     """
-    longueur = len(df)
-    if longueur >= 10:
-        prct10 = int(round(longueur * 10 / 100, 0))
-    else:
-        prct10 = 1
+    prct10 = int(round(len(df) * 10 / 100, 0))
     dict_nb = {}
+    df = df.reset_index().drop(columns="index")
     indices = list(df.index)
     listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
     i = 1
     for liste in listes_indices:
         min_ind = np.min(liste)
-        # if np.max(liste)
         max_ind = np.max(liste) + 1
         dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
         i = i + 1
