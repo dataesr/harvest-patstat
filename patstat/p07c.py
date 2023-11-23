@@ -76,20 +76,15 @@ def subset_df(df: pd.DataFrame) -> dict:
     """
     prct10 = int(round(len(df) * 10 / 100, 0))
     dict_nb = {}
-    deb = 0
-    fin = prct10
-    dict_nb["df1"] = df.iloc[deb:fin, :]
-    deb = fin
-    dixieme = 10 * prct10
-    reste = (len(df) - dixieme)
-    fin_reste = len(df) + 1
-    for i in range(2, 11):
-        fin = (i * prct10 + 1)
-        dict_nb["df" + str(i)] = df.iloc[deb:fin, :]
-        if reste > 0:
-            if len(df.iloc[fin: fin_reste, :]) > 0:
-                dict_nb["reste"] = df.iloc[fin: fin_reste, :]
-        deb = fin
+    df = df.reset_index().drop(columns="index")
+    indices = list(df.index)
+    listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+    i = 1
+    for liste in listes_indices:
+        min_ind = np.min(liste)
+        max_ind = np.max(liste) + 1
+        dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+        i = i + 1
 
     return dict_nb
 
