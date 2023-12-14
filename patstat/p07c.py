@@ -953,7 +953,6 @@ def siren_oeb_bodacc():
     list_dir = os.listdir(f"{DATA_PATH}INPI/")
     list_dir.sort()
 
-    dico = {}
     dirfile = {"fullpath": []}
     for dir in list_dir:
         for dirpath, dirs, files in os.walk(f"{DATA_PATH}INPI/{dir}/", topdown=True):
@@ -966,7 +965,8 @@ def siren_oeb_bodacc():
     paths_aws = pd.DataFrame(data=dirfile)
     paths_aws["file"] = paths_aws["fullpath"].str.split("/")
     paths_aws["publication_number"] = paths_aws["file"].apply(
-        lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
+        lambda a: "".join([x.replace(".xml", "") for x in a if ".xml" in x]))
+    paths_aws["publication_number"] = paths_aws["publication_number"].replace("FR", "", regex=False)
     paths_aws = paths_aws.drop(columns="file")
 
     df_path_fr = pd.merge(fr, paths_aws, on="publication_number", how="inner")
@@ -1041,17 +1041,23 @@ def siren_oeb_bodacc():
     fnok = df_app_inpi_multi.loc[
         ~df_app_inpi_multi["publication_number"].isin(df_app_inpi_multi_ok["publication_number"])]
 
-    liste_fnok = []
-    for pn in set(fnok["publication_number"]):
-        minimum = fnok.loc[fnok["publication_number"] == pn, "distance"].min()
-        tmp_inpi_fnok = fnok.loc[(fnok["publication_number"] == pn) & (fnok["distance"] == minimum)]
-        liste_fnok.append(tmp_inpi_fnok)
-    fnok2 = pd.concat(liste_fnok)
-    fnok2 = fnok2[["publication_number", "key_appln_nr_person", "siren", "name_source"]].drop_duplicates()
+    if len(fnok) > 0:
+        liste_fnok = []
+        for pn in set(fnok["publication_number"]):
+            minimum = fnok.loc[fnok["publication_number"] == pn, "distance"].min()
+            tmp_inpi_fnok = fnok.loc[(fnok["publication_number"] == pn) & (fnok["distance"] == minimum)]
+            liste_fnok.append(tmp_inpi_fnok)
+        if len(liste_fnok) > 0:
+            fnok2 = pd.concat(liste_fnok)
+            fnok2 = fnok2[["publication_number", "key_appln_nr_person", "siren", "name_source"]].drop_duplicates()
 
-    inpi_ok1 = pd.concat([df_app_inpi_ok, df_app_inpi_multi_ok, fnok2])
-    inpi_ok1["id"] = inpi_ok1["publication_number"] + inpi_ok1["key_appln_nr_person"]
-
+    liste_inpi = []
+    for it_inpi in ["df_app_inpi_ok", "df_app_inpi_multi_ok", "fnok2"]:
+        if it_inpi in locals():
+            liste_inpi.append(locals().get(it_inpi))
+    if len(liste_inpi) > 0:
+        inpi_ok1 = pd.concat(liste_inpi)
+        inpi_ok1["id"] = inpi_ok1["publication_number"] + inpi_ok1["key_appln_nr_person"]
     df_inpi3_reste = df_inpi3.copy()
     df_inpi3_reste["id"] = df_inpi3_reste["publication_number"] + df_inpi3_reste["key_appln_nr_person"]
     df_inpi3_reste = df_inpi3_reste.loc[~df_inpi3_reste["id"].isin(inpi_ok1["id"])]
