@@ -114,8 +114,7 @@ def create_task_p07c():
 
 
 def create_task_p08_part_final_patstat():
-    # p08_participants_final.part_final()
-    p08_participants_final_copy.part_final()
+    p08_participants_final.part_final()
     logger.debug("p08: success")
 
 
