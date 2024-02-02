@@ -1,6 +1,7 @@
 # Ce fichier utilisé tout au long du traitement, permet de déclarer le type des variables présentes dans les tables
 # csv  à la lecture. !! évite les erreurs de format
 import pandas as pd
+from pandas.core.indexers import objects
 
 tls206_types = {"person_id": pd.Int64Dtype(),
                 "person_name": object,
@@ -266,3 +267,21 @@ structures_types = {"siret": pd.Int64Dtype(),
                     "numero_telephone_uai": pd.Int64Dtype(),
                     "rce": pd.Int64Dtype(),
                     "dev_immo": pd.Int64Dtype()}
+
+
+tls212_types = {'pat_publn_id': pd.Int64Dtype(),
+                'citn_replenished': pd.Int64Dtype(),
+                'citn_id': pd.Int64Dtype(),
+                'citn_origin': object,
+                'cited_pat_publn_id': pd.Int64Dtype(),
+                'cited_appln_id': pd.Int64Dtype(),
+                'pat_citn_seq_nr': pd.Int64Dtype(),
+                'cited_npl_publn_id': object,
+                'npl_citn_seq_nr': pd.Int64Dtype(),
+                'citn_gener_auth': object}
+
+tls215_types = {'pat_publn_id': pd.Int64Dtype(),
+                'citn_replenished': pd.Int64Dtype(),
+                'citn_id': pd.Int64Dtype(),
+                'citn_categ': object,
+                'relevant_claim': pd.Int64Dtype()}
