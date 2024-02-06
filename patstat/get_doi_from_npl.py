@@ -16,6 +16,7 @@ db = client['citation-patstat']
 
 global doim
 doim = db.doi_pat_publn
+doim.delete_many({})
 doim.create_index([("cited_npl_publn_id", "text"), ("doi", "text")])
 
 
@@ -29,27 +30,29 @@ def parse_npl(file: str):
     os.system(f'mkdir - p {new_directory}')
     link_publication_doi = []
     df = pd.read_csv(f'{DATA_PATH}/tls214/{file}', chunksize=10000)
+    dic_key = {}
     for c in df:
         for row in c.itertuples():
             current_publication_id = row.npl_publn_id
             if isinstance(row.npl_doi, str) and '10.' in row.npl_doi:
-                link_publication_doi.append(
-                    {'cited_npl_publn_id': current_publication_id, 'doi': row.npl_doi.strip().lower()})
+                dic_key[str(current_publication_id) + "_" + str(row.npl_doi.strip().lower())] = {
+                    'cited_npl_publn_id': current_publication_id, 'doi': row.npl_doi.strip().lower()}
                 if isinstance(row.npl_biblio, str):
                     doi_found = extract_dois(row.npl_biblio)
-                    for doi in doi_found:
-                        link_publication_doi.append(
-                            {'cited_npl_publn_id': current_publication_id, 'doi': doi.strip().lower()})
+                for doi in doi_found:
+                    dic_key[str(current_publication_id) + "_" + str(doi.strip().lower())] = {
+                        'cited_npl_publn_id': current_publication_id, 'doi': doi.strip().lower()}
+
+    for key in dic_key.keys():
+        link_publication_doi.append(dic_key[key])
 
     with open("link_publication_doi.json", "w") as f:
         json.dump(link_publication_doi, f)
+
 
     return link_publication_doi
 
 
 def load_pbln_doi_to_mongo():
     liste_doi = parse_npl("tls214_part01.csv")
-    df = pd.DataFrame(data=liste_doi)
-    df = df.drop_duplicates()
-    js = df.to_dict(orient='records')
-    x = doim.insert_many(js).inserted_ids
+    x = doim.insert_many(liste_doi).inserted_ids
