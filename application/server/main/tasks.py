@@ -4,7 +4,7 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation, p07c, \
-    p08_participants_final_copy, loading_mongo
+    p08_participants_final_copy, loading_mongo, get_doi_from_npl
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -54,6 +54,8 @@ def create_task_all(args):
         create_dataesr()
     if args.get('create_mongo', True):
         create_loading_mongo()
+    if args.get('create_doi', True):
+        get_doi()
 
 
 def harvest_inpi():
@@ -144,6 +146,10 @@ def create_recuperation():
 def create_loading_mongo():
     loading_mongo.load_data()
     logger.debug("Tables chargées dans mongo")
+
+def get_doi():
+    get_doi_from_npl.load_pbln_doi_to_mongo()
+    logger.debug("DOI chargées dans mongo")
 
 # def create_task_geo():
 #    p09_geoloc.geoloc()
