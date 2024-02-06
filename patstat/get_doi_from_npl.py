@@ -56,3 +56,4 @@ def parse_npl(file: str):
 def load_pbln_doi_to_mongo():
     liste_doi = parse_npl("tls214_part01.csv")
     x = doim.insert_many(liste_doi).inserted_ids
+    client.close()
