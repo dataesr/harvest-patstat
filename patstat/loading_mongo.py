@@ -11,29 +11,13 @@ DATA_PATH = os.getenv("MOUNTED_VOLUME_TEST")
 
 client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
 
-global db
 db = client['citation-patstat']
 
 for item in ["tls211_pat_publn", "tls212_citation", "tls214_npl_publn", "tls215_citn_categ"]:
     db[item].drop()
 
-global tls211
-tls211 = db.tls211_pat_publn
-tls211.create_index([("pat_publn_id", "text")], unique=True)
+client.close()
 
-global tls212
-tls212 = db.tls212_citation
-tls212.create_index([("pat_publn_id", "text"), ("citn_replenished", "text"), ("citn_id", "text")], unique=True)
-
-global tls214
-tls214 = db.tls214_npl_publn
-tls214.create_index([("cited_npl_publn_id", "text")], unique=True)
-
-global tls215
-tls215 = db.tls215_citn_categ
-tls215.create_index(
-    [("pat_publn_id", "text"), ("citn_replenished", "text"), ("citn_id", "text"), ("citn_categ", "text"),
-     ("relevant_claim", "text")], unique=True)
 
 DICT = {
     "tls211": {'sep': ',', 'chunksize': 1000000, 'engine': "python", "dtype": types.tls211_types},
@@ -63,7 +47,7 @@ def get_logger(name):
     return loggers[name]
 
 
-def csv_file_querying(folder: str, chunk_query, dict_param_load_csv: dict) -> pd.DataFrame:
+def csv_file_querying(folder: str, chunk_query, dict_param_load_csv: dict):
     files_list = glob.glob(folder + "/*.csv")
     print(f"query beginning {folder}: ", dt.now())
     for file in files_list:
@@ -76,28 +60,50 @@ def csv_file_querying(folder: str, chunk_query, dict_param_load_csv: dict) -> pd
 
 
 def chunk_function_211(chunk):
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    db = client['citation-patstat']
+    tls211 = db.tls211_pat_publn
+    tls211.create_index([("pat_publn_id", "text")], unique=True)
     chunk = chunk.loc[chunk["pat_publn_id"] > 0]
     js = chunk.to_dict(orient='records')
     x = tls211.insert_many(js)
+    client.close()
 
 
 def chunk_function_212(chunk):
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    db = client['citation-patstat']
+    tls212 = db.tls212_citation
+    tls212.create_index([("pat_publn_id", "text"), ("citn_replenished", "text"), ("citn_id", "text")], unique=True)
     chunk = chunk.loc[chunk["pat_publn_id"] > 0]
     js = chunk.to_dict(orient='records')
     x = tls212.insert_many(js)
+    client.close()
 
 
 def chunk_function_214(chunk):
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    db = client['citation-patstat']
+    tls214 = db.tls214_npl_publn
+    tls214.create_index([("cited_npl_publn_id", "text")], unique=True)
     chunk = chunk.loc[chunk["npl_publn_id"] != "0"]
     chunk = chunk.rename(columns={'npl_publn_id': 'cited_npl_publn_id'})
     js = chunk.to_dict(orient='records')
     x = tls214.insert_many(js)
+    client.close()
 
 
 def chunk_function_215(chunk):
+    client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+    db = client['citation-patstat']
+    tls215 = db.tls215_citn_categ
+    tls215.create_index(
+        [("pat_publn_id", "text"), ("citn_replenished", "text"), ("citn_id", "text"), ("citn_categ", "text"),
+         ("relevant_claim", "text")], unique=True)
     chunk = chunk.loc[chunk["pat_publn_id"] > 0]
     js = chunk.to_dict(orient='records')
     x = tls215.insert_many(js)
+    client.close()
 
 
 def load_data():
