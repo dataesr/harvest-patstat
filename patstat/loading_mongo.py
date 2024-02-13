@@ -54,7 +54,7 @@ def mongo_import_collection(collection_name: str, folder: str):
         # Import to mongo
         import_timer = timer()
         impmongo.info(f"File {file} loading started")
-        mongoimport = f"mongoimport {URI} --db='citpat' --collection='{collection_name}' --file='{file}' \
+        mongoimport = f"mongoimport '{URI}' --db='citpat' --collection='{collection_name}' --file='{file}' \
          --type='csv' --headerline --authenticationDatabase=admin"
         os.system(mongoimport)
         impmongo.info(f"File {file} loaded in {(timer() - import_timer):.2f}")
