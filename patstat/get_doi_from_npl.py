@@ -27,7 +27,7 @@ def extract_dois(txt):
 def parse_npl(file: str):
     new_directory = f'{DATA_PATH}/link_publ_doi'
     os.system(f'rm -rf {new_directory}')
-    os.system(f'mkdir - p {new_directory}')
+    os.system(f'mkdir -p {new_directory}')
     link_publication_doi = []
     df = pd.read_csv(f'{DATA_PATH}/tls214/{file}', chunksize=10000)
     dic_key = {}
