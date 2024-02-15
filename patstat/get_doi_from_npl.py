@@ -61,8 +61,8 @@ def parse_npl(file: str):
     for key in dic_key.keys():
         link_publication_doi.append(dic_key[key])
 
-    with open("link_publication_doi.json", "w") as f:
-        json.dump(f"{DATA_PATH}/link_publ_doi/link_publication_doi", f, indent=1)
+    with open(f"{DATA_PATH}/link_publ_doi/link_publication_doi.json", "w") as f:
+        json.dump(link_publication_doi, f, indent=1)
 
 
 def load_pbln_doi_to_mongo():
