@@ -12,7 +12,7 @@ URI = os.getenv("MONGO_CITPAT")
 client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
 
 global db
-db = client['citation-patstat']
+db = client['citpat']
 
 
 def get_logger(name):
