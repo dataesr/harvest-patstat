@@ -1,23 +1,36 @@
 import os
 import re
+import logging
+import sys
 import pandas as pd
 import json
-from pymongo import MongoClient
+from timeit import default_timer as timer
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 DOI_REGEX = "10.\\d{4,9}/[-._;()/:a-z0-9A-Z]+"
 DOI_PATTERN = re.compile(DOI_REGEX)
 
-client = MongoClient(host=os.getenv("MONGO_URI"), connect=True, connectTimeoutMS=360000)
+URI = os.getenv("MONGO_CITPAT")
 
-global db
-db = client['citation-patstat']
 
-global doim
-doim = db.doi_pat_publn
-doim.delete_many({})
-doim.create_index([("cited_npl_publn_id", "text"), ("doi", "text")])
+def get_logger(name):
+    """
+    """
+    loggers = {}
+    if name in loggers:
+        return loggers[name]
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(fmt)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    loggers[name] = logger
+    return loggers[name]
 
 
 def extract_dois(txt):
@@ -39,21 +52,29 @@ def parse_npl(file: str):
                     'cited_npl_publn_id': current_publication_id, 'doi': row.npl_doi.strip().lower()}
                 if isinstance(row.npl_biblio, str):
                     doi_found = extract_dois(row.npl_biblio)
-                for doi in doi_found:
-                    dic_key[str(current_publication_id) + "_" + str(doi.strip().lower())] = {
-                        'cited_npl_publn_id': current_publication_id, 'doi': doi.strip().lower()}
+
+                if "doi_found" in locals():
+                    for doi in doi_found:
+                        dic_key[str(current_publication_id) + "_" + str(doi.strip().lower())] = {
+                            'cited_npl_publn_id': current_publication_id, 'doi': doi.strip().lower()}
 
     for key in dic_key.keys():
         link_publication_doi.append(dic_key[key])
 
     with open("link_publication_doi.json", "w") as f:
-        json.dump(link_publication_doi, f)
-
-
-    return link_publication_doi
+        json.dump(link_publication_doi, f, indent=1)
 
 
 def load_pbln_doi_to_mongo():
-    liste_doi = parse_npl("tls214_part01.csv")
-    x = doim.insert_many(liste_doi).inserted_ids
-    client.close()
+    """Import collection data into mongo db.
+
+    """
+    impmongo = get_logger(f"Import mongo doi_pat_publn")
+
+    import_timer = timer()
+    impmongo.info(f"File link_publication_doi.json loading started")
+    mongoimport = f"mongoimport '{URI}' --db='citpat' --collection='doi_pat_publn' --file='link_publication_doi.json' \
+         --authenticationDatabase=admin"
+    os.system(mongoimport)
+    impmongo.info(f"File link_publication_doi.json loaded in {(timer() - import_timer):.2f}")
+
