@@ -62,13 +62,15 @@ def parse_npl(file: str):
         link_publication_doi.append(dic_key[key])
 
     with open("link_publication_doi.json", "w") as f:
-        json.dump(link_publication_doi, f, indent=1)
+        json.dump(f"{DATA_PATH}/link_publ_doi/link_publication_doi", f, indent=1)
 
 
 def load_pbln_doi_to_mongo():
     """Import collection data into mongo db.
 
     """
+    os.chdir(f"{DATA_PATH}/link_publ_doi/")
+
     impmongo = get_logger(f"Import mongo doi_pat_publn")
 
     import_timer = timer()
