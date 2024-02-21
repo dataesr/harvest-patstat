@@ -39,7 +39,6 @@ def extract_dois(txt):
 
 def parse_npl(file: str):
     new_directory = f'{DATA_PATH}link_publ_doi'
-    print(new_directory, flush=True)
     os.system(f'rm -rf {new_directory}')
     os.system(f'mkdir -p {new_directory}')
     link_publication_doi = []
@@ -70,7 +69,11 @@ def load_pbln_doi_to_mongo():
     """Import collection data into mongo db.
 
     """
-    os.chdir(f"{DATA_PATH}link_publ_doi/")
+    # os.chdir(f"{DATA_PATH}link_publ_doi/")
+
+    print(f"{DATA_PATH}link_publ_doi/", flush=True)
+
+    parse_npl("tls214_part01.csv")
 
     impmongo = get_logger(f"Import mongo doi_pat_publn")
 
