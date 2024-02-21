@@ -80,7 +80,7 @@ def load_pbln_doi_to_mongo():
     import_timer = timer()
     impmongo.info(f"File link_publication_doi.json loading started")
     mongoimport = f"mongoimport '{URI}' --db='citpat' --collection='doi_pat_publn' --file='link_publication_doi.json' \
-         --authenticationDatabase=admin"
+    --jsonArray --authenticationDatabase=admin"
     os.system(mongoimport)
     impmongo.info(f"File link_publication_doi.json loaded in {(timer() - import_timer):.2f}")
 
