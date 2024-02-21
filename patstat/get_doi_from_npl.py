@@ -38,9 +38,12 @@ def extract_dois(txt):
 
 
 def parse_npl(file: str):
+    plog = get_logger(f"Parse {file}")
+    plog.info("Create directory")
     new_directory = f'{DATA_PATH}link_publ_doi'
     os.system(f'rm -rf {new_directory}')
     os.system(f'mkdir -p {new_directory}')
+    plog.info("Get DOI by chunk")
     link_publication_doi = []
     df = pd.read_csv(f'{DATA_PATH}tls214/{file}', chunksize=10000)
     dic_key = {}
@@ -61,6 +64,7 @@ def parse_npl(file: str):
     for key in dic_key.keys():
         link_publication_doi.append(dic_key[key])
 
+    plog.info("Write JSON DOI")
     with open(f"{DATA_PATH}link_publ_doi/link_publication_doi.json", "w") as f:
         json.dump(link_publication_doi, f, indent=1)
 
@@ -69,8 +73,6 @@ def load_pbln_doi_to_mongo():
     """Import collection data into mongo db.
 
     """
-    print(f"{DATA_PATH}link_publ_doi/", flush=True)
-
     parse_npl("tls214_part01.csv")
 
     impmongo = get_logger(f"Import mongo doi_pat_publn")
@@ -83,4 +85,3 @@ def load_pbln_doi_to_mongo():
     --jsonArray --authenticationDatabase=admin"
     os.system(mongoimport)
     impmongo.info(f"File link_publication_doi.json loaded in {(timer() - import_timer):.2f}")
-
