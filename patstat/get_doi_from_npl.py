@@ -69,13 +69,13 @@ def load_pbln_doi_to_mongo():
     """Import collection data into mongo db.
 
     """
-    # os.chdir(f"{DATA_PATH}link_publ_doi/")
-
     print(f"{DATA_PATH}link_publ_doi/", flush=True)
 
     parse_npl("tls214_part01.csv")
 
     impmongo = get_logger(f"Import mongo doi_pat_publn")
+
+    os.chdir(f"{DATA_PATH}link_publ_doi/")
 
     import_timer = timer()
     impmongo.info(f"File link_publication_doi.json loading started")
