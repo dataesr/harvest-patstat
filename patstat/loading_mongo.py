@@ -64,28 +64,28 @@ def mongo_import_collection(collection_name: str, folder: str):
 
 def load_data():
 
-    # t211 = get_logger("Loading table 211")
-    # t211.info("Start loading table 211")
-    # mongo_import_collection("tls211_pat_publn", "tls211")
-    # db["tls211_pat_publn"].delete_many({"pat_publn_id": 0})
-    # t211.info("End loading table 211")
-    #
-    # t212 = get_logger("Loading table 212")
-    # t212.info("Start loading table 212")
-    # mongo_import_collection("tls212_citation", "tls212")
-    # db["tls212_citation"].delete_many({"pat_publn_id": 0})
-    # t212.info("End loading table 212")
-    #
-    # t214 = get_logger("Loading table 214")
-    # t214.info("Start loading table 214")
-    # mongo_import_collection("tls214_npl_publn", "tls214")
-    # db["tls214_npl_publn"].delete_many({"npl_publn_id": "0"})
-    # t214.info("End loading table 214")
+    t211 = get_logger("Loading table 211")
+    t211.info("Start loading table 211")
+    mongo_import_collection("tls211_pat_publn", "tls211")
+    db["tls211_pat_publn"].delete_many({"pat_publn_id": 0})
+    t211.info("End loading table 211")
 
-    t215 = get_logger("Loading table 215")
-    t215.info("Start loading table 215")
-    mongo_import_collection("tls215_citn_categ", "tls215")
-    db["tls215_citn_categ"].delete_many({"pat_publn_id": 0})
-    t215.info("End loading table 215")
+    t212 = get_logger("Loading table 212")
+    t212.info("Start loading table 212")
+    mongo_import_collection("tls212_citation", "tls212")
+    db["tls212_citation"].delete_many({"pat_publn_id": 0})
+    t212.info("End loading table 212")
+
+    t214 = get_logger("Loading table 214")
+    t214.info("Start loading table 214")
+    mongo_import_collection("tls214_npl_publn", "tls214")
+    db["tls214_npl_publn"].delete_many({"npl_publn_id": "0"})
+    t214.info("End loading table 214")
+
+    # t215 = get_logger("Loading table 215")
+    # t215.info("Start loading table 215")
+    # mongo_import_collection("tls215_citn_categ", "tls215")
+    # db["tls215_citn_categ"].delete_many({"pat_publn_id": 0})
+    # t215.info("End loading table 215")
 
     client.close()
