@@ -6,7 +6,7 @@ import redis
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
-from application.server.main.tasks import create_task_all, create_task_clean
+from application.server.main.tasks import create_task_all, create_task_clean, create_task_doi
 
 default_timeout = 43200000
 
@@ -17,6 +17,15 @@ main_blueprint = Blueprint('main', __name__, )
 @main_blueprint.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
+
+
+@main_blueprint.route('/harvest_doi', methods=['GET'])
+def doi():
+    args = request.get_json(force=True)
+
+    res = create_task_doi(args)
+    response_object = {'status': 'success', 'data': res}
+    return jsonify(response_object), 202
 
 
 @main_blueprint.route('/harvest_compute', methods=['POST'])
