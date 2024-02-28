@@ -4,13 +4,25 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr , recreate_partfin_recuperation, p07c, \
-    p08_participants_final_copy, loading_mongo, get_doi_from_npl
+    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+
+
+def create_task_doi(args):
+    if args.get("liste"):
+        if isinstance(args.get("liste"), list):
+            liste = args.get("liste")
+            dict_pat = get_patent_from_doi.get_patents_common_doi(liste)
+        else:
+            logger.debug("Objet n'est pas une liste")
+    else:
+        logger.debug("Liste pas présente dans les arguments")
+    return dict_pat
 
 
 def create_task_clean(args):
