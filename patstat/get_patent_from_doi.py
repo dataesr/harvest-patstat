@@ -99,14 +99,14 @@ def get_appln_id(lste_patpid: list) -> list:
     return liste
 
 
-def get_patents_common_doi():
+def get_patents_common_doi(liste_doi: list):
     plog = get_logger("get_patents_common_doi")
     plog.info("Create directory")
     new_directory = f'{DATA_PATH}common_doi'
     os.system(f'rm -rf {new_directory}')
     os.system(f'mkdir -p {new_directory}')
 
-    liste_cdoi = get_common_doi()
+    liste_cdoi = get_common_doi(liste_doi)
 
     liste_cited = get_pat_publn_id(liste_cdoi)
 
@@ -119,3 +119,5 @@ def get_patents_common_doi():
     compat = patents.loc[patents["appln_id"].isin(liste_applnid)]
 
     compat.to_csv(f"{DATA_PATH}french_patents_doi.csv", sep="|", encoding="utf-8", index=False)
+
+    compat.to_json("fam_final_json.jsonl", orient="records", lines=True)
