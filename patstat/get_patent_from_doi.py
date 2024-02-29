@@ -116,25 +116,31 @@ def get_patents_common_doi(liste_doi: list):
 
     liste_cdoi = list(df_doi["cited_npl_publn_id"].unique())
 
+    plog = get_logger("get_pat_publn_id")
     df_cited, liste_cited = get_pat_publn_id(liste_cdoi)
 
+    plog = get_logger("get_appln_id")
     df_applnid, liste_applnid = get_appln_id(liste_cited)
 
     plog.info("Get French patents")
-    patents = pd.read_csv(f"{DATA_PATH}patents.csv", sep="|", encoding="utf-8", engine="python",
+    patents = pd.read_csv(f"{DATA_PATH}patent.csv", sep="|", encoding="utf-8", engine="python",
                           dtype=types.patent_types)
 
     compat = patents.loc[patents["appln_id"].isin(liste_applnid)]
+
+    plog.info("Merge")
 
     doi_cited = pd.merge(df_doi, df_cited[["cited_npl_publn_id", "pat_publn_id"]], how="inner",
                          on="cited_npl_publn_id").drop_duplicates().reset_index(drop=True)
     doi_cited_appln = pd.merge(doi_cited, df_applnid[["pat_publn_id", "appln_id"]], how="inner",
                                on="pat_publn_id").drop_duplicates().reset_index(drop=True)
 
+    plog.info("Final DF")
     pat_doi = pd.merge(doi_cited_appln[["doi", "appln_id"]],
                        compat[["appln_id", "docdb_family_id", "appln_publn_number", "appln_auth"]], how="inner",
                        on="appln_id").drop(columns="appln_id").drop_duplicates().reset_index(drop=True)
 
+    plog.info("Final dict")
     dict_pat = pat_doi.to_dict(orient="records")
 
     return dict_pat
