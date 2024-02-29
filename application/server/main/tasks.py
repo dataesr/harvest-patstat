@@ -18,6 +18,7 @@ def create_task_doi(args):
         if isinstance(args.get("liste"), list):
             liste = args.get("liste")
             dict_pat = get_patent_from_doi.get_patents_common_doi(liste)
+            print(dict_pat[0], flush=True)
         else:
             logger.debug("Objet n'est pas une liste")
     else:
