@@ -23,8 +23,11 @@ def home():
 def doi():
     args = request.get_json(force=True)
 
-    res = create_task_doi(args)
-    response_object = {'status': 'success', 'data': res}
+    with Connection(redis.from_url(current_app.config['REDIS_URL'])):
+        q = Queue(name='patents', default_timeout=default_timeout)
+        task = q.enqueue(create_task_doi, args)
+    # res = create_task_doi(args)
+    response_object = {'status': 'success', 'data': task}
     return jsonify(response_object), 202
 
 
