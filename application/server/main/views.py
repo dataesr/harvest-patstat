@@ -17,25 +17,22 @@ default_timeout = 43200000
 main_blueprint = Blueprint('main', __name__, )
 
 
-
 @main_blueprint.route('/', methods=['GET'])
 def home():
     return render_template('home.html')
 
 
-@main_blueprint.route('/harvest_doi', methods=['GET'])
+@main_blueprint.route('/harvest_doi', methods=['POST'])
 def doi():
     logger.debug("Get args")
     args = request.get_json(force=True)
 
-    # with Connection(redis.from_url(current_app.config['REDIS_URL'])):
-    #     logger.debug("Connect Redis")
-    #     q = Queue(name='patents', default_timeout=default_timeout)
-    #     task = q.enqueue(create_task_doi, args)
-    #     logger.debug("End task")
-    res = create_task_doi(args)
-    response_object = {'status': 'success', 'data': res}
-    logger.debug("End views")
+    with Connection(redis.from_url(current_app.config['REDIS_URL'])):
+        logger.debug("Connect Redis")
+        q = Queue(name='patents', default_timeout=default_timeout, result_ttl=default_timeout)
+        task = q.enqueue(create_task_doi, args)
+    logger.debug("End task")
+    response_object = {'status': 'success', 'data': {'task_id': task.get_id()}}
     return jsonify(response_object), 202
 
 
@@ -52,6 +49,7 @@ def run_task_all():
     response_object = {'status': 'success', 'data': {'task_id': task.get_id()}}
     return jsonify(response_object), 202
 
+
 @main_blueprint.route('/clean', methods=['POST'])
 def run_task_clean():
     """
@@ -63,5 +61,3 @@ def run_task_clean():
         task = q.enqueue(create_task_clean, args)
     response_object = {'status': 'success', 'data': {'task_id': task.get_id()}}
     return jsonify(response_object), 202
-
-
