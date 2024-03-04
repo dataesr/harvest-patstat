@@ -18,6 +18,8 @@ import zipfile
 
 # directory where the folders are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+
+
 # VERSION = "2021_Autumn/"
 
 
@@ -30,8 +32,8 @@ def unzip_folders(pth: str, folders: list):
 
 # function to select the files to unzip based on their names
 def select_files(pth: str, pattern: str) -> list:
-    zip_folds = glob.glob(pth+r"*.zip")
-    list_folds = [_zip for _zip in zip_folds if re.match(pth+pattern, _zip)]
+    zip_folds = glob.glob(pth + r"*.zip")
+    list_folds = [_zip for _zip in zip_folds if re.match(pth + pattern, _zip)]
     if len(list_folds) < 1:
         raise ValueError("There are no zipped files in the folder")
     else:
@@ -57,7 +59,8 @@ def unzip():
     unzip_folders(path, zipped_folders)
 
     # selects the subfolders
-    subfolders = select_files(path, r"tls(204|211|201|206|207|209|225|224|203|202|212|214|215)_part\d{2}\.zip")
+    subfolders = select_files(path,
+                              r"tls(204|211|201|206|207|209|225|224|203|202|212|214|215|904)_part\d{2}\.zip")
     # unzips the subfolders
     unzip_folders(path, subfolders)
 
@@ -78,5 +81,3 @@ def unzip():
     delete_files(DATA_PATH, r"data_PATSTAT_Global_*")
 
     delete_files(DATA_PATH, r"*.zip")
-
-
