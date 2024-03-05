@@ -60,7 +60,7 @@ def unzip():
 
     # selects the subfolders
     subfolders = select_files(path,
-                              r"tls(204|211|201|206|207|209|225|224|203|202|212|214|215|904)_part\d{2}\.zip")
+                              r"tls(204|211|201|206|207|209|225|224|203|202|212|214|215|904|226)_part\d{2}\.zip")
     # unzips the subfolders
     unzip_folders(path, subfolders)
 
