@@ -21,7 +21,7 @@ def get_regions():
     os.chdir(DATA_PATH)
     logger.info("Read part_p08")
     part = pd.read_csv("part_p08.csv", sep="|", encoding="utf-8", engine="python",
-                       dtype=types.partfin_types)
+                       dtype=types.partfin_types, parse_dates=["earliest_filing_date"])
 
     part["year"] = part["earliest_filing_date"].apply(lambda a: a.year)
 
