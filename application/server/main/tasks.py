@@ -27,9 +27,10 @@ def create_task_clean(args):
 
 
 def create_task_region(args):
-    logger.debug("create_task_region")
-    get_regions.get_regions()
-    logger.debug("files regions created.")
+    if args.get('regions', True):
+        logger.debug("create_task_region")
+        get_regions.get_regions()
+        logger.debug("files regions created.")
 
 
 def create_task_all(args):
