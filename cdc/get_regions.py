@@ -9,11 +9,13 @@ logger = get_logger(__name__)
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
+c206 = list(types.tls206_types.keys())
+
 DICT = {
-    "tls206_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': "person_id",
+    "tls206_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c206,
                                 'dtype': types.tls206_types},
-    "tls904_nuts": {'sep': ',', 'chunksize': 5000000, 'usecols': "nuts",
-                                'dtype': {"nuts": object, "nuts_level": pd.Int64Dtype(), "nuts_label": object}}
+    "tls904_nuts": {'sep': ',', 'chunksize': 5000000, 'usecols': ["nuts", "nuts_level", "nuts_label"],
+                    'dtype': {"nuts": object, "nuts_level": pd.Int64Dtype(), "nuts_label": object}}
 }
 
 
@@ -71,18 +73,17 @@ def get_regions():
 
     logger.info("Application patents since 2018")
     pat2 = pd.merge(pat, partn2018, on=['docdb_family_id',
-                                     'inpadoc_family_id',
-                                     'key_appln_nr',
-                                     'appln_auth'], how="inner").drop_duplicates()
+                                        'inpadoc_family_id',
+                                        'key_appln_nr',
+                                        'appln_auth'], how="inner").drop_duplicates()
     pat2.to_csv("patpart_appln_region.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'patpart_appln_region.csv')
 
     logger.info("Grant patents since 2018")
     patg = pat.loc[pat["grant_year"] >= 2018]
     patg2 = pd.merge(patg, partn, on=['docdb_family_id',
-                                     'inpadoc_family_id',
-                                     'key_appln_nr',
-                                     'appln_auth'], how="inner").drop_duplicates()
+                                      'inpadoc_family_id',
+                                      'key_appln_nr',
+                                      'appln_auth'], how="inner").drop_duplicates()
     patg2.to_csv("patpart_grant_region.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'patpart_grant_region.csv')
-
