@@ -23,7 +23,7 @@ def home():
 
 
 @main_blueprint.route('/harvest_regions', methods=['POST'])
-def doi():
+def regions():
     logger.debug("Regions CdC")
     args = request.get_json(force=True)
 
