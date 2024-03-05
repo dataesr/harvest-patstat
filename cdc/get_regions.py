@@ -69,6 +69,8 @@ def get_regions():
     pat["grant_year"] = pat["grant_publn_date"].apply(lambda a: a.year)
 
     partn2 = partn.drop(columns='earliest_filing_date').drop_duplicates().reset_index().drop(columns="index")
+    partn2018 = partn2.copy()
+    partn2018["year"] = partn2018["year"].astype(int)
     partn2018 = partn2.loc[partn2["year"] >= 2018]
 
     logger.info("Application patents since 2018")
