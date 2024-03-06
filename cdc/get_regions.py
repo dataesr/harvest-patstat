@@ -15,7 +15,7 @@ c226 = list(types.tls226_types)
 DICT = {
     # "tls206_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c206,
     #                             'dtype': types.tls206_types},
-    "tls226_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c206,
+    "tls226_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c226,
                                 'dtype': types.tls226_types}
 }
 
