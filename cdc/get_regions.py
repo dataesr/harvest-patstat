@@ -9,13 +9,14 @@ logger = get_logger(__name__)
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-c206 = list(types.tls206_types.keys())
+# c206 = list(types.tls206_types.keys())
+c226 = list(types.tls226_types)
 
 DICT = {
-    "tls206_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c206,
-                                'dtype': types.tls206_types},
-    "tls904_nuts": {'sep': ',', 'chunksize': 5000000, 'usecols': ["nuts", "nuts_level", "nuts_label"],
-                    'dtype': {"nuts": object, "nuts_level": pd.Int64Dtype(), "nuts_label": object}}
+    # "tls206_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c206,
+    #                             'dtype': types.tls206_types},
+    "tls226_french_person_id": {'sep': ',', 'chunksize': 5000000, 'usecols': c206,
+                                'dtype': types.tls226_types}
 }
 
 
@@ -44,23 +45,14 @@ def get_regions():
 
     part3 = part3.loc[part3["key_appln_nr_person"].isin(role["key_appln_nr_person"])]
 
-    logger.info("Read t206")
-    t206 = csv_files_querying.filtering("tls206", part3, "person_id",
-                                        DICT.get("tls206_french_person_id"))
-
-    t206 = t206[["person_id", "nuts", "nuts_level"]].drop_duplicates().reset_index(drop=True)
-
-    logger.info("Get NUTS")
-    nuts = csv_files_querying.filtering("tls904", t206, "nuts",
-                                        DICT.get("tls904_nuts"))
-
-    logger.info("Join 206 and NUTS")
-    t206n = pd.merge(t206, nuts, on=["nuts", "nuts_level"], how="left").drop_duplicates().reset_index(drop=True)
+    logger.info("Read t226")
+    t226 = csv_files_querying.filtering("tls226", part3, "person_id",
+                                        DICT.get("tls226_french_person_id"))
 
     logger.info("Join 206n and part")
-    partn = pd.merge(part3, t206n, on="person_id", how="left")
-    partn.to_csv("part_region.csv", sep="|", encoding="utf-8", index=False)
-    swift.upload_object('patstat', 'part_region.csv')
+    partn = pd.merge(part3, t226, on="person_id", how="left")
+    partn.to_csv("part_orig.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'part_orig.csv')
 
     logger.info("Read patents")
     pat = pd.read_csv("patent.csv", sep="|", encoding="utf-8", engine="python", dtype=types.patent_types,
@@ -78,8 +70,8 @@ def get_regions():
                                         'inpadoc_family_id',
                                         'key_appln_nr',
                                         'appln_auth'], how="inner").drop_duplicates()
-    pat2.to_csv("patpart_appln_region.csv", sep="|", encoding="utf-8", index=False)
-    swift.upload_object('patstat', 'patpart_appln_region.csv')
+    pat2.to_csv("patpart_appln_orig.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'patpart_appln_orig.csv')
 
     logger.info("Grant patents since 2018")
     patg = pat.loc[pat["grant_year"] >= 2018]
@@ -87,5 +79,5 @@ def get_regions():
                                       'inpadoc_family_id',
                                       'key_appln_nr',
                                       'appln_auth'], how="inner").drop_duplicates()
-    patg2.to_csv("patpart_grant_region.csv", sep="|", encoding="utf-8", index=False)
-    swift.upload_object('patstat', 'patpart_grant_region.csv')
+    patg2.to_csv("patpart_grant_orig.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'patpart_grant_orig.csv')
