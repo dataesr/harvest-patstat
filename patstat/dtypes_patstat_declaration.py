@@ -288,7 +288,7 @@ tls215_types = {'pat_publn_id': pd.Int64Dtype(),
 
 tls226_types = {"person_orig_id": object,
                 "person_id": pd.Int64Dtype(),
-                "soource": object,
+                "source": object,
                 "source_version": object,
                 "name_freeform": object,
                 "person_name_orig_lg": object,
