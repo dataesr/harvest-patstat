@@ -1,5 +1,7 @@
 # HARVEST-PATSAT
 
+[![Docker Image CI](https://github.com/dataesr/harvest-patstat/actions/workflows/production.yml/badge.svg)](https://github.com/dataesr/harvest-patstat/actions/workflows/production.yml)
+
 ## GOAL
 Harvest and clean data from the Patent Statistical Database PATSTAT published by the European Patent Organisation
 
