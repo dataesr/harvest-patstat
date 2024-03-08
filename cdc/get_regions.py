@@ -44,13 +44,16 @@ def get_regions():
     role = role.loc[role["role"] == "dep"]
 
     part3 = part3.loc[part3["key_appln_nr_person"].isin(role["key_appln_nr_person"])]
+    part3fr = part3.loc[part3["country_corrected"]=="FR"]
 
     logger.info("Read t226")
-    t226 = csv_files_querying.filtering("tls226", part3, "person_id",
+    t226 = csv_files_querying.filtering("tls226", part3fr, "person_id",
                                         DICT.get("tls226_french_person_id"))
 
     logger.info("Join 206n and part")
-    partn = pd.merge(part3, t226, on="person_id", how="left")
+    partn = pd.merge(part3, t226, on="person_id", how="left").drop_duplicates().reset_index()
+    logger.info(f"Nombre de lignes de partn {len(partn)}.")
+    logger.info(f"Colonnes de partn {list(partn.columns)}.")
     partn.to_csv("part_orig.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'part_orig.csv')
 
@@ -62,7 +65,7 @@ def get_regions():
 
     partn2 = partn.drop(columns='earliest_filing_date').drop_duplicates().reset_index().drop(columns="index")
     partn2018 = partn2.copy()
-    partn2018["year"] = partn2018["year"].astype(int)
+    partn2018["year"] = partn2018["year_min"].astype(int)
     partn2018 = partn2.loc[partn2["year"] >= 2018]
 
     logger.info("Application patents since 2018")
