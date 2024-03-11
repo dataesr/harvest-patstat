@@ -5,6 +5,8 @@
 
 
 import os
+
+import numpy as np
 import pandas as pd
 from utils import swift
 
@@ -91,10 +93,11 @@ def get_json():
     patent["links"] = patent["appln_auth"] + patent["publicationNumber"]
     patent["internatApplicationNumber"] = patent["internat_appln_id"].apply(lambda a: "" if a == 0 else str(a))
     patent["isPriority"] = patent["ispriority"].apply(lambda a: True if a == 1 else False)
+    patent["year"] = patent["appln_publn_date"].apply(get_year)
     pat_json = patent[
         ["docdb_family_id", "key_appln_nr", "isPriority", "ipr_type", "appln_auth", "appln_filing_date", "appln_nr",
          "internatApplicationNumber",
-         "appln_publn_date", "publicationNumber", "grant_publn_date", "links"]].rename(
+         "appln_publn_date", "year", "publicationNumber", "grant_publn_date", "links"]].rename(
         columns={"key_appln_nr": "id", "ipr_type": "ipType", "appln_auth": "office",
                  "appln_filing_date": "applicationDate",
                  "appln_nr": "applicationNumber", "appln_publn_date": "publicationDate",
@@ -128,7 +131,8 @@ def get_json():
         elt = {'id': row.id, "isPriority": row.isPriority, "ipType": row.ipType, "office": row.office,
                "applicationDate": row.applicationDate, "applicationNumber": row.applicationNumber,
                "internatApplicationNumber": row.internatApplicationNumber, "publicationDate": row.publicationDate,
-               "publicationNumber": row.publicationNumber, "grantedDate": row.grantedDate, "links": row.links}
+               "year": row.year, "publicationNumber": row.publicationNumber,
+               "grantedDate": row.grantedDate, "links": row.links}
         if elt not in pat_dict[family_id]:
             pat_dict[family_id].append(elt)
 
@@ -187,10 +191,14 @@ def get_json():
     for row in part2.itertuples():
         family_id = row.key_appln_nr_person
         if family_id not in affiliation_dict:
-            affiliation_dict[family_id] = []
+            affiliation_dict[family_id] = [{"siren": [], "idref": []}]
         elt = row.siren
-        if elt and elt not in affiliation_dict[family_id]:
-            affiliation_dict[family_id].append(elt)
+        idref = row.idref
+        if elt and elt not in affiliation_dict[family_id][0]["siren"]:
+            affiliation_dict[family_id][0]["siren"].append(elt)
+        if idref is not np.nan and idref not in affiliation_dict[family_id][0]["idref"]:
+            affiliation_dict[family_id][0]["idref"].append(idref)
+
     res = []
     for family_id in affiliation_dict:
         new_elt = {'family_id': family_id, 'affiliations': affiliation_dict[family_id]}
@@ -235,7 +243,7 @@ def get_json():
         columns=["design_patents_count", "patents_count", "utility_models_count", "is_granted", "title_en", "title_fr",
                  "title_default_language", "title_default", "abstract_en", "abstract_fr", "abstract_default_language",
                  "abstract_default"])
-    fam_final["year"] = fam_final["earliest_application_date"].apply(get_year)
+    fam_final["yearSubmisssion"] = fam_final["earliest_application_date"].apply(get_year)
     fam_final["productionType"] = "patent"
     fam_final["inventionKind"] = "brevet"
     fam_final['isOa'] = False
