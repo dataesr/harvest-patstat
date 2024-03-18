@@ -4,7 +4,7 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
-    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi
+    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08
 # comp_version_y02y04s,
 from cdc import get_regions
 from application.server.main.logger import get_logger
@@ -164,6 +164,11 @@ def create_loading_mongo():
 def get_doi():
     get_doi_from_npl.load_pbln_doi_to_mongo()
     logger.debug("DOI chargées dans mongo")
+
+
+def getp08():
+    p08.function()
+    logger.debug("recupération p08")
 
 # def create_task_geo():
 #    p09_geoloc.geoloc()
