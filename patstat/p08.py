@@ -9,4 +9,4 @@ from utils import swift
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 def fun1():
-    swift.download_object('patstat', 'part_p08.csv', 'part_p08.csv')
+    swift.download_object('patstat', 'part_p08.csv', f'{DATA_PATH}part_p08.csv')
