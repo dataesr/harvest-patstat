@@ -290,7 +290,7 @@ def get_dataesr():
     # keep columns final df
 
     deposant2 = deposant[
-        ["key_appln_nr", "docdb_family_id", "inpadoc_family_id", "doc_std_name", "country_corrected",
+        ["key_appln_nr", "docdb_family_id", "inpadoc_family_id", "name_corrected", "country_corrected",
          "id_paysage", "siren", "key_appln_nr_person"]]
 
     deposant2["key_appln_nr"] = deposant2["key_appln_nr"].replace(r"\s+", "", regex=True)
@@ -300,7 +300,7 @@ def get_dataesr():
     deposant2_na = deposant2.loc[deposant2["id_paysage"].notna()]
     deposant2_na = deposant2_na.rename(columns={"docdb_family_id": "nr_famille_docdb",
                                                 'inpadoc_family_id': "nr_famille_inpadoc",
-                                                'doc_std_name': "nom_demandeur",
+                                                'name_corrected': "nom_demandeur",
                                                 'country_corrected': "code_pays",
                                                 'id_paysage': "Paysage_id"})
 
@@ -311,7 +311,7 @@ def get_dataesr():
     deposant2 = deposant2.rename(columns={
         "docdb_family_id": "nr_famille_docdb",
         'inpadoc_family_id': "nr_famille_inpadoc",
-        'doc_std_name': "nom_demandeur",
+        'name_corrected': "nom_demandeur",
         'country_corrected': "code_pays",
         'id_paysage': "Paysage_id"})
 
