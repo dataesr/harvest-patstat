@@ -70,6 +70,9 @@ def create_task_all(args):
         create_loading_mongo()
     if args.get('create_doi', True):
         get_doi()
+    if args.get('dwnp08', True):
+        getp08()
+
 
 
 def harvest_inpi():
