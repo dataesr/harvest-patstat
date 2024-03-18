@@ -167,7 +167,7 @@ def get_doi():
 
 
 def getp08():
-    p08.function()
+    p08.fun1()
     logger.debug("recupération p08")
 
 # def create_task_geo():
