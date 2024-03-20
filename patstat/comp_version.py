@@ -73,6 +73,33 @@ def get_json():
     role = pd.read_csv("role.csv", sep="|", encoding="utf-8")
     role["key_appln_nr_person"] = role["key_appln_nr_person"].replace(r"\s+", "", regex=True)
 
+    dep = set(role.loc[role["role"] == "dep", "key_appln_nr_person"])
+    inv = set(role.loc[role["role"] == "inv", "key_appln_nr_person"])
+
+    depextra = list(part.loc[(part["key_appln_nr_person"].isin(inv)) & (part["type"] == "pm") & (
+        part["id_paysage"].notna()), "key_appln_nr_person"].unique())
+
+    dep.update(depextra)
+
+    [inv.remove(item) for item in depextra]
+
+    deposant = part.copy()
+    deposant = deposant.loc[deposant["key_appln_nr_person"].isin(dep)]
+    deposant["virgules"] = deposant["name_corrected"].apply(lambda a: "virgules" if ",, " in a else "")
+    dep_virg = deposant.loc[
+        (deposant["virgules"] == "virgules") & (deposant["siren"] != "")]
+    dep_virg["liste_name"] = dep_virg["name_corrected"].str.split(",, ")
+    dep_virg["liste_siren"] = dep_virg["siren"].str.split(",, ")
+    dep_virg2 = dep_virg.explode(["liste_name", "liste_siren"])
+    dep_virg2 = dep_virg2.drop(columns=["name_corrected", "siren"]).rename(
+        columns={"liste_name": "name_corrected", "liste_siren": "siren"}).drop_duplicates().reset_index(drop=True)
+    dep_virg2 = dep_virg2[deposant.columns].drop(columns="virgules")
+    dep_aut = deposant.loc[~deposant["key_appln_nr_person"].isin(dep_virg["key_appln_nr_person"])]
+    deposant2 = pd.concat([dep_virg2, dep_aut], ignore_index=True)
+
+    inventeur = part.copy()
+    inventeur = inventeur.loc[inventeur["key_appln_nr_person"].isin(inv)]
+
     pat_dict = {}
     for row in fam_techno.itertuples():
         family_id = row.docdb_family_id
@@ -174,78 +201,134 @@ def get_json():
         new_elt = {'family_id': family_id, 'summary': abstract_dict[family_id]}
         res.append(new_elt)
     df_abstract = pd.DataFrame(res)
-    role_dict = {}
-    for row in role.itertuples():
+
+    depaffilition_dict = {}
+    for row in deposant2.itertuples():
         family_id = row.key_appln_nr_person
-        if family_id not in role_dict:
-            role_dict[family_id] = []
-        elt = {"role": row.role, "description": row.role}
-        if elt not in role_dict[family_id]:
-            role_dict[family_id].append(elt)
-    res = []
-    for family_id in role_dict:
-        new_elt = {'family_id': family_id, 'rolePatent': role_dict[family_id]}
-        res.append(new_elt)
-    df_role = pd.DataFrame(res)
-    part2 = pd.merge(part, df_role, left_on="key_appln_nr_person", right_on="family_id", how="left").drop(
-        columns="family_id")
-    affiliation_dict = {}
-    for row in part2.itertuples():
-        family_id = row.key_appln_nr_person
-        if family_id not in affiliation_dict:
-            affiliation_dict[family_id] = [{"siren": [], "idref": []}]
+        if family_id not in depaffilition_dict:
+            depaffilition_dict[family_id] = []
         elt = row.siren
         idref = row.idref
-        if elt and elt not in affiliation_dict[family_id][0]["siren"]:
-            affiliation_dict[family_id][0]["siren"].append(elt)
-        if idref is not np.nan and idref not in affiliation_dict[family_id][0]["idref"]:
-            affiliation_dict[family_id][0]["idref"].append(idref)
+        name = row.name_corrected
+        typ = row.type
+        country = row.country_corrected
+        dep_dict = {}
+
+        if name:
+            dep_dict["fullName"] = name
+        if elt != "":
+            dep_dict["siren"] = elt
+        if idref is not np.nan:
+            dep_dict["idref"] = idref
+        if typ:
+            dep_dict["typeParticipant"] = typ
+        if country:
+            dep_dict["country"] = country
+
+        depaffilition_dict[family_id].append(dep_dict)
+
+    invaffilition_dict = {}
+    for row in inventeur.itertuples():
+        family_id = row.key_appln_nr_person
+        if family_id not in invaffilition_dict:
+            invaffilition_dict[family_id] = []
+        idref = row.idref
+        name = row.name_corrected
+        country = row.country_corrected
+        inv_dict = {}
+
+        if name:
+            inv_dict["fullName"] = name
+        if idref is not np.nan:
+            inv_dict["idref"] = idref
+        if country:
+            dep_dict["country"] = country
+        inv_dict["typeParticipant"] = "pp"
+
+        invaffilition_dict[family_id].append(inv_dict)
 
     res = []
-    for family_id in affiliation_dict:
-        new_elt = {'family_id': family_id, 'affiliations': affiliation_dict[family_id]}
+    for family_id in depaffilition_dict:
+        new_elt = {'family_id': family_id, 'affiliations': depaffilition_dict[family_id]}
         res.append(new_elt)
-    df_affiliation = pd.DataFrame(res)
-    part3 = pd.merge(part2, df_affiliation, left_on="key_appln_nr_person", right_on="family_id", how="left").drop(
+    df_depaffiliation = pd.DataFrame(res)
+
+    part_dep = pd.merge(part[["docdb_family_id", "key_appln_nr_person"]], df_depaffiliation,
+                        left_on="key_appln_nr_person", right_on="family_id", how="inner").drop(
         columns="family_id")
-    authors_dict = {}
-    for row in part3.itertuples():
-        family_id = row.docdb_family_id
-        if family_id not in authors_dict:
-            authors_dict[family_id] = []
-        elt = {"typeParticipant": row.type, "fullName": row.name_corrected, "country": row.country_corrected,
-               "rolePatent": row.rolePatent, "affiliations": row.affiliations}
-        if elt and elt not in authors_dict[family_id]:
-            authors_dict[family_id].append(elt)
+
     res = []
-    for family_id in authors_dict:
-        new_elt = {'family_id': family_id, 'authors': authors_dict[family_id]}
+    for family_id in invaffilition_dict:
+        new_elt = {'family_id': family_id, 'affiliations': invaffilition_dict[family_id]}
+        res.append(new_elt)
+    df_invaffiliation = pd.DataFrame(res)
+
+    part_inv = pd.merge(part[["docdb_family_id", "key_appln_nr_person"]], df_invaffiliation,
+                        left_on="key_appln_nr_person", right_on="family_id", how="inner").drop(
+        columns="family_id")
+
+    deposant_dict = {}
+    for row in part_dep.itertuples():
+        family_id = row.docdb_family_id
+        if family_id not in deposant_dict:
+            deposant_dict[family_id] = []
+            elt = row.affiliations
+        if elt and elt not in deposant_dict[family_id]:
+            deposant_dict[family_id].append(elt)
+
+    inventeur_dict = {}
+    for row in part_inv.itertuples():
+        family_id = row.docdb_family_id
+        if family_id not in inventeur_dict:
+            inventeur_dict[family_id] = []
+            elt = row.affiliations
+        if elt and elt not in inventeur_dict[family_id]:
+            inventeur_dict[family_id].append(elt)
+
+    res = []
+    for family_id in deposant_dict:
+        new_elt = {'family_id': family_id, 'applicants': deposant_dict[family_id]}
+        res.append(new_elt)
+    df_deposants = pd.DataFrame(res)
+
+    res = []
+    for family_id in inventeur_dict:
+        new_elt = {'family_id': family_id, 'inventors': inventeur_dict[family_id]}
+        res.append(new_elt)
+    df_inventeurs = pd.DataFrame(res)
+
+    df_part = pd.merge(df_deposants, df_inventeurs, on="family_id", how="outer")
+
+    part_dict = {}
+    for row in df_part.itertuples():
+        family_id = row.family_id
+        applicants = row.applicants
+        inventors = row.inventors
+        pdict = {}
+        if applicants:
+            pdict["applicants"] = applicants
+        if inventors:
+            pdict["inventors"] = inventors
+        if family_id not in part_dict:
+            part_dict[family_id] = pdict
+
+    res = []
+    for family_id in part_dict:
+        new_elt = {'family_id': family_id, 'authors': part_dict[family_id]}
         res.append(new_elt)
     df_authors = pd.DataFrame(res)
+
     fam_authors = jointure(fam, df_authors)
     fam_titles = jointure(fam_authors, df_title)
     fam_sum = jointure(fam_titles, df_abstract)
     fam_domains = jointure(fam_sum, df_fam)
     fam_pat = jointure(fam_domains, df_pat)
-    affiliation_dict2 = {}
-    for row in part2.itertuples():
-        family_id = row.docdb_family_id
-        if family_id not in affiliation_dict2:
-            affiliation_dict2[family_id] = []
-        elt = row.siren
-        if elt and elt not in affiliation_dict2[family_id]:
-            affiliation_dict2[family_id].append(elt)
-    res = []
-    for family_id in affiliation_dict2:
-        new_elt = {'family_id': family_id, 'affiliations': affiliation_dict2[family_id]}
-        res.append(new_elt)
-    df_affiliation2 = pd.DataFrame(res)
-    fam_affiliations = jointure(fam_pat, df_affiliation2)
-    fam_final = fam_affiliations.drop(
+    fam_final = fam_pat.drop(
         columns=["design_patents_count", "patents_count", "utility_models_count", "is_granted", "title_en", "title_fr",
                  "title_default_language", "title_default", "abstract_en", "abstract_fr", "abstract_default_language",
                  "abstract_default"])
     fam_final["year"] = fam_final["earliest_application_date"].apply(get_year)
+    fam_final = fam_final.loc[fam_final["year"] >= 2010]
     fam_final["productionType"] = "patent"
     fam_final["inventionKind"] = "brevet"
     fam_final['isOa'] = False
