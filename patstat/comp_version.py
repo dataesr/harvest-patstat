@@ -257,7 +257,6 @@ def get_json():
         siren = row.siren
         idref = row.idref
         rnsr = row.rnsr
-        siret = row.siret
         ids = []
         if grid is not np.nan:
             idd = {"id": grid, "type": "grid"}
@@ -274,9 +273,7 @@ def get_json():
         if rnsr is not np.nan:
             idd = {"id": rnsr, "type": "rnsr"}
             ids.append(idd)
-        if siret is not np.nan:
-            idd = {"id": siret, "type": "siret"}
-            ids.append(idd)
+
         name = row.name_corrected
         typ = row.type
         country = row.country_corrected
@@ -326,30 +323,14 @@ def get_json():
     invaffilition_dict = {}
     for row in inventeur.itertuples():
         family_id = row.id_pseudo
-        grid = row.grid
         paysage = row.id_paysage
-        siren = row.siren
         idref = row.idref
-        rnsr = row.rnsr
-        siret = row.siret
         ids = []
-        if grid is not np.nan:
-            idd = {"id": grid, "type": "grid"}
-            ids.append(idd)
         if paysage is not np.nan:
             idd = {"id": paysage, "type": "id_paysage"}
             ids.append(idd)
-        if siren != "":
-            idd = {"id": siren, "type": "siren"}
-            ids.append(idd)
         if idref is not np.nan:
             idd = {"id": idref, "type": "idref"}
-            ids.append(idd)
-        if rnsr is not np.nan:
-            idd = {"id": rnsr, "type": "rnsr"}
-            ids.append(idd)
-        if siret is not np.nan:
-            idd = {"id": siret, "type": "siret"}
             ids.append(idd)
         name = row.name_corrected
         country = row.country_corrected
