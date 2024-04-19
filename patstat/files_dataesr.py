@@ -332,44 +332,48 @@ def get_dataesr():
 
     deposant_nna2 = deposant_nna2.drop(columns="identifiant_interne")
 
-    paysage_id = {"key_appln_nr_person": [], "siren": [], "paysage": []}
+    if len(deposant_virgule) > 0:
+        paysage_id = {"key_appln_nr_person": [], "siren": [], "paysage": []}
 
-    for _, r in deposant_virgule.iterrows():
-        key = r.key_appln_nr_person
-        s = r["siren"].split(", ")
-        p2 = []
+        for _, r in deposant_virgule.iterrows():
+            key = r.key_appln_nr_person
+            s = r["siren"].split(", ")
+            p2 = []
 
-        for i in s:
-            res = structures_uni.loc[structures_uni["siren"] == i, "identifiant_interne"].values
-            if res.size == 0:
-                r = ""
-            else:
-                r = res[0]
-            p2.append(r)
+            for i in s:
+                res = structures_uni.loc[structures_uni["siren"] == i, "identifiant_interne"].values
+                if res.size == 0:
+                    r = ""
+                else:
+                    r = res[0]
+                p2.append(r)
 
-        paysage_id["key_appln_nr_person"].append(key)
+            paysage_id["key_appln_nr_person"].append(key)
 
-        paysage_id["siren"].append(s)
+            paysage_id["siren"].append(s)
 
-        paysage_id["paysage"].append(p2)
+            paysage_id["paysage"].append(p2)
 
-    multi_siren = pd.DataFrame(data=paysage_id)
+        multi_siren = pd.DataFrame(data=paysage_id)
 
-    for col in ["siren", "paysage"]:
-        multi_siren[col] = multi_siren[col].apply(lambda a: ", ".join(a))
+        for col in ["siren", "paysage"]:
+            multi_siren[col] = multi_siren[col].apply(lambda a: ", ".join(a))
 
-    multi_siren[col] = multi_siren[col].replace(r"^,$", "", regex=True)
+        multi_siren[col] = multi_siren[col].replace(r"^,$", "", regex=True)
 
-    multi_siren[col] = multi_siren[col].replace(r"^\s{0,},\s{0,}|\s{0,},\s{0,}$", "", regex=True)
+        multi_siren[col] = multi_siren[col].replace(r"^\s{0,},\s{0,}|\s{0,},\s{0,}$", "", regex=True)
 
-    deposant_virgule2 = pd.merge(deposant_virgule, multi_siren, on=["key_appln_nr_person", "siren"], how="left")
+        deposant_virgule2 = pd.merge(deposant_virgule, multi_siren, on=["key_appln_nr_person", "siren"], how="left")
 
-    deposant_virgule2.loc[deposant_virgule2["Paysage_id"].isna(), "Paysage_id"] = deposant_virgule2.loc[
-        deposant_virgule2["Paysage_id"].isna(), "paysage"]
+        deposant_virgule2.loc[deposant_virgule2["Paysage_id"].isna(), "Paysage_id"] = deposant_virgule2.loc[
+            deposant_virgule2["Paysage_id"].isna(), "paysage"]
 
-    deposant_virgule2 = deposant_virgule2.drop(columns="paysage")
+        deposant_virgule2 = deposant_virgule2.drop(columns="paysage")
 
-    deposant3 = pd.concat([deposant_na, deposant_nna2, deposant2_na, deposant_virgule2])
+        deposant3 = pd.concat([deposant_na, deposant_nna2, deposant2_na, deposant_virgule2])
+
+    else:
+        deposant3 = pd.concat([deposant_na, deposant_nna2, deposant2_na])
 
     # concat all the df again
 
