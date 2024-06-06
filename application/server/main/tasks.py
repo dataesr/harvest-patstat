@@ -6,7 +6,6 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
     p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08
 # comp_version_y02y04s,
-from cdc import get_regions
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
@@ -24,13 +23,6 @@ def create_task_clean(args):
     os.system(f'rm -rf {DATA_PATH}/data_PATSTAT_Global_*')
     os.system(f'rm -rf {DATA_PATH}/index_documentation_scripts_PATSTAT*')
     os.system(f'rm -rf {DATA_PATH}/tls*')
-
-
-def create_task_region(args):
-    if args.get('regions', True):
-        logger.debug("create_task_region")
-        get_regions.get_regions()
-        logger.debug("files regions created.")
 
 
 def create_task_all(args):
