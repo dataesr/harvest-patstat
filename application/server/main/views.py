@@ -6,7 +6,7 @@ import redis
 
 from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
-from application.server.main.tasks import create_task_all, create_task_clean, create_task_doi, create_task_region
+from application.server.main.tasks import create_task_all, create_task_clean, create_task_doi
 
 from application.server.main.logger import get_logger
 
