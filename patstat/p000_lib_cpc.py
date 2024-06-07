@@ -12,7 +12,7 @@ from bs4 import BeautifulSoup
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
-# CPC = "https://www.cooperativepatentclassification.org/"
+CPC = "https://www.cooperativepatentclassification.org/"
 
 
 def request(str_url: str) -> object:
@@ -93,7 +93,7 @@ def lib_cpc():
 
     # /!\ CPC Scheme XML file changes often. Check the current file and URL /!\
 
-    url_scheme = f"https://link.epo.org/cpc/CPCSchemeXML202308_9935.zip"
+    url_scheme = f"{CPC}sites/default/files/cpc/bulk/CPCSchemeXML202405.zip"
     zf_scheme = request(url_scheme)
 
     # gets all the filenames in the zipped folder
