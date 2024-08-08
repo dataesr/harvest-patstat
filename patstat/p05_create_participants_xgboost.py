@@ -12,11 +12,6 @@ from patstat import csv_files_querying as cfq
 from patstat import text_functions as tf
 
 import unidecode
-from unihandecode import Unihandecoder
-
-jp = Unihandecoder(lang='ja')
-cn = Unihandecoder(lang='zh')
-kr = Unihandecoder(lang='kr')
 
 codes_uni = [32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58,
              59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85,
@@ -326,9 +321,6 @@ def condition(mot: str, dif_cjk: list, lst_cjk: list) -> str:
     for lettre in mot:
         if lettre in dif_cjk:
             mot2 = mot2 + lettre
-        elif lettre in lst_cjk:
-            lettre_cjk = jp.decode(lettre)
-            mot2 = mot2 + lettre_cjk
         else:
             lettre3 = unidecode.unidecode(lettre)
             mot2 = mot2 + lettre3
@@ -800,43 +792,9 @@ def clean_name(crt_prt: pd.DataFrame) -> pd.DataFrame:
         crt_prt2["diff"] == {'Ί'}, "name_clean2"].str.replace("Ί", "Í", regex=False)
     crt_prt2.loc[crt_prt2["diff"] == {"ُ"}, "name_clean2"] = crt_prt2.loc[
         crt_prt2["diff"] == {"ُ"}, "name_clean2"].str.replace("ُ", "", regex=False)
-    crt_prt2.loc[crt_prt2["diff"] == set(), "unidecode"] = crt_prt2.loc[
-        crt_prt2["diff"] == set(), "name_clean2"]
 
     crt_prt2["set_name"] = crt_prt2["name_clean2"].apply(lambda x: set([l for l in x]))
     crt_prt2["diff"] = crt_prt2["set_name"].apply(lambda x: x.difference(set(liste_uni)))
-
-    crt_prt2.loc[
-        (crt_prt2["diff"] != set()) & (~crt_prt["appln_auth"].isin(["CN", "JP", "KR", "HK"])), "unidecode"] = \
-        crt_prt2.loc[
-            (crt_prt2["diff"] != set()) & (
-                ~crt_prt["appln_auth"].isin(["CN", "JP", "KR", "HK"])), "name_clean2"].apply(
-            lambda x: "".join([unidecode.unidecode(l) for l in x]))
-
-    crt_prt2.loc[
-        (crt_prt2["diff"] != set()) & (~crt_prt["appln_auth"].isin(["CN", "JP", "KR", "HK"])), "unidecode"] = \
-        crt_prt2.loc[
-            (crt_prt2["diff"] != set()) & (
-                ~crt_prt["appln_auth"].isin(["CN", "JP", "KR", "HK"])), "name_clean2"].apply(
-            lambda x: condition(x, diff_cjk, liste_cjk))
-
-    crt_prt2.loc[(crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"].isin(["CN", "HK"])), "unidecode"] = \
-        crt_prt2.loc[
-            (crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"].isin(["CN", "HK"])), "name_clean2"].apply(
-            lambda x: cn.decode(x))
-    crt_prt2.loc[(crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"].isin(["CN", "HK"])), "unidecode"] = \
-        crt_prt2.loc[
-            (crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"].isin(["CN", "HK"])), "unidecode"].str.replace(
-            "\*", ".",
-            regex=True)
-    crt_prt2.loc[(crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"] == "JP"), "unidecode"] = \
-        crt_prt2.loc[
-            (crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"] == "JP"), "name_clean2"].apply(
-            lambda x: jp.decode(x))
-    crt_prt2.loc[(crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"] == "KR"), "unidecode"] = \
-        crt_prt2.loc[
-            (crt_prt2["diff"] != set()) & (crt_prt2["appln_auth"] == "KR"), "name_clean2"].apply(
-            lambda x: kr.decode(x))
 
     compte_key = crt_prt2[["docdb_family_id", "key_appln_nr"]].groupby("docdb_family_id").nunique(
         dropna=False).reset_index()
