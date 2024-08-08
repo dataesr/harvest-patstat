@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 # coding: utf-8
 
-from patstat import csv_files_querying as cfq
 from patstat import dtypes_patstat_declaration as types
 import fasttext
-from imblearn.over_sampling import RandomOverSampler
 import numpy as np
 import os
 import pandas as pd
@@ -27,9 +25,7 @@ PM = ["COMPANY",
       "COMPANY UNIVERSITY",
       "COMPANY HOSPITAL"]
 
-COLUMNS = ['person_name', 'person_name_orig_lg', 'person_address',
-           'person_ctry_code', 'doc_std_name', 'psn_name',
-           'han_name']
+COLUMNS = ["person_name", "doc_std_name", "invt_seq_nr"]
 
 # set working directory
 os.chdir(DATA_PATH)
@@ -41,59 +37,42 @@ def create_dataset(t206: pd.DataFrame) -> pd.DataFrame:
     :param t206:
     :return:
     """
-    tls206_c = t206.dropna(subset=["person_name"])
-    tls206_c = tls206_c.copy()
-
-    tls206_c["label"] = tls206_c["psn_sector"].apply(
-        lambda a: 'pm' if a in set(PM) else 'pp' if a == "INDIVIDUAL" else np.nan)
+    t206["label"] = t206["type"].copy()
+    tls206_c = t206.copy()
 
     indiv_with_pm_type = tls206_c[["doc_std_name", "doc_std_name_id", "person_name", "label"]].drop_duplicates() \
         .groupby(["doc_std_name", "doc_std_name_id", "person_name"]).count().reset_index().rename(
         columns={"label": "count_label"})
 
     indiv_with_pm_type = indiv_with_pm_type[indiv_with_pm_type["count_label"] > 1]
+    indiv_with_pm_type = pd.merge(tls206_c, indiv_with_pm_type, on=["doc_std_name", "doc_std_name_id", "person_name"],
+                                  how="inner")
 
-    double = pd.merge(indiv_with_pm_type, tls206_c, on=["doc_std_name", "doc_std_name_id", "person_name"], how="left")
-    sum_invt = pd.DataFrame(double.groupby(["doc_std_name", "person_name"])["invt_seq_nr"].sum()).rename(
-        columns={"invt_seq_nr": "sum_invt"})
-    double = pd.merge(double, sum_invt, on=["doc_std_name", "person_name"], how="left")
-    double["type2"] = double["sum_invt"].apply(lambda a: "pp" if a > 0 else "pm")
-    double = double.copy()
-    double = double[["doc_std_name", "person_name", "type2"]].drop_duplicates()
+    part2 = tls206_c.loc[~tls206_c["key_appln_nr_person"].isin(indiv_with_pm_type["key_appln_nr_person"])]
 
-    part2 = pd.merge(tls206_c, double, on=["doc_std_name", "person_name"], how="left")
-    part2 = part2.copy()
-    part2["label2"] = np.where(part2["type2"].isna(), part2["label"], part2["type2"])
-    part2 = part2.drop(columns=["label", "type2"]).rename(columns={"label2": "label"})
+    lrn = part2[["person_name", "doc_std_name", "invt_seq_nr", "label"]].drop_duplicates()
 
-    lrn = part2[part2["label"].notna()].drop(
-        columns=["applt_seq_nr", "person_id", "appln_id", "doc_std_name_id", "nuts", "nuts_level", "doc_std_name_id",
-                 "psn_id", "psn_level", "psn_sector", "han_id",
-                 "han_harmonized"]).drop_duplicates()
+    lrn = lrn.loc[lrn["label"].notna()]
 
     return lrn
 
 
 def trn_tst(lrn: pd.DataFrame) -> (pd.DataFrame, pd.DataFrame):
     trn, tst = train_test_split(lrn, random_state=123, shuffle=True)
-    ros = RandomOverSampler(random_state=42)
-    trn_sample = trn.copy()
-    trn_ros_x, trn_ros_y = ros.fit_resample(trn_sample.iloc[:, :-1], trn_sample["label"])
-    trn_ros = trn_ros_x.join(trn_ros_y)
 
-    return tst, trn_ros
+    return tst, trn
 
 
 def learning_type_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame) -> fasttext.FastText:
     train_file = open('train.txt', 'w')
     for i, row in trn.iterrows():
-        my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} \n"
+        my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name}\n"
         train_file.write(my_line)
     train_file.close()
 
     test_file = open('test.txt', 'w')
     for i, row in tst.iterrows():
-        my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name} \n"
+        my_line = f"__label__{row.label} {row.doc_std_name} {row.person_name}\n"
         test_file.write(my_line)
     test_file.close()
 
@@ -137,14 +116,16 @@ def learning_type_invt_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame) -> fasttext.
     return model2
 
 
-def testing_fasttext(tst: pd.DataFrame, col_txt: str, col_pred: str, col_type: str, mod_fsttxt: fasttext.FastText) -> pd.DataFrame:
+def testing_fasttext(tst: pd.DataFrame, col_txt: str, col_pred: str, col_type: str,
+                     mod_fsttxt: fasttext.FastText) -> pd.DataFrame:
     tst[col_pred] = tst[col_txt].apply(lambda a: mod_fsttxt.predict(a))
-    tst[col_type] = tst[col_pred].apply(lambda a: re.search("pp|pm", str(a)).group(0))
+    tst[col_type] = tst[col_pred].apply(
+        lambda a: re.search("pp|pm", str(a)).group(0) if re.search("pp|pm", str(a)) else np.nan)
 
     return tst
 
 
-def learning_xgb(trn_xgb: pd.DataFrame, tst: pd.DataFrame, colmns: list) -> (
+def learning_xgb_invt(trn_xgb: pd.DataFrame, tst: pd.DataFrame, colmns: list) -> (
         xgb.Booster, xgb.DMatrix, xgb.DMatrix, pd.DataFrame):
     trn_xgb = trn_xgb.copy()
 
@@ -171,51 +152,118 @@ def learning_xgb(trn_xgb: pd.DataFrame, tst: pd.DataFrame, colmns: list) -> (
     evallist = [(dtest, 'eval'), (dtrain, 'train')]
     num_round = 10
     bst = xgb.train(param, dtrain, num_round, evallist)
-    bst.save_model('0001.model')
+    # bst.save_model('0001.model')
+    bst.save_model('0001.json')
 
     ypred = bst.predict(dtest)
 
-    tst = tst.reset_index().copy()
+    tst = tst.reset_index(drop=True).copy()
 
-    tst.insert(9, "pred_xgb", pd.Series(ypred))
+    tst.insert(2, "pred_xgb_invt", pd.Series(ypred))
 
-    tst["type_xgb"] = tst["pred_xgb"].apply(lambda a: "pp" if a >= 0.5 else "pm")
-    tst = tst.drop(columns="index")
+    tst["type_xgb_invt"] = tst["pred_xgb_invt"].apply(lambda a: "pp" if a >= 0.5 else "pm")
 
     return bst, trn_xgb, tst_xgb, tst
 
-def comparison(tst: pd.DataFrame) -> pd.DataFrame:
-    comp = tst[["invt_seq_nr", "person_name", "doc_std_name", "label", "type_xgb", "type", "type_int", "invt"]].copy()
-    comp["test_invt"] = np.where(comp["label"] != comp["invt"], 1, 0)
-    comp["test_fsttxt1"] = np.where(comp["label"] != comp["type"], 1, 0)
-    comp["test_fsttxt_invt"] = np.where(comp["label"] != comp["type_int"], 1, 0)
-    comp["test_xgb"] = np.where(comp["label"] != comp["type_xgb"], 1, 0)
 
-    res = pd.DataFrame(data={"invt": [comp["test_invt"].sum()],
-                             "fsttxt1": [comp["test_fsttxt1"].sum()],
+def learning_xgb(trn_xgb: pd.DataFrame, tst: pd.DataFrame) -> (
+        xgb.Booster, xgb.DMatrix, xgb.DMatrix, pd.DataFrame):
+    trn_xgb = trn_xgb.copy()
+    trn_xgb = trn_xgb.drop(columns="invt_seq_nr")
+
+    trn_xgb["label2"] = trn_xgb["label"].apply(
+        lambda a: 0 if a == "pm" else 1)
+
+    tst_xgb = tst.copy()
+    tst_xgb = tst_xgb[['person_name', 'doc_std_name', 'label']]
+
+    tst_xgb["label2"] = tst_xgb["label"].apply(
+        lambda a: 0 if a == "pm" else 1)
+
+    trn_xgb = trn_xgb.drop(columns="label").rename(columns={"label2": "label"}).copy()
+
+    tst_xgb = tst_xgb.drop(columns="label").rename(columns={"label2": "label"}).copy()
+
+    for col in ["doc_std_name", "person_name"]:
+        trn_xgb[col] = trn_xgb[col].astype("category")
+        tst_xgb[col] = tst_xgb[col].astype("category")
+
+    dtrain = xgb.DMatrix(trn_xgb.iloc[:, :-1], trn_xgb["label"], enable_categorical=True)
+    dtest = xgb.DMatrix(tst_xgb.iloc[:, :-1], tst_xgb["label"], enable_categorical=True)
+
+    param = {'max_depth': 2, 'objective': 'binary:logistic', 'seed': 123, 'nthread': 2, 'eval_metric': 'auc'}
+    evallist = [(dtest, 'eval'), (dtrain, 'train')]
+    num_round = 10
+    bst = xgb.train(param, dtrain, num_round, evallist)
+    # bst.save_model('0001.model')
+    bst.save_model('model_xgb.json')
+
+    ypred = bst.predict(dtest)
+
+    tst = tst.reset_index(drop=True).copy()
+
+    tst.insert(1, "pred_xgb", pd.Series(ypred))
+
+    tst["type_xgb"] = tst["pred_xgb"].apply(lambda a: "pp" if a >= 0.5 else "pm")
+
+    return bst, trn_xgb, tst_xgb, tst
+
+
+def comparison(tst: pd.DataFrame) -> pd.DataFrame:
+    comp = tst[["person_name", "doc_std_name", "label", "type_xgb", "type", "type_int", "type_xgb_invt"]].copy()
+    comp["test_fsttxt1"] = comp.apply(lambda a: 1 if a["label"] != a["type"] else 0, axis=1)
+    comp["test_fsttxt_invt"] = comp.apply(lambda a: 1 if a["label"] != a["type_int"] else 0, axis=1)
+    comp["test_xgb_invt"] = comp.apply(lambda a: 1 if a["label"] != a["type_xgb_invt"] else 0, axis=1)
+    comp["test_xgb"] = comp.apply(lambda a: 1 if a["label"] != a["type_xgb"] else 0, axis=1)
+
+    res = pd.DataFrame(data={"fsttxt1": [comp["test_fsttxt1"].sum()],
                              "fsttxt_invt": [comp["test_fsttxt_invt"].sum()],
+                             "xgb_invt": [comp["test_xgb_invt"].sum()],
                              "xgb": [comp["test_xgb"].sum()]})
+
+    # cols = ["type_xgb", "type", "type_int", "type_xgb_invt"]
+    # comp["label_binaire"] = comp["label"].apply(lambda a: 0 if a == "pm" else 1)
+    # for col in cols:
+    #     nom = col + "_binaire"
+    #     comp[nom] = comp[col].apply(lambda a: 0 if a == "pm" else 1)
+    #     nom_vp = nom + "_vp"
+    #     nom_fp = nom + "_fp"
+    #     nom_vn = nom + "_vn"
+    #     nom_fn = nom + "_fn"
+    #
+    #     comp[nom_vp] = comp.apply(lambda a: 1 if a["label_binaire"] == 1 and a[nom] == 1 else 0, axis=1)
+    #     comp[nom_fp] = comp.apply(lambda a: 1 if a["label_binaire"] == 0 and a[nom] == 1 else 0, axis=1)
+    #     comp[nom_vn] = comp.apply(lambda a: 1 if a["label_binaire"] == 0 and a[nom] == 0 else 0, axis=1)
+    #     comp[nom_fn] = comp.apply(lambda a: 1 if a["label_binaire"] == 1 and a[nom] == 0 else 0, axis=1)
+    #
+    # res2 = pd.DataFrame(data={
+    #     "prec_fsttxt1": [comp["type_binaire_vp"].sum() / (comp["type_binaire_vp"].sum() + comp["type_binaire_fp"].sum())],
+    #     "prec_fsttxt_invt": [comp["type_int_binaire_vp"].sum() / (
+    #                 comp["type_int_binaire_vp"].sum() + comp["type_int_binaire_fp"].sum())],
+    #     "prec_xgb_invt": [comp["type_xgb_invt_binaire_vp"].sum() / (
+    #                 comp["type_xgb_invt_binaire_vp"].sum() + comp["type_xgb_invt_binaire_fp"].sum())],
+    #     "prec_xgb": [comp["type_xgb_binaire_vp"].sum() / (
+    #                 comp["type_xgb_binaire_vp"].sum() + comp["type_xgb_binaire_fp"].sum())]})
 
     return res
 
 
 def main():
-    patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
-    old_part = pd.read_csv("part_init.csv",
+    old_part = pd.read_csv("part_init_p05_corrected.csv",
                            sep='|',
                            dtype=types.part_init_types,
                            encoding="utf-8")
 
-    appln_id = pd.DataFrame(patents["appln_id"].append(old_part["appln_id"])).drop_duplicates()
+    new_participants = old_part.copy()
 
-    tls207 = cfq.filtering("tls207", appln_id, "appln_id", DICT["tls207"])
-    tls206 = cfq.filtering("tls206", tls207, "person_id", DICT["tls206"])
-    new_participants = pd.merge(tls207, tls206, how="inner", on="person_id")
+    new_participants["person_name"] = new_participants["name_source"].copy()
+
     learning = create_dataset(new_participants)
     test, train_ros = trn_tst(learning)
     mod = learning_type_fsttxt(train_ros, test)
     mod2 = learning_type_invt_fsttxt(train_ros, test)
-    boosting, train_xgb, test_xgb, test = learning_xgb(train_ros, test, COLUMNS)
+    boosting_invt, train_xgb_invt, test_xgb_invt, test = learning_xgb_invt(train_ros, test, COLUMNS)
+    boosting, train_xgb, test_xgb, test = learning_xgb(train_ros, test)
     test = test.copy()
     test["txt"] = test["doc_std_name"] + " " + test["person_name"]
     test["txt_invt"] = test["doc_std_name"] + " " + test["person_name"] + " " + test["invt_seq_nr"].astype(str)
@@ -223,10 +271,5 @@ def main():
     test = testing_fasttext(test, "txt", "prediction", "type", mod)
     test = testing_fasttext(test, "txt_invt", "pred_invt", "type_int", mod2)
     test = test.copy()
-    test["invt"] = test["invt_seq_nr"].apply(lambda a: "pm" if a == 0 else "pp")
     results = comparison(test)
-    print("Best model:", results.idxmin(axis=1)[0])
-
-
-if __name__ == "__main__":
-    main()
+    print("Best model:", results.idxmin(axis=1)[0], flush=True)

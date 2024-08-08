@@ -1,10 +1,11 @@
 import os
 
 from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p02_titles_abstracts, p03_patents, \
-    p04_families, p05_creat_participants, p05b_clean_participants, p06_clean_participants_individuals, \
+    p04_families, p05_create_participants_xgboost, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
-    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing
+    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing, \
+    correction_type
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -22,6 +23,11 @@ def create_task_doi(args):
 def create_task_ef():
     logger.debug("create_task_ef")
     entity_fishing.get_ef()
+
+
+def create_task_models():
+    logger.debug("create_task_models")
+    correction_type.main()
 
 
 def create_task_clean(args):
@@ -103,7 +109,7 @@ def create_task_p01_p04_patstat():
 
 
 def create_task_p05_patstat():
-    p05_creat_participants.start_part()
+    p05_create_participants_xgboost.start_part()
     logger.debug("p05: success")
 
 

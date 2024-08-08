@@ -105,26 +105,26 @@ def get_url(ul: str):
     return res
 
 
-def xml_json(rt):
-    """
-    Get parties from XML result
-    """
-    data = xmltodict.parse(rt.content)
-    djson = json.dumps(data)
-    djson2 = json.loads(djson)
-    djson2 = djson2["ops:world-patent-data"]["ops:register-search"]["reg:register-documents"]["reg:register-document"][
-        "reg:bibliographic-data"]["reg:parties"]
-    return djson2
-
-
-def r_dict(xjson):
-    """
-    Get applicants from XML results
-    """
-    jsn = xml_json(xjson)
-    res_part1 = jsn["reg:applicants"]
-
-    return res_part1
+# def xml_json(rt):
+#     """
+#     Get parties from XML result
+#     """
+#     data = xmltodict.parse(rt.content)
+#     djson = json.dumps(data)
+#     djson2 = json.loads(djson)
+#     djson2 = djson2["ops:world-patent-data"]["ops:register-search"]["reg:register-documents"]["reg:register-document"][
+#         "reg:bibliographic-data"]["reg:parties"]
+#     return djson2
+#
+#
+# def r_dict(xjson):
+#     """
+#     Get applicants from XML results
+#     """
+#     jsn = xml_json(xjson)
+#     res_part1 = jsn["reg:applicants"]
+#
+#     return res_part1
 
 
 def df_applicant(res_part1) -> pd.DataFrame:
@@ -132,10 +132,17 @@ def df_applicant(res_part1) -> pd.DataFrame:
     Create dataframe with applicants
     """
     global df1
+    global nom
     if isinstance(res_part1, dict):
         if isinstance(res_part1["reg:applicant"], list):
             df1 = pd.json_normalize([res_part1], record_path=["reg:applicant"],
                                     meta=["@change-date", "@change-gazette-num"])
+
+            for col in list(df1.columns):
+                nom = re.sub("reg:applicant\.", "", col)
+                nom = re.sub("\.\$", "", nom)
+                df1 = df1.rename(columns={col: nom})
+
             df1 = df1.drop(
                 columns=["@app-type", "@designation", "reg:nationality.reg:country", "reg:residence.reg:country"])
 
@@ -163,17 +170,23 @@ def df_applicant(res_part1) -> pd.DataFrame:
 
         else:
             df1 = pd.json_normalize([res_part1])
-            df1 = df1.drop(columns=["reg:applicant.@app-type",
-                                    "reg:applicant.@designation",
-                                    "reg:applicant.reg:nationality.reg:country",
-                                    "reg:applicant.reg:residence.reg:country"])
+
+            for col in list(df1.columns):
+                nom = re.sub("reg:applicant\.", "", col)
+                nom = re.sub("\.\$", "", nom)
+                df1 = df1.rename(columns={col: nom})
+
+            df1 = df1.drop(columns=["@app-type",
+                                    "@designation",
+                                    "reg:nationality.reg:country",
+                                    "reg:residence.reg:country"])
 
             df1 = df1.fillna("")
 
             col_address = []
 
             for col in list(df1.columns):
-                if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
+                if col.startswith("reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
             df1["address"] = df1[col_address[0]]
@@ -182,20 +195,25 @@ def df_applicant(res_part1) -> pd.DataFrame:
                 df1["address"] = df1["address"].apply(lambda a: a.strip())
 
             for col in col_address:
-                name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
                 df1 = df1.rename(columns={col: name})
 
-            df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
-                                      "reg:applicant.reg:addressbook.@cdsid": "cdsid",
-                                      "reg:applicant.reg:addressbook.reg:name": "name",
-                                      "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
-
+            df1 = df1.rename(columns={"@sequence": "sequence",
+                                      "reg:addressbook.@cdsid": "cdsid",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country"})
     else:
         set_liste = [isinstance(item["reg:applicant"], list) for item in res_part1]
         set_liste = set(set_liste)
         if len(set_liste) == 1 and True in set_liste:
             df1 = pd.json_normalize(res_part1, record_path=["reg:applicant"],
                                     meta=["@change-date", "@change-gazette-num"])
+
+            for col in list(df1.columns):
+                nom = re.sub("reg:applicant\.", "", col)
+                nom = re.sub("\.\$", "", nom)
+                df1 = df1.rename(columns={col: nom})
+
             df1 = df1.drop(
                 columns=["@app-type", "@designation", "reg:nationality.reg:country", "reg:residence.reg:country"])
 
@@ -227,6 +245,12 @@ def df_applicant(res_part1) -> pd.DataFrame:
                 if isinstance(item["reg:applicant"], list):
                     tmp = pd.json_normalize(item, record_path=["reg:applicant"],
                                             meta=["@change-date", "@change-gazette-num"])
+
+                    for col in list(tmp.columns):
+                        nom = re.sub("reg:applicant\.", "", col)
+                        nom = re.sub("\.\$", "", nom)
+                        tmp = tmp.rename(columns={col: nom})
+
                     tmp = tmp.drop(
                         columns=["@app-type", "@designation", "reg:nationality.reg:country",
                                  "reg:residence.reg:country"])
@@ -254,17 +278,23 @@ def df_applicant(res_part1) -> pd.DataFrame:
                     liste_part.append(tmp)
                 else:
                     tmp = pd.json_normalize(item)
-                    tmp = tmp.drop(columns=["reg:applicant.@app-type",
-                                            "reg:applicant.@designation",
-                                            "reg:applicant.reg:nationality.reg:country",
-                                            "reg:applicant.reg:residence.reg:country"])
+
+                    for col in list(tmp.columns):
+                        nom = re.sub("reg:applicant\.", "", col)
+                        nom = re.sub("\.\$", "", nom)
+                        tmp = tmp.rename(columns={col: nom})
+
+                    tmp = tmp.drop(columns=["@app-type",
+                                            "@designation",
+                                            "reg:nationality.reg:country",
+                                            "reg:residence.reg:country"])
 
                     tmp = tmp.fillna("")
 
                     col_address = []
 
                     for col in list(tmp.columns):
-                        if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
+                        if col.startswith("reg:addressbook.reg:address.reg:address-"):
                             col_address.append(col)
 
                     tmp["address"] = tmp[col_address[0]]
@@ -273,33 +303,39 @@ def df_applicant(res_part1) -> pd.DataFrame:
                         tmp["address"] = tmp["address"].apply(lambda a: a.strip())
 
                     for col in col_address:
-                        name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                        name = re.sub("reg:addressbook.reg:address.reg:", "", col)
                         df1 = df1.rename(columns={col: name})
 
                     # tmp = tmp.drop(
                     #     columns=col_address)
 
-                    tmp = tmp.rename(columns={"reg:applicant.@sequence": "sequence",
-                                              "reg:applicant.reg:addressbook.@cdsid": "cdsid",
-                                              "reg:applicant.reg:addressbook.reg:name": "name",
-                                              "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                    tmp = tmp.rename(columns={"@sequence": "sequence",
+                                              "reg:addressbook.@cdsid": "cdsid",
+                                              "reg:addressbook.reg:name": "name",
+                                              "reg:addressbook.reg:address.reg:country": "country"})
                     liste_part.append(tmp)
 
             df1 = pd.concat(liste_part)
 
         else:
             df1 = pd.json_normalize(res_part1)
-            df1 = df1.drop(columns=["reg:applicant.@app-type",
-                                    "reg:applicant.@designation",
-                                    "reg:applicant.reg:nationality.reg:country",
-                                    "reg:applicant.reg:residence.reg:country"])
+
+            for col in list(df1.columns):
+                nom = re.sub("reg:applicant\.", "", col)
+                nom = re.sub("\.\$", "", nom)
+                df1 = df1.rename(columns={col: nom})
+
+            df1 = df1.drop(columns=["@app-type",
+                                    "@designation",
+                                    "reg:nationality.reg:country",
+                                    "reg:residence.reg:country"])
 
             df1 = df1.fillna("")
 
             col_address = []
 
             for col in list(df1.columns):
-                if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
+                if col.startswith("reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
             df1["address"] = df1[col_address[0]]
@@ -308,13 +344,13 @@ def df_applicant(res_part1) -> pd.DataFrame:
                 df1["address"] = df1["address"].apply(lambda a: a.strip())
 
             for col in col_address:
-                name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
                 df1 = df1.rename(columns={col: name})
 
-            df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
-                                      "reg:applicant.reg:addressbook.@cdsid": "cdsid",
-                                      "reg:applicant.reg:addressbook.reg:name": "name",
-                                      "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+            df1 = df1.rename(columns={"@sequence": "sequence",
+                                      "reg:addressbook.@cdsid": "cdsid",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country"})
 
     return df1
 
@@ -344,7 +380,7 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
     """
     global d_app
     ret1 = requests.get(f"http://ops.epo.org/3.2/rest-services/register/search/biblio?q=pn%3D{pn}",
-                        headers={"Authorization": tkn})
+                        headers={"Authorization": tkn, 'Accept': 'application/json'})
 
     status = ret1.status_code
     if status != 200:
@@ -356,8 +392,17 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
             raise ConnectionError("Failed while trying to access the URL")
     else:
         print("URL successfully accessed", flush=True)
-        res_part1 = r_dict(ret1)
-        d_app = df_applicant(res_part1)
+        res_part1 = \
+            ret1.json()["ops:world-patent-data"]["ops:register-search"]["reg:register-documents"][
+                "reg:register-document"][
+                "reg:bibliographic-data"]
+        if "reg:parties" in res_part1.keys():
+            res_part1 = res_part1["reg:parties"]
+            if "reg:applicants" in res_part1.keys():
+                res_part1 = res_part1["reg:applicants"]
+                d_app = df_applicant(res_part1)
+        else:
+            pass
 
     return d_app
 
@@ -680,16 +725,15 @@ def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
     liste_famille = []
 
     for pb in pub:
+        print(f"Publication number: {pb}")
         time.sleep(1)
         token = get_token_oeb()
-        fam = requests.get(f"http://ops.epo.org/3.2/rest-services/family/publication/docdb/EP{pb}",
-                           headers={"Authorization": token})
+        fam = requests.get(f"http://ops.epo.org/3.2/rest-services/family/publication/docdb/EP{pb}.json",
+                           headers={"Authorization": token, 'Accept': 'application/json'})
         if fam.status_code == 200:
             print("Success")
-            data = xmltodict.parse(fam.content)
-            djson = json.dumps(data)
-            djson2 = json.loads(djson)
-            djson3 = djson2["ops:world-patent-data"]["ops:patent-family"]["ops:family-member"]
+            data = fam.json()
+            djson3 = data["ops:world-patent-data"]["ops:patent-family"]["ops:family-member"]
             liste = []
             if isinstance(djson3, list):
                 for item in djson3:
@@ -702,6 +746,9 @@ def fam_oeb(tst_na: pd.DataFrame) -> pd.DataFrame:
                 liste.append(tmp)
 
             df = pd.concat(liste)
+            for col in list(df.columns):
+                nom = re.sub("\.\$", "", col)
+                df = df.rename(columns={col: nom})
             df2 = df.loc[df["@document-id-type"] == "docdb"]
             df2 = df2.loc[df2["country"].isin(["EP", "FR"])]
             df2["pn"] = "EP" + pb
@@ -835,8 +882,8 @@ def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
     Get SIREN and other ID from ScanR
     """
     # prod scanr
-    url_structures = "https://scanr-api.enseignementsup-recherche.gouv.fr/elasticsearch/structures/_search"
-    headers = headers = {"Authorization": os.getenv("HEADERS_API_SCANR")}
+    url_structures = "https://scanr.enseignementsup-recherche.gouv.fr/api/scanr-organizations/_search"
+    headers = {"Authorization": os.getenv("HEADERS_API_SCANR")}
 
     dict_res = {"person_id": [], "name_source": [], "name_propre": [], "address_source": [], "key_appln_nr_person": [],
                 "externalIds": [],

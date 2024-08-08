@@ -46,7 +46,7 @@ def res_futures(dict_nb: dict) -> pd.DataFrame:
     It returns a df with the IdRef.
     """
     res = []
-    with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
+    with concurrent.futures.ThreadPoolExecutor(max_workers=101, thread_name_prefix="thread") as executor:
         # Start the load operations and mark each future with its URL
         future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
         for future in concurrent.futures.as_completed(future_to_req):
@@ -71,13 +71,13 @@ def query(df: pd.DataFrame) -> pd.DataFrame:
     pydref = pdref.Pydref()
     logger = get_logger(threading.current_thread().name)
     logger.info("start")
-    part_idref = {"person_id": [], "name_corrected": [], "idref": []}
+    part_idref = {"person_id": [], "name_corrige": [], "idref": []}
     for _, r in df.iterrows():
         try:
-            result = pydref.identify(r["name_corrected"])
+            result = pydref.identify(r["name_corrige"])
             if result.get("status") == "found":
                 part_idref["person_id"].append(r["person_id"])
-                part_idref["name_corrected"].append(r["name_corrected"])
+                part_idref["name_corrige"].append(r["name_corrige"])
                 part_idref["idref"].append(result.get("idref"))
         except:
             pass
@@ -95,7 +95,7 @@ def subset_df(df: pd.DataFrame) -> dict:
     The subsets are put into a dictionary with 10-11 pairs key-value.
     Each key is the df subset name and each value is the df subset.
     """
-    prct10 = int(round(len(df) * 10 / 100, 0))
+    prct10 = int(round(len(df) / 100, 0))
     dict_nb = {}
     df = df.reset_index().drop(columns="index")
     indices = list(df.index)
@@ -112,7 +112,7 @@ def subset_df(df: pd.DataFrame) -> dict:
 
 def merge_idref(ori, dfref):
     ori2 = ori.rename(columns={"idref": "idref_original"})
-    ori2 = pd.merge(ori2, dfref, on=["person_id", "name_corrected"], how="left")
+    ori2 = pd.merge(ori2, dfref, on=["person_id", "name_corrige"], how="left")
 
     ori2.loc[(ori2["idref_original"].isna()) & (ori2["idref"].notna()), "idref2"] = ori2.loc[
         (ori2["idref_original"].isna()) & (ori2["idref"].notna()), "idref"]
@@ -136,9 +136,9 @@ def collecte():
 
     names = pd.DataFrame(
         part.loc[
-            (part["idref"].isna()) & (part["name_corrected"].notna()), ["name_corrected",
+            (part["idref"].isna()) & (part["name_corrige"].notna()), ["name_corrige",
                                                                         "person_id"]].drop_duplicates())
-    names["length"] = names["name_corrected"].apply(lambda a: len(a.split()))
+    names["length"] = names["name_corrige"].apply(lambda a: len(a.split()))
     names = names.loc[names["length"] > 1]
     names = names.drop(columns="length")
     names = names.reset_index().drop(columns="index")
@@ -151,7 +151,7 @@ def collecte():
 
     idref_identifies = pd.DataFrame(
         part.loc[
-            (part["idref"].notna()) & (part["name_corrected"].notna()), ["name_corrected",
+            (part["idref"].notna()) & (part["name_corrige"].notna()), ["name_corrige",
                                                                         "person_id", "idref"]].drop_duplicates())
 
     idref_identifies.to_csv("IdRef_identifies.csv", sep="|", encoding="utf-8", index=False)

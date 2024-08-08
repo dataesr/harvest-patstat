@@ -41,11 +41,11 @@ def get_part_to_deduplicate_by_fam(part_table: pd.DataFrame, famtype: str, name_
 
     """
 
-    part = part_table[[famtype, "doc_std_name", name_or, name_cor, 'isascii']].copy()
+    part = part_table[[famtype, "doc_std_name", name_or, name_cor, 'islatin']].copy()
     for col in part.columns:
         part[col] = part[col].replace(np.nan, '')
     #  on ne dédoublonne que les noms en caractères latins
-    part2 = part[part['isascii']].copy()
+    part2 = part[part['islatin']].copy()
     # on sélectionne les familles qui ont des nouveaux participants
     # (ceux dont le nom corrigé de la version précédente est nul)
     fam_to_deduplicate = part2[part2[name_cor] == ''][[famtype, "doc_std_name"]].drop_duplicates().copy()
@@ -91,7 +91,7 @@ def get_multinames_info(name: str) -> bool:
     :return: a boolean that returns True if there are more than two words separated, False otherwise
 
     """
-    separator = [",", ";", "/"]
+    separator = [",", ";", "/", ",,"]
     multin = False
     for sep in separator:
         if len(name.split(sep)) > 2:
@@ -362,16 +362,16 @@ def get_dict_score_entp_identicals(dict_clusters: dict, name: str) -> dict:
 def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict) -> pd.DataFrame:
     part_indiv = part_df[part_df['type'] == type_person].copy()
 
-    part_ind_to_deduplicate = get_part_to_deduplicate_by_fam(part_indiv, family, 'name_source',
+    part_ind_to_deduplicate = get_part_to_deduplicate_by_fam(part_indiv, family, 'name',
                                                              'old_name')
 
-    deduplicated_ind = deduplicate_part_by_fam(part_ind_to_deduplicate, family, 'name_source',
+    deduplicated_ind = deduplicate_part_by_fam(part_ind_to_deduplicate, family, 'name',
                                                get_dict)
 
     # On recompose ensuite la table individus avec les nouveaux groupes
 
-    part_ind = part_indiv.merge(deduplicated_ind[[family, 'doc_std_name', 'name_source', 'new_name']].drop_duplicates(),
-                                on=[family, 'doc_std_name', 'name_source'], how='left')
+    part_ind = part_indiv.merge(deduplicated_ind[[family, 'doc_std_name', 'name', 'new_name']].drop_duplicates(),
+                                on=[family, 'doc_std_name', 'name'], how='left')
 
     for col in part_ind.columns:
         part_ind[col] = part_ind[col].replace(np.nan, '')
@@ -382,22 +382,36 @@ def deduplication(part_df: pd.DataFrame, type_person: str, family: str, get_dict
 def get_clean_part():
     # set working directory
     os.chdir(DATA_PATH)
-    part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types)
+    part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types, engine="python")
+
+    part.loc[(part["name_corrected"].notna()) & (part["old_name"].notna()), "old_name"] = part.loc[
+        (part["name_corrected"].notna()) & (part["old_name"].notna()), "name_corrected"]
+
+    part.loc[part["name_corrected"].notna(), "name"] = part.loc[part["name_corrected"].notna(), "name_corrected"]
+    part.loc[part["name_corrected"].isna(), "name"] = part.loc[part["name_corrected"].isna(), "name_clean2"]
 
     for col in part.columns:
         part[col] = part[col].replace(np.nan, '')
 
-    part_ind = deduplication(part, "pp", "inpadoc_family_id", get_dict_score_individus)
+    part_ind = deduplication(part, "pp", "docdb_family_id", get_dict_score_individus)
+    part_ind['name_corrige'] = part_ind['new_name'].copy()
+    part_ind.loc[part_ind['new_name'] == '', 'name_corrige'] = part_ind.loc[part_ind['new_name'] == '', 'old_name']
+    part_ind.loc[part_ind['new_name'] == '', 'name_corrige'] = part_ind.loc[part_ind['new_name'] == '', 'old_name']
+    part_ind['name_corrige'] = part_ind['name_corrige'].apply(tf.put_title_format)
 
     part_ind.to_csv("part_ind.csv", sep="|", index=False, encoding="utf-8")
     swift.upload_object('patstat', 'part_ind.csv')
 
-    part_entp = deduplication(part, "pm", "inpadoc_family_id", get_dict_score_entp_identicals)
+    part_entp = deduplication(part, "pm", "docdb_family_id", get_dict_score_entp_identicals)
     for col in part_entp.columns:
         part_entp[col] = part_entp[col].fillna('')
-        part_entp['name_corrected'] = np.where(part_entp['new_name'] == '', part_entp['old_name'],
-                                               part_entp['new_name'])
-    part_entp['name_corrected'] = part_entp['name_corrected'].apply(tf.put_title_format)
+
+    part_entp['name_corrige'] = part_entp['new_name'].copy()
+    part_entp.loc[part_entp['new_name'] == '', 'name_corrige'] = part_entp.loc[part_entp['new_name'] == '', 'old_name']
+    part_entp.loc[part_entp['new_name'] == '', 'name_corrige'] = part_entp.loc[part_entp['new_name'] == '', 'old_name']
+    part_entp.loc[(part_entp['new_name'] == '') & (part_entp['name_corrected'] != ''), 'name_corrige'] = part_entp.loc[
+        (part_entp['new_name'] == '') & (part_entp['name_corrected'] != ''), 'name_corrected']
+    part_entp['name_corrige'] = part_entp['name_corrige'].apply(tf.put_title_format)
 
     part_entp.to_csv("part_entp.csv", sep="|", index=False, encoding="utf-8")
     swift.upload_object('patstat', 'part_entp.csv')

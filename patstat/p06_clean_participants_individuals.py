@@ -3,10 +3,15 @@
 
 import os
 import time
+import concurrent.futures
 
 import numpy as np
 import pandas as pd
 import requests
+import logging
+import threading
+import sys
+from retry import retry
 
 from utils import swift
 
@@ -20,6 +25,70 @@ DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 # Ensuite on va choisir pour chaque cluster mis en avant dans chaque famille,
 # le nom qu'on va garder. On ne fait la sélection que sur les nouveaux clusters
+
+def get_logger(name):
+    """
+    This function helps to follow the execution of the parallel computation.
+    """
+    loggers = {}
+    if name in loggers:
+        return loggers[name]
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(fmt)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    loggers[name] = logger
+    return loggers[name]
+
+
+def subset_df(df: pd.DataFrame) -> dict:
+    """
+    This function divides the initial df into subsets which represent ca. 10 % of the original df.
+    The subsets are put into a dictionary with 10-11 pairs key-value.
+    Each key is the df subset name and each value is the df subset.
+    """
+    prct10 = int(round(len(df) / 100, 0))
+    dict_nb = {}
+    df = df.reset_index().drop(columns="index")
+    indices = list(df.index)
+    listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+    i = 1
+    for liste in listes_indices:
+        min_ind = np.min(liste)
+        max_ind = np.max(liste) + 1
+        dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+        i = i + 1
+
+    return dict_nb
+
+
+def res_futures(dict_nb: dict, query) -> pd.DataFrame:
+    """
+    This function applies the query function on each subset of the original df in a parallel way
+    It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
+    It returns a df with the IdRef.
+    """
+    global jointure
+    res = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=101, thread_name_prefix="thread") as executor:
+        # Start the load operations and mark each future with its URL
+        future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
+        for future in concurrent.futures.as_completed(future_to_req):
+            req = future_to_req[future]
+            try:
+                data = future.result()
+                res.append(data)
+                jointure = pd.concat(res)
+            except Exception as exc:
+                print('%r generated an exception: %s' % (req, exc), flush=True)
+
+    return jointure
+
 
 def select_nice_name(name_table: pd.DataFrame, family_var: str, source_name_var: str, cluster_name_var: str,
                      office_var: str) -> pd.DataFrame:
@@ -128,112 +197,130 @@ def affectation_most_occurences(table_to_fill: pd.DataFrame, famtype: str, var_t
     return table_extrapol
 
 
-#def get_sex_proba_from_name(name: str):
-#    """   This function uses a dataesr API to get sex from name : it can be a first name or complete name. It gets the
-#    first occurence : best result
-#
-#    param name: the name to get sex from
-#    type name: string
-#
-#    :return:  4 variables : 'sexe', 'proba' (vaut entre 0 et 1), 'occurences' (le nombre d'occurences dans la base de
-#    référence du prénom identifié dans la chaîne) et en dernier le résultat de l'appel API. (erreur, détecté,
-#    non détecté)
-#
-#    """
-#
-#    url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
-#    headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
-#    proba = 0.0
-#    r = requests.get(url_sexe_request + name, headers=headers)
-#    if r.status_code != 200:
-#        raise ConnectionError("Failed while trying to access the URL")
-#    else:
-#        if (r.json()['status']) == 'detected':
-#            prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
-#            sexe = prem_occurr['gender']
-#            if sexe == 'M':
-#                proba = round(prem_occurr['proportion_M'])
-#            if sexe == 'F':
-#                proba = prem_occurr['proportion_F']
-#            occurrences = prem_occurr['nb_occurrences_with_gender']
-#            return sexe, proba, occurrences, 'detected'
-#        else:
-#            return "", "", "", "not_detected"
-#
-#
-#def get_sex_from_name_set(set_nom: set) -> pd.DataFrame:
-#    """   This function uses a dataesr API to get sex from name. It takes a set of names and returns a dataframe with
-#    API variables results for each name in the set
-#
-#    param name: the set of names to get sex from
-#    type name: set
-#
-#    :return:  a dataframe with the original name, and the results of sex API
-#
-#    """
-#
-#    dict_nom = {}
-#    set_nom = set_nom.difference(set(dict_nom))
-#    count = 0
-#    start_time = time.time()
-#    for name in set_nom:
-#        dict_tmp = {'sex': (get_sex_proba_from_name(name))[0], 'proba': (get_sex_proba_from_name(name))[1],
-#                    'occurence': (get_sex_proba_from_name(name))[2], 'error': (get_sex_proba_from_name(name))[3]}
-#        dict_nom[name] = dict_tmp
-#        count += 1
-#        if count % 1000 == 0:
-#            print("Nombre de requêtes de nom effectuées : " + str(count) + " --  ")
-#            print("--- %s seconds ---" % (time.time() - start_time))
-#        if count % 5000 == 0:
-#            pd.DataFrame.from_dict(dict_nom, orient='index').reset_index() \
-#                .rename(columns={'index': 'name'}).to_csv('sex_names.csv', sep='|', index=False)
-#    sex_table = pd.DataFrame.from_dict(dict_nom, orient='index').reset_index().rename(columns={'index': 'name'})
-#    return sex_table
+@retry(tries=3, delay=5, backoff=5)
+def get_sex_proba_from_name(name: str):
+    """   This function uses a dataesr API to get sex from name : it can be a first name or complete name. It gets the
+    first occurence : best result
+
+    param name: the name to get sex from
+    type name: string
+
+    :return:  4 variables : 'sexe', 'proba' (vaut entre 0 et 1), 'occurences' (le nombre d'occurences dans la base de
+    référence du prénom identifié dans la chaîne) et en dernier le résultat de l'appel API. (erreur, détecté,
+    non détecté)
+
+    """
+
+    url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
+    headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
+    proba = 0.0
+    r = requests.get(url_sexe_request + name, headers=headers)
+    if r.status_code != 200:
+        raise ConnectionError("Failed while trying to access the URL")
+    else:
+        if (r.json()['status']) == 'detected':
+            prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
+            sexe = prem_occurr['gender']
+            if sexe == 'M':
+                proba = round(prem_occurr['proportion_M'])
+            if sexe == 'F':
+                proba = prem_occurr['proportion_F']
+            occurrences = prem_occurr['nb_occurrences_with_gender']
+            return sexe, proba, occurrences, 'detected'
+        else:
+            return "", "", "", "not_detected"
+
+
+def get_sex_from_name_set(df_nom: pd.DataFrame) -> pd.DataFrame:
+    """   This function uses a dataesr API to get sex from name. It takes a set of names and returns a dataframe with
+    API variables results for each name in the set
+
+    param name: the set of names to get sex from
+    type name: set
+
+    :return:  a dataframe with the original name, and the results of sex API
+
+    """
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start query gender")
+    dict_nom = {}
+    count = 0
+    start_time = time.time()
+    for row in df_nom.itertuples():
+        name = row.name_corrige
+        dict_tmp = {'sex': (get_sex_proba_from_name(name))[0], 'proba': (get_sex_proba_from_name(name))[1],
+                    'occurence': (get_sex_proba_from_name(name))[2], 'error': (get_sex_proba_from_name(name))[3]}
+        dict_nom[name] = dict_tmp
+        count += 1
+        if count % 1000 == 0:
+            print("Nombre de requêtes de nom effectuées : " + str(count) + " --  ")
+            print("--- %s seconds ---" % (time.time() - start_time))
+        if count % 5000 == 0:
+            pd.DataFrame.from_dict(dict_nom, orient='index').reset_index() \
+                .rename(columns={'index': 'name'}).to_csv('sex_names.csv', sep='|', index=False)
+    sex_table = pd.DataFrame.from_dict(dict_nom, orient='index').reset_index().rename(columns={'index': 'name'})
+
+    logger.info("end query gender")
+    return sex_table
 
 
 def get_clean_ind():
     # set working directory
     os.chdir(DATA_PATH)
-    part_ind = pd.read_csv('part_ind.csv', sep='|', dtype=types.part_init_types)
+    part_ind = pd.read_csv('part_ind.csv', sep='|', dtype=types.part_init_types,
+                           encoding="utf-8", engine="python")
 
-    part_ind_name_nice = select_nice_name(part_ind[part_ind['new_name'] != ''], 'inpadoc_family_id', 'name_source',
-                                          'new_name', 'appln_auth')
+    part_ind["name_corrige"] = part_ind["name_corrige"].fillna("")
 
-    part_individuals = part_ind.merge(part_ind_name_nice[['inpadoc_family_id', 'new_name']],
-                                      on=['inpadoc_family_id', 'new_name'], how='left')
+    part_ind_name_nice = select_nice_name(part_ind.loc[part_ind['name_corrige'] != ''],
+                                          'docdb_family_id', 'name',
+                                          'name_corrige', 'appln_auth')
+
+    part_individuals = part_ind.merge(part_ind_name_nice[['docdb_family_id', 'name_corrige']],
+                                      on=['docdb_family_id', 'name_corrige'], how='left')
     for col in part_individuals.columns:
         part_individuals[col] = part_individuals[col].fillna('')
 
     # pour les anciens clusters, on garde le old_name, qui était l'ancien nom du cluster de la version précédente
 
-    part_individuals['name_corrected'] = np.where(part_individuals['new_name'] == '', part_individuals['old_name'],
-                                                  part_individuals['new_name'])
+    part_individuals.loc[part_individuals["name_corrige"] == "", "name_corrige"] = part_individuals.loc[
+        part_individuals["name_corrige"] == "", "old_name"]
 
-    part_individuals['name_corrected'] = part_individuals['name_corrected'].apply(clean_name_to_nice)
+    # part_individuals['name_corrected'] = np.where(part_individuals['new_name'] == '', part_individuals['old_name'],
+    #                                               part_individuals['new_name'])
 
-    part_individuals = affectation_most_occurences(part_individuals, 'inpadoc_family_id', 'country_corrected',
-                                                   'name_corrected')
+    part_individuals['name_corrige'] = part_individuals['name_corrige'].apply(clean_name_to_nice)
 
-    part_individuals_fin = part_individuals
-#    # Enfin on récupère le sexe par API pour les nouvelles personnes
-#
-#    table_to_get_sex = part_individuals[
-#        (part_individuals['isascii']) & (part_individuals['new_name'] != '')].copy()
-#    set_to_get_sex = set(table_to_get_sex['name_corrected'])
-#
-#    sex_table = get_sex_from_name_set(set_to_get_sex)
-#
-#    sex_table.to_csv('sex_table.csv', sep='|', index=False)
-#
-#    sex_table = pd.read_csv('sex_table.csv', sep='|')
-#
-#    part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrected', right_on='name', how='left')
+    part_individuals = affectation_most_occurences(part_individuals, 'docdb_family_id', 'country_corrected',
+                                                   'name_corrige')
+
+    part_individuals_fin = part_individuals.copy()
+    # Enfin on récupère le sexe par API pour les nouvelles personnes
+
+    table_to_get_sex = part_individuals.loc[
+        (part_individuals['islatin']) & (part_individuals['name_corrige'] != '')].copy()
+    # set_to_get_sex = set(table_to_get_sex['new_name'])
+
+    sub_get_sex = subset_df(pd.DataFrame(data={"name_corrige": table_to_get_sex["name_corrige"].unique()}))
+
+    sex_table = res_futures(sub_get_sex, get_sex_from_name_set)
+
+    # sex_table = get_sex_from_name_set(set_to_get_sex)
+
+    sex_table.to_csv('sex_table.csv', sep='|', index=False)
+
+    sex_table = pd.read_csv('sex_table.csv', sep='|')
+
+    part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrige', right_on='name', how='left')
 
     for col in part_individuals_fin.columns:
         part_individuals_fin[col] = part_individuals_fin[col].fillna('')
         part_individuals_fin[col] = part_individuals_fin[col].astype(str)
 
-    #part_individuals_fin['sexe'] = np.where(part_individuals_fin['sexe'] == '', part_individuals_fin['sex'],
+    part_individuals_fin.loc[part_individuals["sexe"] == "", "sexe"] = part_individuals_fin.loc[
+        part_individuals["sexe"] == "", "sex"]
+
+    # part_individuals_fin['sexe'] = np.where(part_individuals_fin['sexe'] == '', part_individuals_fin['sex'],
     #                                        part_individuals_fin['sexe'])
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
