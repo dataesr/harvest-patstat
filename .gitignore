@@ -18,3 +18,4 @@ clean_participants_localhost.localdomain_Jan-10-094217-2022_Conflict.py
 check_output_json.py
 get_json.py
 patstat/missing_siren_fall2022.py
+patstat/entity_fishing.py

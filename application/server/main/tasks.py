@@ -4,9 +4,8 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     p04_families, p05_create_participants_xgboost, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
-    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing, \
-    correction_type
-# comp_version_y02y04s,
+    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, correction_type
+# comp_version_y02y04s
 from application.server.main.logger import get_logger
 
 logger = get_logger(__name__)
@@ -18,11 +17,6 @@ def create_task_doi(args):
     logger.debug("create_task_doi")
     liste = args.get("liste")
     get_patent_from_doi.get_patents_common_doi(liste)
-
-
-def create_task_ef():
-    logger.debug("create_task_ef")
-    entity_fishing.get_ef()
 
 
 def create_task_models():
