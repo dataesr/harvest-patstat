@@ -122,15 +122,15 @@ def loading():
 
     # set working directory
     os.chdir(DATA_PATH)
-    shutil.rmtree(f"{DATA_PATH}/inpi")
+    shutil.rmtree(f"{DATA_PATH}inpi")
 
-    os.system(f'mkdir -p {DATA_PATH}/inpi')
+    os.system(f'mkdir -p {DATA_PATH}inpi')
 
     for i in reversed(year_list):
-        download_ftp_tree(ftp_server, i, f"{DATA_PATH}/inpi", pattern=None, overwrite=False,
+        download_ftp_tree(ftp_server, i, f"{DATA_PATH}inpi", pattern=None, overwrite=False,
                           guess_by_extension=True)
 
-        if os.path.isdir(f"{DATA_PATH}/inpi/{i}"):
+        if os.path.isdir(f"{DATA_PATH}inpi/{i}"):
             break
 
     ftp_server.quit()
