@@ -1197,7 +1197,7 @@ def xgb_learning(prt_record: pd.DataFrame) -> pd.DataFrame:
         prt_xgb["type"].isna()].drop_duplicates().reset_index(drop=True).drop(columns="type")
 
     mod = xgb.Booster()
-    mod.load_model("0001.model")
+    mod.load_model("model_xgb.json")
 
     for col in list(prt_xgb_na.columns):
         prt_xgb_na[col] = prt_xgb_na[col].astype("category")
