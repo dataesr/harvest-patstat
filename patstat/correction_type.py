@@ -10,6 +10,8 @@ import re
 from sklearn.model_selection import train_test_split
 import xgboost as xgb
 
+from utils import swift
+
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 DICT = {"tls207": {'sep': ',', 'chunksize': 10000000, 'dtype': types.tls207_types},
@@ -83,6 +85,7 @@ def learning_type_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame) -> fasttext.FastT
                                       epoch=50)
 
     model.save_model('model_test')
+    swift.upload_object('patstat', 'model_test')
     test_pred = model.test('test.txt', k=-1, threshold=0.5)
     print(test_pred)
 
@@ -109,6 +112,7 @@ def learning_type_invt_fsttxt(trn: pd.DataFrame, tst: pd.DataFrame) -> fasttext.
                                        epoch=50)
 
     model2.save_model('model_test2')
+    swift.upload_object('patstat', 'model_test2')
 
     test_pred2 = model2.test('test.txt', k=-1, threshold=0.5)
     print(test_pred2)
@@ -154,6 +158,7 @@ def learning_xgb_invt(trn_xgb: pd.DataFrame, tst: pd.DataFrame, colmns: list) ->
     bst = xgb.train(param, dtrain, num_round, evallist)
     # bst.save_model('0001.model')
     bst.save_model('0001.json')
+    swift.upload_object('patstat', '0001.json')
 
     ypred = bst.predict(dtest)
 
@@ -197,6 +202,8 @@ def learning_xgb(trn_xgb: pd.DataFrame, tst: pd.DataFrame) -> (
     bst = xgb.train(param, dtrain, num_round, evallist)
     # bst.save_model('0001.model')
     bst.save_model('model_xgb.json')
+    swift.upload_object('patstat', 'model_xgb.json')
+
 
     ypred = bst.predict(dtest)
 
