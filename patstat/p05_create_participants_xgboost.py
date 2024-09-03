@@ -1303,7 +1303,7 @@ def start_part():
 
     patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
     print("1 : chargement patents", flush=True)
-    swift.download_object('patstat', 'part_init_p05.csv', 'part_init_p05.csv')
+    # swift.download_object('patstat', 'part_init_p05.csv', 'part_init_p05.csv')
     old_part = pd.read_csv("part_init_p05.csv",
                            sep='|',
                            dtype=types.part_init_types,
