@@ -157,8 +157,8 @@ def learning_xgb_invt(trn_xgb: pd.DataFrame, tst: pd.DataFrame, colmns: list) ->
     num_round = 10
     bst = xgb.train(param, dtrain, num_round, evallist)
     # bst.save_model('0001.model')
-    bst.save_model('0001.json')
-    swift.upload_object('patstat', '0001.json')
+    bst.save_model('model_xgb_invt.json')
+    swift.upload_object('patstat', 'model_xgb_invt.json')
 
     ypred = bst.predict(dtest)
 

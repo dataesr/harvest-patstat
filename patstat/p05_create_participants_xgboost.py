@@ -1197,7 +1197,9 @@ def xgb_learning(prt_record: pd.DataFrame) -> pd.DataFrame:
         prt_xgb["type"].isna()].drop_duplicates().reset_index(drop=True).drop(columns="type")
 
     mod = xgb.Booster()
-    mod.load_model("model_xgb.json")
+    mod.load_model("model_xgb_invt.json")
+
+    prt_xgb_na = prt_xgb_na.rename(columns={"name_source": "person_name"})
 
     for col in list(prt_xgb_na.columns):
         prt_xgb_na[col] = prt_xgb_na[col].astype("category")
@@ -1214,6 +1216,8 @@ def xgb_learning(prt_record: pd.DataFrame) -> pd.DataFrame:
     print("15 : prédictions type", flush=True)
 
     prt_xgb_na = prt_xgb_na.drop(columns="pred_xgb")
+    prt_xgb_na = prt_xgb_na.rename(columns={"person_name": "name_source"})
+
     prt_xgb_na2 = pd.merge(prt_xgb_na2, prt_xgb_na, on=["name_source", "doc_std_name", "invt_seq_nr"], how="left")
 
     prt_concat = pd.concat([prt_type, prt_xgb_nna, prt_xgb_na2], ignore_index=True)
