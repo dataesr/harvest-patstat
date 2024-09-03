@@ -24,7 +24,7 @@ def home():
 
 
 @main_blueprint.route('/harvest_doi', methods=['POST'])
-def doi():
+def harvest_doi():
     logger.debug("Get args")
     args = request.get_json(force=True)
 
