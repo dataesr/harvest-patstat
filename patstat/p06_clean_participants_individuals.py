@@ -20,8 +20,8 @@ from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-
+# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = "/run/media/julia/DATA/spring2024/"
 
 # Ensuite on va choisir pour chaque cluster mis en avant dans chaque famille,
 # le nom qu'on va garder. On ne fait la sélection que sur les nouveaux clusters
@@ -212,12 +212,13 @@ def get_sex_proba_from_name(name: str):
     """
 
     url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
-    headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
+    # headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
+    headers = {"Authorization": "Basic ***REMOVED***"}
     proba = 0.0
     r = requests.get(url_sexe_request + name, headers=headers)
     if r.status_code != 200:
         print(f"{name}: Failed while trying to access the URL", flush=True)
-        pass
+        return "", "", "", "not_detected"
         # raise ConnectionError("Failed while trying to access the URL")
     else:
         if (r.json()['status']) == 'detected':
@@ -304,11 +305,11 @@ def get_clean_ind():
 
     df_get_sex = pd.DataFrame(data={"name_corrige": table_to_get_sex["name_corrige"].unique()})
 
-    sex_table = get_sex_from_name_set(df_get_sex)
+    # sex_table = get_sex_from_name_set(df_get_sex)
 
-    # sub_get_sex = subset_df(df_get_sex)
+    sub_get_sex = subset_df(df_get_sex)
 
-    # sex_table = res_futures(sub_get_sex, get_sex_from_name_set)
+    sex_table = res_futures(sub_get_sex, get_sex_from_name_set)
 
     sex_table.to_csv('sex_table.csv', sep='|', index=False)
 
