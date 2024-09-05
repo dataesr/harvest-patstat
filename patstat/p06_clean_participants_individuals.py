@@ -305,9 +305,9 @@ def get_clean_ind():
 
     # sex_table = get_sex_from_name_set(df_get_sex)
 
-    # sub_get_sex = subset_df(df_get_sex)
+    sub_get_sex = subset_df(df_get_sex)
 
-    # sex_table = res_futures(sub_get_sex, get_sex_from_name_set)
+    sex_table = res_futures(sub_get_sex, get_sex_from_name_set)
 
     sex_table.to_csv('sex_table.csv', sep='|', index=False)
 
