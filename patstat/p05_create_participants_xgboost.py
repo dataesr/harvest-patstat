@@ -1307,14 +1307,14 @@ def start_part():
 
     patents = pd.read_csv("patent.csv", sep="|", dtype=types.patent_types)
     print("1 : chargement patents", flush=True)
-    # swift.download_object('patstat', 'part_init_p05.csv', 'part_init_p05.csv')
+    swift.download_object('patstat', 'part_init_p05.csv', 'part_init_p05.csv')
     old_part = pd.read_csv("part_init_p05.csv",
                            sep='|',
                            dtype=types.part_init_types,
                            encoding="utf-8",
                            engine="python")
     old_part = old_part.drop_duplicates()
-    # old_part.to_csv("part_init_backup.csv", sep="|", index=False)
+    old_part.to_csv("part_init_backup.csv", sep="|", index=False)
     print("2 : chargement part_init", flush=True)
 
     old_part["key_appln_nr_person"] = old_part["key_appln_nr"] + "_" + old_part[
