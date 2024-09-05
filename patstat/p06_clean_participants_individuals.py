@@ -216,7 +216,9 @@ def get_sex_proba_from_name(name: str):
     proba = 0.0
     r = requests.get(url_sexe_request + name, headers=headers)
     if r.status_code != 200:
-        raise ConnectionError("Failed while trying to access the URL")
+        print(f"{name}: Failed while trying to access the URL", flush=True)
+        pass
+        # raise ConnectionError("Failed while trying to access the URL")
     else:
         if (r.json()['status']) == 'detected':
             prem_occurr = r.json()['data'][0]['firstnames_detected'][0]
@@ -300,7 +302,11 @@ def get_clean_ind():
     table_to_get_sex = part_individuals.loc[
         (part_individuals['islatin']) & (part_individuals['name_corrige'] != '')].copy()
 
-    sub_get_sex = subset_df(pd.DataFrame(data={"name_corrige": table_to_get_sex["name_corrige"].unique()}))
+    df_get_sex = pd.DataFrame(data={"name_corrige": table_to_get_sex["name_corrige"].unique()})
+
+    # sex_table = get_sex_from_name_set(df_get_sex)
+
+    sub_get_sex = subset_df(df_get_sex)
 
     sex_table = res_futures(sub_get_sex, get_sex_from_name_set)
 
