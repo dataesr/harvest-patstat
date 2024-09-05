@@ -20,8 +20,7 @@ from patstat import dtypes_patstat_declaration as types
 from patstat import text_functions as tf
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-DATA_PATH = "/run/media/julia/DATA/spring2024/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 # Ensuite on va choisir pour chaque cluster mis en avant dans chaque famille,
 # le nom qu'on va garder. On ne fait la sélection que sur les nouveaux clusters
@@ -212,8 +211,7 @@ def get_sex_proba_from_name(name: str):
     """
 
     url_sexe_request = "http://185.161.45.213/persons/persons/_gender?q="
-    # headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
-    headers = {"Authorization": "Basic cm9vdDp0b25uZXJyZTJCcmVzdA=="}
+    headers = {"Authorization": f"Basic {os.getenv('DATAESR')}"}
     proba = 0.0
     r = requests.get(url_sexe_request + name, headers=headers)
     if r.status_code != 200:
