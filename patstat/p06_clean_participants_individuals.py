@@ -327,3 +327,5 @@ def get_clean_ind():
 
     part_individuals_fin.to_csv('part_individuals.csv', sep='|', index=False)
     swift.upload_object('patstat', 'part_individuals.csv')
+
+    # fin
