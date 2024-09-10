@@ -76,15 +76,18 @@ def subset_df(df: pd.DataFrame) -> dict:
     """
     prct10 = int(round(len(df) * 10 / 100, 0))
     dict_nb = {}
-    df = df.reset_index().drop(columns="index")
-    indices = list(df.index)
-    listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
-    i = 1
-    for liste in listes_indices:
-        min_ind = np.min(liste)
-        max_ind = np.max(liste) + 1
-        dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
-        i = i + 1
+    if prct10 > 0:
+        df = df.reset_index().drop(columns="index")
+        indices = list(df.index)
+        listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+        i = 1
+        for liste in listes_indices:
+            min_ind = np.min(liste)
+            max_ind = np.max(liste) + 1
+            dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+            i = i + 1
+    else:
+        dict_nb["df1"] = df
 
     return dict_nb
 
@@ -883,7 +886,6 @@ def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
     """
     # prod scanr
     url_structures = "https://scanr.enseignementsup-recherche.gouv.fr/api/scanr-organizations/_search"
-    headers = {"Authorization": os.getenv("HEADERS_API_SCANR")}
 
     dict_res = {"person_id": [], "name_source": [], "name_propre": [], "address_source": [], "key_appln_nr_person": [],
                 "externalIds": [],
@@ -917,7 +919,7 @@ def req_scanr_stru(df_stru_fuz: pd.DataFrame) -> pd.DataFrame:
             }
         }
 
-        res1 = requests.get(url_structures, headers=headers, json=query1).json()
+        res1 = requests.get(url_structures, json=query1, verify=False).json()
         if res1.get("status"):
             pass
         elif len(res1.get("hits").get("hits")) > 0:
@@ -968,10 +970,12 @@ def siren_oeb_bodacc():
     # Load files
 
     part_entp_final = pd.read_csv("part_entp_final.csv", sep="|", encoding="utf-8",
-                                  dtype=types.part_entp_types)
+                                  dtype=types.part_entp_types, engine="python")
+
+    part_entp_final = part_entp_final.rename(columns={"name": "name_part"})
 
     p05 = pd.read_csv("part_init_p05.csv", sep="|", encoding="utf-8",
-                      dtype=types.part_entp_types)
+                      dtype=types.part_entp_types, engine="python")
 
     p05 = p05[["key_appln_nr_person", "name_source", "applt_seq_nr"]].drop_duplicates()
 
@@ -1478,142 +1482,152 @@ def siren_oeb_bodacc():
 
     if len(df_bodacc) > 0:
         nepfr_address = pd.merge(nepfr_address, df_bodacc, on="name_source", how="left")
+        nepfr_address = nepfr_address.loc[nepfr_address["personne.numeroImmatriculation.numeroIdentification"].notna()]
 
-        nepfr_address.loc[:, "housenumber2"] = ""
-        nepfr_address.loc[:, "nbr_min"] = 0
-        nepfr_address.loc[:, "nbr_max"] = 0
-        for i, r in nepfr_address.loc[nepfr_address["housenumber"].notna()].iterrows():
-            chaine = r.housenumber
-            ch = split_hs(chaine)
-            nepfr_address.at[i, "housenumber2"] = ch
-            if ch:
-                mini = int(min(ch))
-                maxi = int(max(ch)) + 1
-                nepfr_address.at[i, "nbr_min"] = mini
-                nepfr_address.at[i, "nbr_max"] = maxi
+        if len(nepfr_address) > 0:
+            nepfr_address.loc[:, "housenumber2"] = ""
+            nepfr_address.loc[:, "nbr_min"] = 0
+            nepfr_address.loc[:, "nbr_max"] = 0
+            for i, r in nepfr_address.loc[nepfr_address["housenumber"].notna()].iterrows():
+                chaine = r.housenumber
+                ch = split_hs(chaine)
+                nepfr_address.at[i, "housenumber2"] = ch
+                if ch:
+                    mini = int(min(ch))
+                    maxi = int(max(ch)) + 1
+                    nepfr_address.at[i, "nbr_min"] = mini
+                    nepfr_address.at[i, "nbr_max"] = maxi
 
-        nepfr_address["numeroVoie2"] = ""
-        nepfr_address["no_min"] = 0
-        nepfr_address["no_max"] = 0
-        for i, r in nepfr_address.loc[
-            nepfr_address["personne.adresseSiegeSocial.numeroVoie"].notna()].iterrows():
-            chaine2 = str(r["personne.adresseSiegeSocial.numeroVoie"])
-            ch2 = split_hs(chaine2)
-            nepfr_address.at[i, "numeroVoie2"] = ch2
-            if ch2 != []:
-                mini2 = int(min(ch2))
-                maxi2 = int(max(ch2)) + 1
-                nepfr_address.at[i, "no_min"] = mini2
-                nepfr_address.at[i, "no_max"] = maxi2
+            nepfr_address["numeroVoie2"] = ""
+            nepfr_address["no_min"] = 0
+            nepfr_address["no_max"] = 0
+            for i, r in nepfr_address.loc[
+                nepfr_address["personne.adresseSiegeSocial.numeroVoie"].notna()].iterrows():
+                chaine2 = str(r["personne.adresseSiegeSocial.numeroVoie"])
+                ch2 = split_hs(chaine2)
+                nepfr_address.at[i, "numeroVoie2"] = ch2
+                if ch2 != []:
+                    mini2 = int(min(ch2))
+                    maxi2 = int(max(ch2)) + 1
+                    nepfr_address.at[i, "no_min"] = mini2
+                    nepfr_address.at[i, "no_max"] = maxi2
 
-        nepfr_address = nepfr_address.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
-                                              "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
+            nepfr_address = nepfr_address.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
+                                                  "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
 
-        nepfr_address.loc[nepfr_address["housenumber2"].notna(), "nbr_et"] = nepfr_address.loc[
-            nepfr_address["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
-            lambda a: [x for x in range(a.nbr_min, a.nbr_max) if x % 2 == 0] if a.nbr_min % 2 == 0 else [x
-                                                                                                         for x in
-                                                                                                         range(
-                                                                                                             a.nbr_min,
-                                                                                                             a.nbr_max)
-                                                                                                         if
-                                                                                                         x % 2 > 0],
-            axis=1)
+            nepfr_address.loc[nepfr_address["housenumber2"].notna(), "nbr_et"] = nepfr_address.loc[
+                nepfr_address["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
+                lambda a: [x for x in range(a.nbr_min, a.nbr_max) if x % 2 == 0] if a.nbr_min % 2 == 0 else [x
+                                                                                                             for x in
+                                                                                                             range(
+                                                                                                                 a.nbr_min,
+                                                                                                                 a.nbr_max)
+                                                                                                             if
+                                                                                                             x % 2 > 0],
+                axis=1)
 
-        nepfr_address.loc[nepfr_address["numeroVoie2"].notna(), "no_et"] = nepfr_address.loc[
-            nepfr_address["numeroVoie2"].notna(), ["no_min", "no_max"]].apply(
-            lambda a: [x for x in range(a.no_min, a.no_max) if x % 2 == 0] if a.no_min % 2 == 0 else [x for
-                                                                                                      x in
-                                                                                                      range(a.no_min,
-                                                                                                            a.no_max)
-                                                                                                      if x % 2 > 0],
-            axis=1)
+            nepfr_address.loc[nepfr_address["numeroVoie2"].notna(), "no_et"] = nepfr_address.loc[
+                nepfr_address["numeroVoie2"].notna(), ["no_min", "no_max"]].apply(
+                lambda a: [x for x in range(a.no_min, a.no_max) if x % 2 == 0] if a.no_min % 2 == 0 else [x for
+                                                                                                          x in
+                                                                                                          range(
+                                                                                                              a.no_min,
+                                                                                                              a.no_max)
+                                                                                                          if x % 2 > 0],
+                axis=1)
 
-        nepfr_address.loc[nepfr_address["housenumber2"].notna(), "len_nr"] = nepfr_address.loc[
-            nepfr_address["housenumber2"].notna(), "housenumber2"].apply(lambda a: len(a))
-        nepfr_address.loc[nepfr_address["numeroVoie2"].notna(), "len_no"] = nepfr_address.loc[
-            nepfr_address["numeroVoie2"].notna(), "numeroVoie2"].apply(lambda a: len(a))
+            nepfr_address.loc[nepfr_address["housenumber2"].notna(), "len_nr"] = nepfr_address.loc[
+                nepfr_address["housenumber2"].notna(), "housenumber2"].apply(lambda a: len(a))
+            nepfr_address.loc[nepfr_address["numeroVoie2"].notna(), "len_no"] = nepfr_address.loc[
+                nepfr_address["numeroVoie2"].notna(), "numeroVoie2"].apply(lambda a: len(a))
 
-        nepfr_address = nepfr_address.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
+            nepfr_address = nepfr_address.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
 
-        nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1), "ep"] = \
-            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1), "housenumber"] == \
-            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1),
-            "personne.adresseSiegeSocial.numeroVoie"]
+            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1), "ep"] = \
+                nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1), "housenumber"] == \
+                nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] == 1),
+                "personne.adresseSiegeSocial.numeroVoie"]
 
-        nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] > 1), "ep"] = \
-            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (
-                    nepfr_address["len_no"] > 1)].apply(lambda a: a["housenumber2"][0] in a["numeroVoie2"], axis=1)
+            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] > 1), "ep"] = \
+                nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (
+                        nepfr_address["len_no"] > 1)].apply(lambda a: a["housenumber2"][0] in a["numeroVoie2"], axis=1)
 
-        nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] > 1), "ep"] = \
-            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (
-                    nepfr_address["len_no"] > 1)].apply(lambda a: a["housenumber2"][0] in a["numeroVoie2"],
-                                                        axis=1)
+            nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (nepfr_address["len_no"] > 1), "ep"] = \
+                nepfr_address.loc[(nepfr_address["len_nr"] == 1) & (
+                        nepfr_address["len_no"] > 1)].apply(lambda a: a["housenumber2"][0] in a["numeroVoie2"],
+                                                            axis=1)
 
-        nepfr_address.loc[(nepfr_address["len_nr"] > 1) & (nepfr_address["len_no"] == 1), "ep"] = \
-            nepfr_address.loc[
-                (nepfr_address["len_nr"] > 1) & (nepfr_address["len_no"] == 1)].apply(
-                lambda a: a["numeroVoie2"][0] in a["housenumber2"], axis=1)
+            nepfr_address.loc[(nepfr_address["len_nr"] > 1) & (nepfr_address["len_no"] == 1), "ep"] = \
+                nepfr_address.loc[
+                    (nepfr_address["len_nr"] > 1) & (nepfr_address["len_no"] == 1)].apply(
+                    lambda a: a["numeroVoie2"][0] in a["housenumber2"], axis=1)
 
-        nepfr_address = nepfr_address.loc[nepfr_address["person_id"].notna()]
+            nepfr_address = nepfr_address.loc[nepfr_address["person_id"].notna()]
 
-        nepfr_address = nepfr_address.drop(
-            columns=["housenumber2", "numeroVoie2", "nbr_min", "nbr_max", "no_min", "no_max", "nbr_et",
-                     "no_et", "len_nr", "len_no"])
+            nepfr_address = nepfr_address.drop(
+                columns=["housenumber2", "numeroVoie2", "nbr_min", "nbr_max", "no_min", "no_max", "nbr_et",
+                         "no_et", "len_nr", "len_no"])
 
-        nepfr_address.loc[:, "ep2"] = nepfr_address.loc[:, "ep"].apply(lambda a: 1 if a is True else 0)
+            nepfr_address.loc[:, "ep2"] = nepfr_address.loc[:, "ep"].apply(lambda a: 1 if a is True else 0)
 
-        nepfr_address = nepfr_address.loc[nepfr_address["ep2"] == 1].drop(columns="ep")
+            nepfr_address = nepfr_address.loc[nepfr_address["ep2"] == 1].drop(columns="ep")
 
-        nepfr_address["name2"] = nepfr_address["name_source"].apply(lambda a: a.lower())
-        nepfr_address["distance"] = nepfr_address.apply(lambda a: lev.distance(a["name2"], a["personne.denomination"]),
-                                                        axis=1)
+            if len(nepfr_address) > 0:
+                nepfr_address["name2"] = nepfr_address["name_source"].apply(lambda a: a.lower())
+                nepfr_address["distance"] = nepfr_address.apply(
+                    lambda a: lev.distance(a["name2"], a["personne.denomination"]),
+                    axis=1)
 
-        liste_publn_nepfr = []
-        for name in set(nepfr_address["name_source"]):
-            df = nepfr_address.loc[nepfr_address["name_source"] == name]
-            dmin = min(df["distance"])
-            df = df.loc[df["distance"] == dmin]
-            df = df.drop(columns=["distance", "name2"])
-            df = df.loc[df["person_id"].notna()]
-            df = df.loc[df["personne.numeroImmatriculation.numeroIdentification"].notna()]
-            df = df.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
-            df = df.astype({"applt_seq_nr": int})
-            liste_publn_nepfr.append(df)
+                liste_publn_nepfr = []
+                for name in set(nepfr_address["name_source"]):
+                    df = nepfr_address.loc[nepfr_address["name_source"] == name]
+                    dmin = min(df["distance"])
+                    df = df.loc[df["distance"] == dmin]
+                    df = df.drop(columns=["distance", "name2"])
+                    df = df.loc[df["person_id"].notna()]
+                    df = df.loc[df["personne.numeroImmatriculation.numeroIdentification"].notna()]
+                    df = df.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
+                    df = df.astype({"applt_seq_nr": int})
+                    liste_publn_nepfr.append(df)
 
-        nepfr_address2 = pd.concat(liste_publn_nepfr)
+                nepfr_address2 = pd.concat(liste_publn_nepfr)
 
-        cmpte = nepfr_address2[
-            ["person_id", "docdb_family_id", "inpadoc_family_id", "name_source", "publication_number",
-             "key_appln_nr_person", "applt_seq_nr", "siren"]].copy()
+                cmpte = nepfr_address2[
+                    ["person_id", "docdb_family_id", "inpadoc_family_id", "name_source", "publication_number",
+                     "key_appln_nr_person", "applt_seq_nr", "siren"]].copy()
 
-        cmpte["id"] = cmpte["person_id"].astype(str) + cmpte["docdb_family_id"].astype(str) + cmpte[
-            "inpadoc_family_id"].astype(str) + cmpte["name_source"] + \
-                      cmpte["publication_number"] + cmpte["key_appln_nr_person"] + cmpte["applt_seq_nr"].astype(str)
-        cmpte = cmpte.drop_duplicates().reset_index(drop=True)
+                cmpte["id"] = cmpte["person_id"].astype(str) + cmpte["docdb_family_id"].astype(str) + cmpte[
+                    "inpadoc_family_id"].astype(str) + cmpte["name_source"] + \
+                              cmpte["publication_number"] + cmpte["key_appln_nr_person"] + cmpte["applt_seq_nr"].astype(
+                    str)
+                cmpte = cmpte.drop_duplicates().reset_index(drop=True)
 
-        cmpte_cmp = cmpte[["id", "siren"]].groupby("id").nunique().reset_index().rename(columns={"siren": "compte"})
+                cmpte_cmp = cmpte[["id", "siren"]].groupby("id").nunique().reset_index().rename(
+                    columns={"siren": "compte"})
 
-        cmpte = pd.merge(cmpte, cmpte_cmp, on="id", how="left")
+                cmpte = pd.merge(cmpte, cmpte_cmp, on="id", how="left")
 
-        cmpte = cmpte.drop(columns=["id", "siren"]).drop_duplicates()
+                cmpte = cmpte.drop(columns=["id", "siren"]).drop_duplicates()
 
-        nepfr_address3 = pd.merge(nepfr_address2, cmpte,
-                                  on=["person_id", "docdb_family_id", "inpadoc_family_id", "name_source",
-                                      "publication_number",
-                                      "key_appln_nr_person", "applt_seq_nr"], how="right")
+                nepfr_address3 = pd.merge(nepfr_address2, cmpte,
+                                          on=["person_id", "docdb_family_id", "inpadoc_family_id", "name_source",
+                                              "publication_number",
+                                              "key_appln_nr_person", "applt_seq_nr"], how="right")
 
-        nepfr_address3.loc[nepfr_address3["compte"] > 1, "siren"] = np.nan
+                nepfr_address3.loc[nepfr_address3["compte"] > 1, "siren"] = np.nan
 
-        nepfr_address3 = nepfr_address3.drop(columns="compte")
-        nepfr_address3 = nepfr_address3.loc[nepfr_address3["siren"].notna()]
-        com_cols = list(set(nepfr_address3.columns).intersection(set(notepfr.columns)))
-        nepfr_address3 = nepfr_address3[com_cols].drop_duplicates()
+                nepfr_address3 = nepfr_address3.drop(columns="compte")
+                nepfr_address3 = nepfr_address3.loc[nepfr_address3["siren"].notna()]
+                com_cols = list(set(nepfr_address3.columns).intersection(set(notepfr.columns)))
+                nepfr_address3 = nepfr_address3[com_cols].drop_duplicates()
 
-    if len(nepfr_address3) > 0:
-        reste_notepfr = notepfr.loc[~notepfr["key_appln_nr_person"].isin(nepfr_address3["key_appln_nr_person"])]
-    else:
-        reste_notepfr = notepfr.copy()
+        if "nepfr_address3" in locals():
+            if len(nepfr_address3) > 0:
+                reste_notepfr = notepfr.loc[~notepfr["key_appln_nr_person"].isin(nepfr_address3["key_appln_nr_person"])]
+            else:
+                reste_notepfr = notepfr.copy()
+        else:
+            reste_notepfr = notepfr.copy()
 
     ###################################################################################################################
     # Patents EP not already found
@@ -1723,129 +1737,140 @@ def siren_oeb_bodacc():
     sub_address_oeb = subset_df(df_address_oeb)
     df_oeb_bodacc = res_futures(sub_address_oeb, bodacc)
 
-    df_address_oeb = pd.merge(df_address_oeb, df_oeb_bodacc, on="name_source", how="left")
+    if len(df_oeb_bodacc) > 0:
+        df_address_oeb = pd.merge(df_address_oeb, df_oeb_bodacc, on="name_source", how="left")
 
-    df_address_oeb.loc[:, "housenumber2"] = ""
-    df_address_oeb.loc[:, "nbr_min"] = 0
-    df_address_oeb.loc[:, "nbr_max"] = 0
-    for i, r in df_address_oeb.loc[df_address_oeb["housenumber"].notna()].iterrows():
-        chaine = r.housenumber
-        ch = split_hs(chaine)
-        df_address_oeb.at[i, "housenumber2"] = ch
-        if ch:
-            mini = int(min(ch))
-            maxi = int(max(ch)) + 1
-            df_address_oeb.at[i, "nbr_min"] = mini
-            df_address_oeb.at[i, "nbr_max"] = maxi
+        df_address_oeb.loc[:, "housenumber2"] = ""
+        df_address_oeb.loc[:, "nbr_min"] = 0
+        df_address_oeb.loc[:, "nbr_max"] = 0
+        for i, r in df_address_oeb.loc[df_address_oeb["housenumber"].notna()].iterrows():
+            chaine = r.housenumber
+            ch = split_hs(chaine)
+            df_address_oeb.at[i, "housenumber2"] = ch
+            if ch:
+                mini = int(min(ch))
+                maxi = int(max(ch)) + 1
+                df_address_oeb.at[i, "nbr_min"] = mini
+                df_address_oeb.at[i, "nbr_max"] = maxi
 
-    df_address_oeb["numeroVoie2"] = ""
-    df_address_oeb["no_min"] = 0
-    df_address_oeb["no_max"] = 0
-    for i, r in df_address_oeb.loc[
-        df_address_oeb["personne.adresseSiegeSocial.numeroVoie"].notna()].iterrows():
-        chaine2 = str(r["personne.adresseSiegeSocial.numeroVoie"])
-        ch2 = split_hs(chaine2)
-        df_address_oeb.at[i, "numeroVoie2"] = ch2
-        if ch2 != []:
-            mini2 = int(min(ch2))
-            maxi2 = int(max(ch2)) + 1
-            df_address_oeb.at[i, "no_min"] = mini2
-            df_address_oeb.at[i, "no_max"] = maxi2
+        df_address_oeb["numeroVoie2"] = ""
+        df_address_oeb["no_min"] = 0
+        df_address_oeb["no_max"] = 0
+        for i, r in df_address_oeb.loc[
+            df_address_oeb["personne.adresseSiegeSocial.numeroVoie"].notna()].iterrows():
+            chaine2 = str(r["personne.adresseSiegeSocial.numeroVoie"])
+            ch2 = split_hs(chaine2)
+            df_address_oeb.at[i, "numeroVoie2"] = ch2
+            if ch2 != []:
+                mini2 = int(min(ch2))
+                maxi2 = int(max(ch2)) + 1
+                df_address_oeb.at[i, "no_min"] = mini2
+                df_address_oeb.at[i, "no_max"] = maxi2
 
-    df_address_oeb = df_address_oeb.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
-                                            "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
+        df_address_oeb = df_address_oeb.astype({"nbr_min": pd.Int64Dtype(), "nbr_max": pd.Int64Dtype(),
+                                                "no_min": pd.Int64Dtype(), "no_max": pd.Int64Dtype()})
 
-    df_address_oeb.loc[df_address_oeb["housenumber2"].notna(), "nbr_et"] = df_address_oeb.loc[
-        df_address_oeb["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
-        lambda a: [x for x in range(a.nbr_min, a.nbr_max) if x % 2 == 0] if a.nbr_min % 2 == 0 else [x
-                                                                                                     for
-                                                                                                     x
-                                                                                                     in
-                                                                                                     range(
-                                                                                                         a.nbr_min,
-                                                                                                         a.nbr_max)
-                                                                                                     if
-                                                                                                     x % 2 > 0],
-        axis=1)
-
-    df_address_oeb.loc[df_address_oeb["numeroVoie2"].notna(), "no_et"] = df_address_oeb.loc[
-        df_address_oeb["numeroVoie2"].notna(), ["no_min", "no_max"]].apply(
-        lambda a: [x for x in range(a.no_min, a.no_max) if x % 2 == 0] if a.no_min % 2 == 0 else [x for
-                                                                                                  x in
-                                                                                                  range(
-                                                                                                      a.no_min,
-                                                                                                      a.no_max)
-                                                                                                  if
-                                                                                                  x % 2 > 0],
-        axis=1)
-
-    df_address_oeb.loc[df_address_oeb["housenumber2"].notna(), "len_nr"] = df_address_oeb.loc[
-        df_address_oeb["housenumber2"].notna(), "housenumber2"].apply(
-        lambda a: len(a))
-    df_address_oeb.loc[df_address_oeb["numeroVoie2"].notna(), "len_no"] = df_address_oeb.loc[
-        df_address_oeb["numeroVoie2"].notna(), "numeroVoie2"].apply(
-        lambda a: len(a))
-
-    df_address_oeb = df_address_oeb.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
-
-    df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1), "ep"] = \
-        df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1), "housenumber"] == \
-        df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1),
-        "personne.adresseSiegeSocial.numeroVoie"]
-
-    df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] > 1), "ep"] = \
-        df_address_oeb.loc[
-            (df_address_oeb["len_nr"] == 1) & (
-                    df_address_oeb["len_no"] > 1)].apply(
-            lambda a: a["housenumber2"][0] in a["numeroVoie2"],
+        df_address_oeb.loc[df_address_oeb["housenumber2"].notna(), "nbr_et"] = df_address_oeb.loc[
+            df_address_oeb["housenumber2"].notna(), ["nbr_min", "nbr_max"]].apply(
+            lambda a: [x for x in range(a.nbr_min, a.nbr_max) if x % 2 == 0] if a.nbr_min % 2 == 0 else [x
+                                                                                                         for
+                                                                                                         x
+                                                                                                         in
+                                                                                                         range(
+                                                                                                             a.nbr_min,
+                                                                                                             a.nbr_max)
+                                                                                                         if
+                                                                                                         x % 2 > 0],
             axis=1)
 
-    df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] > 1), "ep"] = \
-        df_address_oeb.loc[
-            (df_address_oeb["len_nr"] == 1) & (
-                    df_address_oeb["len_no"] > 1)].apply(
-            lambda a: a["housenumber2"][0] in a["numeroVoie2"],
+        df_address_oeb.loc[df_address_oeb["numeroVoie2"].notna(), "no_et"] = df_address_oeb.loc[
+            df_address_oeb["numeroVoie2"].notna(), ["no_min", "no_max"]].apply(
+            lambda a: [x for x in range(a.no_min, a.no_max) if x % 2 == 0] if a.no_min % 2 == 0 else [x for
+                                                                                                      x in
+                                                                                                      range(
+                                                                                                          a.no_min,
+                                                                                                          a.no_max)
+                                                                                                      if
+                                                                                                      x % 2 > 0],
             axis=1)
 
-    df_address_oeb.loc[(df_address_oeb["len_nr"] > 1) & (df_address_oeb["len_no"] == 1), "ep"] = \
-        df_address_oeb.loc[
-            (df_address_oeb["len_nr"] > 1) & (df_address_oeb["len_no"] == 1)].apply(
-            lambda a: a["numeroVoie2"][0] in a["housenumber2"], axis=1)
+        df_address_oeb.loc[df_address_oeb["housenumber2"].notna(), "len_nr"] = df_address_oeb.loc[
+            df_address_oeb["housenumber2"].notna(), "housenumber2"].apply(
+            lambda a: len(a))
+        df_address_oeb.loc[df_address_oeb["numeroVoie2"].notna(), "len_no"] = df_address_oeb.loc[
+            df_address_oeb["numeroVoie2"].notna(), "numeroVoie2"].apply(
+            lambda a: len(a))
 
-    df_address_oeb = df_address_oeb.loc[df_address_oeb["person_id"].notna()]
+        df_address_oeb = df_address_oeb.astype({"len_nr": pd.Int64Dtype(), "len_no": pd.Int64Dtype()})
 
-    df_address_oeb = df_address_oeb.drop(
-        columns=["housenumber2", "numeroVoie2", "nbr_min", "nbr_max", "no_min", "no_max", "nbr_et",
-                 "no_et", "len_nr", "len_no"])
+        df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1), "ep"] = \
+            df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1), "housenumber"] == \
+            df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] == 1),
+            "personne.adresseSiegeSocial.numeroVoie"]
 
-    df_address_oeb.loc[:, "ep2"] = df_address_oeb.loc[:, "ep"].apply(lambda a: 1 if a is True else 0)
+        df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] > 1), "ep"] = \
+            df_address_oeb.loc[
+                (df_address_oeb["len_nr"] == 1) & (
+                        df_address_oeb["len_no"] > 1)].apply(
+                lambda a: a["housenumber2"][0] in a["numeroVoie2"],
+                axis=1)
 
-    df_address_oeb = df_address_oeb.loc[df_address_oeb["ep2"] == 1].drop(columns="ep")
+        df_address_oeb.loc[(df_address_oeb["len_nr"] == 1) & (df_address_oeb["len_no"] > 1), "ep"] = \
+            df_address_oeb.loc[
+                (df_address_oeb["len_nr"] == 1) & (
+                        df_address_oeb["len_no"] > 1)].apply(
+                lambda a: a["housenumber2"][0] in a["numeroVoie2"],
+                axis=1)
 
-    df_address_oeb["name2"] = df_address_oeb["name_source"].apply(lambda a: a.lower())
-    df_address_oeb["distance"] = df_address_oeb.apply(
-        lambda a: lev.distance(a["name2"], a["personne.denomination"]),
-        axis=1)
-    dmin = min(df_address_oeb["distance"])
-    df_address_oeb = df_address_oeb.loc[df_address_oeb["distance"] == dmin]
-    df_address_oeb = df_address_oeb.drop(columns=["distance", "name2"])
-    df_address_oeb = df_address_oeb.loc[df_address_oeb["person_id"].notna()]
-    df_address_oeb = df_address_oeb.loc[df_address_oeb["personne.numeroImmatriculation.numeroIdentification"].notna()]
-    df_address_oeb = df_address_oeb.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
-    df_address_oeb = df_address_oeb.astype({"applt_seq_nr": int})
-    df_address_oeb = df_address_oeb.drop(columns="address_2").drop_duplicates()
-    df_address_oeb2 = df_address_oeb[com_col].drop_duplicates()
+        df_address_oeb.loc[(df_address_oeb["len_nr"] > 1) & (df_address_oeb["len_no"] == 1), "ep"] = \
+            df_address_oeb.loc[
+                (df_address_oeb["len_nr"] > 1) & (df_address_oeb["len_no"] == 1)].apply(
+                lambda a: a["numeroVoie2"][0] in a["housenumber2"], axis=1)
+
+        df_address_oeb = df_address_oeb.loc[df_address_oeb["person_id"].notna()]
+
+        df_address_oeb = df_address_oeb.drop(
+            columns=["housenumber2", "numeroVoie2", "nbr_min", "nbr_max", "no_min", "no_max", "nbr_et",
+                     "no_et", "len_nr", "len_no"])
+
+        df_address_oeb.loc[:, "ep2"] = df_address_oeb.loc[:, "ep"].apply(lambda a: 1 if a is True else 0)
+
+        df_address_oeb = df_address_oeb.loc[df_address_oeb["ep2"] == 1].drop(columns="ep")
+
+        df_address_oeb["name2"] = df_address_oeb["name_source"].apply(lambda a: a.lower())
+        df_address_oeb["distance"] = df_address_oeb.apply(
+            lambda a: lev.distance(a["name2"], a["personne.denomination"]),
+            axis=1)
+        dmin = min(df_address_oeb["distance"])
+        df_address_oeb = df_address_oeb.loc[df_address_oeb["distance"] == dmin]
+        df_address_oeb = df_address_oeb.drop(columns=["distance", "name2"])
+        df_address_oeb = df_address_oeb.loc[df_address_oeb["person_id"].notna()]
+        df_address_oeb = df_address_oeb.loc[
+            df_address_oeb["personne.numeroImmatriculation.numeroIdentification"].notna()]
+        df_address_oeb = df_address_oeb.rename(columns={"personne.numeroImmatriculation.numeroIdentification": "siren"})
+        df_address_oeb = df_address_oeb.astype({"applt_seq_nr": int})
+        df_address_oeb = df_address_oeb.drop(columns="address_2").drop_duplicates()
+        df_address_oeb2 = df_address_oeb[com_col].drop_duplicates()
 
     ###################################################################################################################
     # concatenate all the df with SIREN we already have
-    nepfr_address3 = pd.merge(noms[["key_appln_nr_person", "address_source"]], nepfr_address3, on="key_appln_nr_person",
-                              how="inner")
+    if "nepfr_address3" in locals():
+        nepfr_address3 = pd.merge(noms[["key_appln_nr_person", "address_source"]], nepfr_address3,
+                                  on="key_appln_nr_person",
+                                  how="inner")
 
-    if len(nepfr_address3) > 1:
-        ok = pd.concat(
-            [fr2.loc[fr2["siren"].notna()], publn_bodacc3, nepfr_address3, df_famille_fr_ok2, df_address_oeb2])
+    if "nepfr_address3" in locals():
+        if "df_address_oeb2" in locals():
+            ok = pd.concat(
+                [fr2.loc[fr2["siren"].notna()], publn_bodacc3, nepfr_address3, df_famille_fr_ok2, df_address_oeb2])
+        else:
+            ok = pd.concat(
+                [fr2.loc[fr2["siren"].notna()], publn_bodacc3, nepfr_address3, df_famille_fr_ok2])
     else:
-        ok = pd.concat([fr2.loc[fr2["siren"].notna()], publn_bodacc3, df_famille_fr_ok2, df_address_oeb2])
+        if "df_address_oeb2" in locals():
+            ok = pd.concat([fr2.loc[fr2["siren"].notna()], publn_bodacc3, df_famille_fr_ok2, df_address_oeb2])
+        else:
+            ok = pd.concat([fr2.loc[fr2["siren"].notna()], publn_bodacc3, df_famille_fr_ok2])
 
     ok = ok.drop_duplicates()
 
@@ -1908,20 +1933,17 @@ def siren_oeb_bodacc():
         columns=['address_2',
                  'personne.adresseSiegeSocial.codePostal',
                  'personne.adresseSiegeSocial.numeroVoie',
-                 'personne.adresseEtablissementPrincipal.complGeographique',
-                 'personne.adresseSiegeSocial.localite',
-                 'personne.adresseEtablissementPrincipal.localite',
-                 'personne.nonInscrit',
-                 'personne.enseigne',
-                 'personne.inscriptionRM.numeroDepartement',
-                 'personne.inscriptionRM.codeRM',
-                 'personne.inscriptionRM.numeroIdentificationRM',
-                 'personne',
-                 'personne.adresseSiegeSocial.BP',
-                 'personne.nomUsage',
-                 'personne.adressePP.complGeographique',
-                 'personne.adressePP.localite',
-                 'personne.adressePP.BP']).drop_duplicates()
+                 'personne.adresseSiegeSocial.localite']).drop_duplicates()
+
+    for item in ["personne.adresseEtablissementPrincipal.complGeographique",
+                 "personne.adresseEtablissementPrincipal.localite", "personne.nonInscrit", "personne.enseigne",
+                 "personne.inscriptionRM.numeroDepartement", "personne.inscriptionRM.codeRM",
+                 "personne.inscriptionRM.numeroIdentificationRM", "personne", "personne.adresseSiegeSocial.BP",
+                 "personne.nomUsage", "personne.adressePP.complGeographique", "personne.adressePP.localite",
+                 "personne.adressePP.BP"]:
+        if item in reste2_address_ok.columns:
+            reste2_address_ok = reste2_address_ok.drop(columns=[item]).drop_duplicates()
+
 
     compte_reste2 = reste2_address_ok[["key_appln_nr_person", "siren"]].groupby(
         "key_appln_nr_person").nunique().reset_index().rename(columns={"siren": "compte"})
@@ -2180,7 +2202,7 @@ def siren_oeb_bodacc():
     api_call_headers = {'Authorization': 'Bearer ' + token}
 
     for _, r in name_address.iterrows():
-        url = f'https://api.insee.fr/entreprises/sirene/V3/siret?q=denominationUniteLegale:"{r.name_propre}"'
+        url = f'https://api.insee.fr/entreprises/sirene/V3.11/siret?q=denominationUniteLegale:"{r.name_propre}"'
         rinit = requests.get(url, headers=api_call_headers, verify=False)
         if rinit.status_code == 200:
             rep = pd.json_normalize(rinit.json()["etablissements"])
@@ -2269,6 +2291,7 @@ def siren_oeb_bodacc():
         (part_entp_final2["siren_psn"].notna()) & (part_entp_final2["siren"].isna()), "siren_psn"]
 
     part_entp_final2 = part_entp_final2.drop(columns=["siren2", "siret2", "grid2", "idref2"])
+    part_entp_final2 = part_entp_final2.rename(columns={"name_part": "name"})
 
     part_entp_final2.to_csv("part_entp_final2.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'part_entp_final2.csv')
