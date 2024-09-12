@@ -222,13 +222,10 @@ def create_df_address():
         else:
             pass
 
-    pat_autres = patents.loc[~patents["docdb_family_id"].isin(liste_fr)]
-
     patents = patents.loc[patents["docdb_family_id"].isin(liste_fr)]
 
     part = pd.read_csv("part_p08.csv", sep="|", encoding="utf-8", engine="python",
                        dtype=types.partfin_types, parse_dates=["earliest_filing_date"])
-    part = part.drop(columns="liste_key_person")
 
     part2 = part.copy()
 
