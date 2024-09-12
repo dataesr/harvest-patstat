@@ -5,7 +5,7 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
     p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing, \
-    correction_type, p09_geoloc
+    correction_type, p09_geoloc, p08b_outils_inpi_adress_mongo
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -75,6 +75,8 @@ def create_task_all(args):
         get_doi()
     if args.get('dwnp08', True):
         getp08()
+    if args.get("p08mongo", True):
+        getp08b()
 
 
 
@@ -179,3 +181,8 @@ def getp08():
 def create_task_geo():
    p09_geoloc.geoloc()
    logger.debug("p09: success")
+
+   
+def getp08b():
+    p08b_outils_inpi_adress_mongo.create_df_address()
+    logger.debug("p08b: success")
