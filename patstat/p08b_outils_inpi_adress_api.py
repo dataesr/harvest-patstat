@@ -14,6 +14,19 @@ from utils import swift
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
+
+def doc_nb(lmf, ptdoc):
+    global pb_n
+    if "doc-number" in ptdoc.attrs.keys():
+        pb_n = ptdoc["doc-number"]
+    else:
+        for item in lmf:
+            if ".xml" in item:
+                pb_n = int(item.replace(".xml", ""))
+
+    return pb_n
+
+
 def person_ref(bs, pb_n, ptdoc):
     people = ["applicant", "inventor"]
     liste = []
