@@ -343,16 +343,23 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     res_adm = []
     for _, r in df_nevite.iterrows():
         ad = r["address-complete-fr"]
-        res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json").json()
-        if "features" not in res.keys():
+        res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json")
+        if res.status_code != 200:
+            print(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}", flush=True)
             tadm = pd.DataFrame(data={"address-complete-fr": [ad]})
             res_adm.append(tadm)
         else:
-            res2 = res["features"]
-            for r2 in res2:
-                r2["address-complete-fr"] = ad
-                tadm = pd.json_normalize(r2)
+            res = res.json()
+            if "features" not in res.keys():
+                tadm = pd.DataFrame(data={"address-complete-fr": [ad]})
                 res_adm.append(tadm)
+            else:
+                res2 = res["features"]
+                for r2 in res2:
+                    r2["address-complete-fr"] = ad
+                    tadm = pd.json_normalize(r2)
+                    res_adm.append(tadm)
+
 
     if len(res_adm) > 0:
         df_adm = pd.concat(res_adm, ignore_index=True)
