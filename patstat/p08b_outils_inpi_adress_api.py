@@ -140,6 +140,7 @@ def person_ref(bs, pb_n, ptdoc):
     return df
 
 
+@retry(tries=3, delay=5, backoff=5)
 def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     df_per.loc[df_per["country"].isin(["XX", "FR", ""]), "f"] = df_per.loc[
         df_per["country"].isin(["XX", "FR", ""]), "postcode"].str.replace(r"^F-?\d+", "present", regex=True)
