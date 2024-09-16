@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from bs4 import BeautifulSoup
 import requests
+from retry import retry
 from patstat import dtypes_patstat_declaration as types
 from utils import swift
 
