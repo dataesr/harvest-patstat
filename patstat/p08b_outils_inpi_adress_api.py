@@ -397,8 +397,11 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
                                    how="inner").sort_values(
                     "address-complete-fr").reset_index(drop=True)
 
-                if "properties.district" not in df_adm3.columns:
-                    df_adm3["properties.district"] = np.nan
+                col_missing = ["properties.postcode", "properties.citycode", "properties.city",
+                                   "properties.context", "properties.district"]
+                for col in col_missing:
+                    if col not in df_adm3.columns:
+                        df_adm3[col] = np.nan
 
                 df_adm4 = df_adm3[["address-complete-fr", "properties.postcode", "properties.citycode", "properties.city",
                                    "properties.context", "properties.district"]].drop_duplicates().reset_index(drop=True)
