@@ -389,7 +389,6 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
                 df_adm_final["com-code"] = ""
                 df_adm_final["ville"] = ""
                 df_adm_final = df_adm_final.fillna("")
-                df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
             else:
                 max_score = df_adm2[["address-complete-fr", "properties.score"]].groupby(
                     "address-complete-fr").max().reset_index().drop_duplicates().reset_index(drop=True)
@@ -592,7 +591,6 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
                 df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "0" + a if len(a) == 2 and a != "" else a)
                 df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "D" + a if len(a) == 3 and a != "" else a)
                 df_adm_final = df_adm_final.drop(columns=["properties.context", "liste_context"])
-                df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
         else:
             df_adm_final = df_nevite.copy()
             df_adm_final["dep-id"] = ""
@@ -601,7 +599,6 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
             df_adm_final["com-code"] = ""
             df_adm_final["ville"] = ""
             df_adm_final = df_adm_final.fillna("")
-            df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
     else:
         df_adm_final = df_evite.copy()
         df_adm_final["dep-id"] = ""
@@ -610,7 +607,6 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
         df_adm_final["com-code"] = ""
         df_adm_final["ville"] = ""
         df_adm_final = df_adm_final.fillna("")
-        df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
 
     df_adm_final = df_adm_final[
         ["publication-number", "type-party", "sequence", "address-complete-fr", "com-code", "ville", "dep-id",
