@@ -612,9 +612,6 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
         ["publication-number", "type-party", "sequence", "address-complete-fr", "com-code", "ville", "dep-id",
          "dep-nom", "reg-nom"]].drop_duplicates().reset_index(drop=True)
 
-    df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
-    swift.upload_object("patstat", "df_adm_final.h5", "df_adm_final")
-
     return df_adm_final
 
 
