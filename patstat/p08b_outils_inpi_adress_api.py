@@ -314,6 +314,9 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"^-+\s?", "", regex=True)
     df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"^\.+\s?", "", regex=True)
     df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"^\/+\s?", "", regex=True)
+    df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"&", " ", regex=True)
+    df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r",", " ", regex=True)
+    df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"\_{1,}", " ", regex=True)
     df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"\n", " ", regex=True)
     df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.replace(r"\s{2,}", "", regex=True)
     df_dico2["address-complete-fr"] = df_dico2["address-complete-fr"].str.strip()
@@ -373,10 +376,224 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
             if col in df_adm.columns:
                 df_adm = df_adm.drop(columns=col)
 
-        df_adm2 = df_adm.loc[~df_adm["properties.label"].isin(["1 Cote Guy de Maupassant 76380 Canteleu"])]
-        df_adm2 = df_adm2.loc[df_adm2["properties.score"] >= 0.5]
+        if "properties.label" in df_adm.columns:
 
-        if len(df_adm2) == 0:
+            df_adm2 = df_adm.loc[~df_adm["properties.label"].isin(["1 Cote Guy de Maupassant 76380 Canteleu"])]
+            df_adm2 = df_adm2.loc[df_adm2["properties.score"] >= 0.5]
+
+            if len(df_adm2) == 0:
+                df_adm_final = df_nevite.copy()
+                df_adm_final["dep-id"] = ""
+                df_adm_final["dep-nom"] = ""
+                df_adm_final["reg-nom"] = ""
+                df_adm_final["com-code"] = ""
+                df_adm_final["ville"] = ""
+                df_adm_final = df_adm_final.fillna("")
+                df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
+            else:
+                max_score = df_adm2[["address-complete-fr", "properties.score"]].groupby(
+                    "address-complete-fr").max().reset_index().drop_duplicates().reset_index(drop=True)
+
+                df_adm3 = pd.merge(df_adm2, max_score, on=["address-complete-fr", "properties.score"],
+                                   how="inner").sort_values(
+                    "address-complete-fr").reset_index(drop=True)
+
+                if "properties.district" not in df_adm3.columns:
+                    df_adm3["properties.district"] = np.nan
+
+                df_adm4 = df_adm3[["address-complete-fr", "properties.postcode", "properties.citycode", "properties.city",
+                                   "properties.context", "properties.district"]].drop_duplicates().reset_index(drop=True)
+
+                df_adm5 = pd.merge(df_nevite, df_adm4, on="address-complete-fr", how="left")
+
+                df_adm5.loc[df_adm5["properties.district"].notna(), "ville"] = df_adm5.loc[
+                    df_adm5["properties.district"].notna(), "properties.district"]
+                df_adm5.loc[df_adm5["properties.district"].isna(), "ville"] = df_adm5.loc[
+                    df_adm5["properties.district"].isna(), "properties.city"]
+
+                paris = pd.DataFrame(data={"code": ['75101',
+                                                    '75102',
+                                                    '75103',
+                                                    '75104',
+                                                    '75105',
+                                                    '75106',
+                                                    '75107',
+                                                    '75108',
+                                                    '75109',
+                                                    '75110',
+                                                    '75111',
+                                                    '75112',
+                                                    '75113',
+                                                    '75114',
+                                                    '75115',
+                                                    '75116',
+                                                    '75117',
+                                                    '75118',
+                                                    '75119',
+                                                    '75120'],
+                                           "postcode": ['75001',
+                                                        '75002',
+                                                        '75003',
+                                                        '75004',
+                                                        '75005',
+                                                        '75006',
+                                                        '75007',
+                                                        '75008',
+                                                        '75009',
+                                                        '75010',
+                                                        '75011',
+                                                        '75012',
+                                                        '75013',
+                                                        '75014',
+                                                        '75015',
+                                                        '75116',
+                                                        '75017',
+                                                        '75018',
+                                                        '75019',
+                                                        '75020'],
+                                           "ville2": [f"Paris {i + 1}e arrondissment" for i in range(20)]})
+
+                paris.loc[paris["code"] == "75101", "ville2"] = "Paris 1er arrondissment"
+
+                paris16 = pd.DataFrame(data={"code": ['75116'],
+                                             "postcode": ['75016'],
+                                             "ville2": "Paris 16e arrondissment"})
+
+                paris = pd.concat([paris, paris16], ignore_index=True)
+                paris = paris.sort_values(by=['code', 'postcode'])
+
+                lyon = pd.DataFrame(data={"code": [f'6938{i + 1}' for i in range(9)],
+                                          "postcode": [f'6900{i + 1}' for i in range(9)],
+                                          "ville2": [f"Lyon {i + 1}e arrondissment" for i in range(9)]})
+
+                lyon.loc[lyon["code"] == "69381", "ville2"] = "Lyon 1er arrondissment"
+
+                marseille = pd.DataFrame(data={"code": ['13201',
+                                                        '13202',
+                                                        '13203',
+                                                        '13204',
+                                                        '13205',
+                                                        '13206',
+                                                        '13207',
+                                                        '13208',
+                                                        '13209',
+                                                        '13210', '13211', '13212', '13213', '13214', '13215', '13216'],
+                                               "postcode": ['13001',
+                                                            '13002',
+                                                            '13003',
+                                                            '13004',
+                                                            '13005',
+                                                            '13006',
+                                                            '13007',
+                                                            '13008',
+                                                            '13009',
+                                                            '13010', '13011', '13012', '13013', '13014', '13015', '13016'],
+                                               "ville2": [f"Marseille {i + 1}e arrondissment" for i in range(16)]})
+
+                marseille.loc[marseille["code"] == "13201", "ville2"] = "Marseille 1er arrondissment"
+
+                plm = pd.concat([paris, lyon, marseille], ignore_index=True)
+                plm = plm.rename(columns={"postcode": "properties.postcode"})
+
+                df_adm6 = pd.merge(df_adm5, plm, on="properties.postcode", how="left")
+
+                df_adm6.loc[
+                    (df_adm6["code"].notna()) & (
+                                df_adm6["code"] != df_adm6["properties.citycode"]), "properties.citycode"] = \
+                    df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["code"] != df_adm6["properties.citycode"]), "code"]
+
+                df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville"] = \
+                    df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville2"]
+
+                df_adm6["ad"] = df_adm6["properties.postcode"] + " " + df_adm6["properties.citycode"] + " " + df_adm6[
+                    "ville"] + " " + df_adm6["properties.context"]
+
+                df_adm6 = df_adm6.drop(columns=["code", "ville2"])
+
+                df_adm62 = df_adm6[["publication-number", "sequence", "type-party", "ad"]].drop_duplicates().reset_index(
+                    drop=True)
+
+                df_adm6_compe = df_adm62.groupby(["publication-number", "sequence", "type-party"]).nunique(
+                    dropna=False).reset_index().rename(columns={"ad": "compte"})
+
+                df_adm6_compe_u = df_adm6_compe.loc[df_adm6_compe["compte"] == 1].sort_values(
+                    ["publication-number", "sequence"]).reset_index(drop=True)
+
+                df_adm6_u = pd.merge(df_adm6, df_adm6_compe_u, on=["publication-number", "sequence", "type-party"],
+                                     how="inner").drop(
+                    columns=["compte", "ad",
+                             "properties.postcode", "properties.city",
+                             "properties.district"]).drop_duplicates().reset_index(drop=True)
+
+                df_adm6_compe_m = df_adm6_compe.loc[df_adm6_compe["compte"] > 1].sort_values(
+                    ["publication-number", "sequence"]).reset_index(drop=True)
+
+                if len(df_adm6_compe_m) > 0:
+                    df_adm6m = pd.merge(df_adm6, df_adm6_compe_m, on=["publication-number", "sequence", "type-party"],
+                                        how="inner")
+
+                    dico = {}
+
+                    for _, r in df_adm6m.iterrows():
+                        ids = r.id
+                        pubn = r["publication-number"]
+                        seq = r.sequence
+                        pc = r["properties.postcode"]
+                        city = r["properties.city"]
+                        idn = str(pubn) + " " + str(seq)
+
+                        if idn not in dico:
+                            dico[idn] = {"ids": [], "city": []}
+
+                        dico[idn]["ids"].append(ids)
+
+                        if city not in dico[idn]["city"]:
+                            dico[idn]["city"].append(city)
+
+                    res = []
+                    for ids in dico:
+                        lng = len(dico[ids]["city"])
+                        if lng == 1:
+                            df_ids = pd.DataFrame(data={"ids": ids, "city": dico[ids]["city"]})
+                            res.append(df_ids)
+
+                    df_city = pd.concat(res).reset_index(drop=True)
+
+                    df_adm63 = df_adm6[["publication-number", "sequence", "type-party", "properties.citycode",
+                                        "properties.context", "ville",
+                                        "address-complete-fr"]].drop_duplicates().reset_index(
+                        drop=True)
+                    df_adm64 = df_adm63.copy()
+                    df_adm64["ids"] = df_adm64["publication-number"] + " " + df_adm64["sequence"].astype(str) + " " + \
+                                      df_adm64[
+                                          "type-party"]
+                    df_adm64 = pd.merge(df_adm64, df_city, on="ids", how="inner").drop(
+                        columns=["ids", "city"]).drop_duplicates().reset_index(
+                        drop=True)
+
+                    df_adm7 = pd.concat([df_adm6_u, df_adm64], ignore_index=True)
+
+                if "df_adm7" in locals():
+                    df_adm_final = pd.concat([df_adm7, df_evite], ignore_index=True)
+                else:
+                    df_adm_final = pd.concat([df_adm6_u, df_evite], ignore_index=True)
+
+                df_adm_final = df_adm_final.fillna("")
+
+                df_adm_final = df_adm_final.rename(columns={"properties.citycode": "com-code"})
+                df_adm_final["liste_context"] = df_adm_final["properties.context"].str.split(", ")
+                df_adm_final["dep-id"] = df_adm_final["liste_context"].apply(
+                    lambda a: a[0] if isinstance(a, list) and len(a) == 3 else "")
+                df_adm_final["dep-nom"] = df_adm_final["liste_context"].apply(
+                    lambda a: a[1] if isinstance(a, list) and len(a) == 3 else "")
+                df_adm_final["reg-nom"] = df_adm_final["liste_context"].apply(
+                    lambda a: a[2] if isinstance(a, list) and len(a) == 3 else "")
+                df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "0" + a if len(a) == 1 and a != "" else a)
+                df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "0" + a if len(a) == 2 and a != "" else a)
+                df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "D" + a if len(a) == 3 and a != "" else a)
+                df_adm_final = df_adm_final.drop(columns=["properties.context", "liste_context"])
+                df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
+        else:
             df_adm_final = df_nevite.copy()
             df_adm_final["dep-id"] = ""
             df_adm_final["dep-nom"] = ""
@@ -384,208 +601,7 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
             df_adm_final["com-code"] = ""
             df_adm_final["ville"] = ""
             df_adm_final = df_adm_final.fillna("")
-        else:
-            max_score = df_adm2[["address-complete-fr", "properties.score"]].groupby(
-                "address-complete-fr").max().reset_index().drop_duplicates().reset_index(drop=True)
-
-            df_adm3 = pd.merge(df_adm2, max_score, on=["address-complete-fr", "properties.score"],
-                               how="inner").sort_values(
-                "address-complete-fr").reset_index(drop=True)
-
-            if "properties.district" not in df_adm3.columns:
-                df_adm3["properties.district"] = np.nan
-
-            df_adm4 = df_adm3[["address-complete-fr", "properties.postcode", "properties.citycode", "properties.city",
-                               "properties.context", "properties.district"]].drop_duplicates().reset_index(drop=True)
-
-            df_adm5 = pd.merge(df_nevite, df_adm4, on="address-complete-fr", how="left")
-
-            df_adm5.loc[df_adm5["properties.district"].notna(), "ville"] = df_adm5.loc[
-                df_adm5["properties.district"].notna(), "properties.district"]
-            df_adm5.loc[df_adm5["properties.district"].isna(), "ville"] = df_adm5.loc[
-                df_adm5["properties.district"].isna(), "properties.city"]
-
-            paris = pd.DataFrame(data={"code": ['75101',
-                                                '75102',
-                                                '75103',
-                                                '75104',
-                                                '75105',
-                                                '75106',
-                                                '75107',
-                                                '75108',
-                                                '75109',
-                                                '75110',
-                                                '75111',
-                                                '75112',
-                                                '75113',
-                                                '75114',
-                                                '75115',
-                                                '75116',
-                                                '75117',
-                                                '75118',
-                                                '75119',
-                                                '75120'],
-                                       "postcode": ['75001',
-                                                    '75002',
-                                                    '75003',
-                                                    '75004',
-                                                    '75005',
-                                                    '75006',
-                                                    '75007',
-                                                    '75008',
-                                                    '75009',
-                                                    '75010',
-                                                    '75011',
-                                                    '75012',
-                                                    '75013',
-                                                    '75014',
-                                                    '75015',
-                                                    '75116',
-                                                    '75017',
-                                                    '75018',
-                                                    '75019',
-                                                    '75020'],
-                                       "ville2": [f"Paris {i + 1}e arrondissment" for i in range(20)]})
-
-            paris.loc[paris["code"] == "75101", "ville2"] = "Paris 1er arrondissment"
-
-            paris16 = pd.DataFrame(data={"code": ['75116'],
-                                         "postcode": ['75016'],
-                                         "ville2": "Paris 16e arrondissment"})
-
-            paris = pd.concat([paris, paris16], ignore_index=True)
-            paris = paris.sort_values(by=['code', 'postcode'])
-
-            lyon = pd.DataFrame(data={"code": [f'6938{i + 1}' for i in range(9)],
-                                      "postcode": [f'6900{i + 1}' for i in range(9)],
-                                      "ville2": [f"Lyon {i + 1}e arrondissment" for i in range(9)]})
-
-            lyon.loc[lyon["code"] == "69381", "ville2"] = "Lyon 1er arrondissment"
-
-            marseille = pd.DataFrame(data={"code": ['13201',
-                                                    '13202',
-                                                    '13203',
-                                                    '13204',
-                                                    '13205',
-                                                    '13206',
-                                                    '13207',
-                                                    '13208',
-                                                    '13209',
-                                                    '13210', '13211', '13212', '13213', '13214', '13215', '13216'],
-                                           "postcode": ['13001',
-                                                        '13002',
-                                                        '13003',
-                                                        '13004',
-                                                        '13005',
-                                                        '13006',
-                                                        '13007',
-                                                        '13008',
-                                                        '13009',
-                                                        '13010', '13011', '13012', '13013', '13014', '13015', '13016'],
-                                           "ville2": [f"Marseille {i + 1}e arrondissment" for i in range(16)]})
-
-            marseille.loc[marseille["code"] == "13201", "ville2"] = "Marseille 1er arrondissment"
-
-            plm = pd.concat([paris, lyon, marseille], ignore_index=True)
-            plm = plm.rename(columns={"postcode": "properties.postcode"})
-
-            df_adm6 = pd.merge(df_adm5, plm, on="properties.postcode", how="left")
-
-            df_adm6.loc[
-                (df_adm6["code"].notna()) & (
-                            df_adm6["code"] != df_adm6["properties.citycode"]), "properties.citycode"] = \
-                df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["code"] != df_adm6["properties.citycode"]), "code"]
-
-            df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville"] = \
-                df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville2"]
-
-            df_adm6["ad"] = df_adm6["properties.postcode"] + " " + df_adm6["properties.citycode"] + " " + df_adm6[
-                "ville"] + " " + df_adm6["properties.context"]
-
-            df_adm6 = df_adm6.drop(columns=["code", "ville2"])
-
-            df_adm62 = df_adm6[["publication-number", "sequence", "type-party", "ad"]].drop_duplicates().reset_index(
-                drop=True)
-
-            df_adm6_compe = df_adm62.groupby(["publication-number", "sequence", "type-party"]).nunique(
-                dropna=False).reset_index().rename(columns={"ad": "compte"})
-
-            df_adm6_compe_u = df_adm6_compe.loc[df_adm6_compe["compte"] == 1].sort_values(
-                ["publication-number", "sequence"]).reset_index(drop=True)
-
-            df_adm6_u = pd.merge(df_adm6, df_adm6_compe_u, on=["publication-number", "sequence", "type-party"],
-                                 how="inner").drop(
-                columns=["compte", "ad",
-                         "properties.postcode", "properties.city",
-                         "properties.district"]).drop_duplicates().reset_index(drop=True)
-
-            df_adm6_compe_m = df_adm6_compe.loc[df_adm6_compe["compte"] > 1].sort_values(
-                ["publication-number", "sequence"]).reset_index(drop=True)
-
-            if len(df_adm6_compe_m) > 0:
-                df_adm6m = pd.merge(df_adm6, df_adm6_compe_m, on=["publication-number", "sequence", "type-party"],
-                                    how="inner")
-
-                dico = {}
-
-                for _, r in df_adm6m.iterrows():
-                    ids = r.id
-                    pubn = r["publication-number"]
-                    seq = r.sequence
-                    pc = r["properties.postcode"]
-                    city = r["properties.city"]
-                    idn = str(pubn) + " " + str(seq)
-
-                    if idn not in dico:
-                        dico[idn] = {"ids": [], "city": []}
-
-                    dico[idn]["ids"].append(ids)
-
-                    if city not in dico[idn]["city"]:
-                        dico[idn]["city"].append(city)
-
-                res = []
-                for ids in dico:
-                    lng = len(dico[ids]["city"])
-                    if lng == 1:
-                        df_ids = pd.DataFrame(data={"ids": ids, "city": dico[ids]["city"]})
-                        res.append(df_ids)
-
-                df_city = pd.concat(res).reset_index(drop=True)
-
-                df_adm63 = df_adm6[["publication-number", "sequence", "type-party", "properties.citycode",
-                                    "properties.context", "ville",
-                                    "address-complete-fr"]].drop_duplicates().reset_index(
-                    drop=True)
-                df_adm64 = df_adm63.copy()
-                df_adm64["ids"] = df_adm64["publication-number"] + " " + df_adm64["sequence"].astype(str) + " " + \
-                                  df_adm64[
-                                      "type-party"]
-                df_adm64 = pd.merge(df_adm64, df_city, on="ids", how="inner").drop(
-                    columns=["ids", "city"]).drop_duplicates().reset_index(
-                    drop=True)
-
-                df_adm7 = pd.concat([df_adm6_u, df_adm64], ignore_index=True)
-
-            if "df_adm7" in locals():
-                df_adm_final = pd.concat([df_adm7, df_evite], ignore_index=True)
-            else:
-                df_adm_final = pd.concat([df_adm6_u, df_evite], ignore_index=True)
-
-            df_adm_final = df_adm_final.fillna("")
-
-            df_adm_final = df_adm_final.rename(columns={"properties.citycode": "com-code"})
-            df_adm_final["liste_context"] = df_adm_final["properties.context"].str.split(", ")
-            df_adm_final["dep-id"] = df_adm_final["liste_context"].apply(
-                lambda a: a[0] if isinstance(a, list) and len(a) == 3 else "")
-            df_adm_final["dep-nom"] = df_adm_final["liste_context"].apply(
-                lambda a: a[1] if isinstance(a, list) and len(a) == 3 else "")
-            df_adm_final["reg-nom"] = df_adm_final["liste_context"].apply(
-                lambda a: a[2] if isinstance(a, list) and len(a) == 3 else "")
-            df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "0" + a if len(a) == 1 and a != "" else a)
-            df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "0" + a if len(a) == 2 and a != "" else a)
-            df_adm_final["dep-id"] = df_adm_final["dep-id"].apply(lambda a: "D" + a if len(a) == 3 and a != "" else a)
-            df_adm_final = df_adm_final.drop(columns=["properties.context", "liste_context"])
+            df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
     else:
         df_adm_final = df_evite.copy()
         df_adm_final["dep-id"] = ""
@@ -594,10 +610,14 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
         df_adm_final["com-code"] = ""
         df_adm_final["ville"] = ""
         df_adm_final = df_adm_final.fillna("")
+        df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
 
     df_adm_final = df_adm_final[
         ["publication-number", "type-party", "sequence", "address-complete-fr", "com-code", "ville", "dep-id",
          "dep-nom", "reg-nom"]].drop_duplicates().reset_index(drop=True)
+
+    df_adm_final.to_hdf("df_adm_final.h5", "df_adm_final", mode="a", append=True, index=False)
+    swift.upload_object("patstat", "df_adm_final.h5", "df_adm_final")
 
     return df_adm_final
 
