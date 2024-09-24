@@ -724,7 +724,7 @@ def create_df_address():
     addresses = pd.concat(liste2)
     addresses = addresses.drop_duplicates().reset_index(drop=True)
 
-    if "part_p08_address.csv" in files:
+    if csv == "part_p08_address.csv":
         part_jointure = part.loc[part["address-complete-fr"].isna()]
         part_jointure2 = part.loc[(part["address-complete-fr"].notna()) & (part["com-code"].isna())]
         part_jointure_final = pd.concat([part_jointure, part_jointure2], ignore_index=True)
@@ -861,8 +861,6 @@ def create_df_address():
                                                                    "bonneville", "pierrefonds", "lyons", "valbonne",
                                                                    "le neubourg",
                                                                    "3 rue jeanjacques rousseau aussillon 81200 mazamet"])]
-
-    missing2 = missing2.iloc[0:100, :]
 
     lng = len(missing2)
     lng2 = len(missing2)
