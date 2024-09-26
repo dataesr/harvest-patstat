@@ -3,6 +3,7 @@
 
 import os
 import re
+import concurrent.futures
 
 import numpy as np
 import pandas as pd
@@ -10,11 +11,34 @@ from bs4 import BeautifulSoup
 import requests
 from retry import retry
 from patstat import dtypes_patstat_declaration as types
-from utils import swift
 from timeit import default_timer as timer
+import logging
+import threading
+import sys
+from utils import swift
 
 # directory where the files are
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+
+
+def get_logger(name):
+    """
+    This function helps to follow the execution of the parallel computation.
+    """
+    loggers = {}
+    if name in loggers:
+        return loggers[name]
+    logger = logging.getLogger(name)
+    logger.setLevel(logging.DEBUG)
+    fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+    formatter = logging.Formatter(fmt)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setFormatter(formatter)
+    logger.addHandler(ch)
+
+    loggers[name] = logger
+    return loggers[name]
 
 
 def doc_nb(lmf, ptdoc):
@@ -633,6 +657,8 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
 
 @retry(tries=3, delay=5, backoff=5)
 def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start query missing address")
     miss2 = miss_fr2.loc[(miss_fr2["address-complete-fr"] == "") & (miss_fr2["address_source"] != "") & (
         miss_fr2["country_source"].isin(['FR', '  ']))]
 
@@ -677,8 +703,6 @@ def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
                                                                    "bonneville", "pierrefonds", "lyons", "valbonne",
                                                                    "le neubourg",
                                                                    "3 rue jeanjacques rousseau aussillon 81200 mazamet"])]
-
-    miss2 = miss2.iloc[0:100, :]
 
     lng = len(miss2)
     lng2 = len(miss2)
@@ -967,8 +991,91 @@ def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
          "dep-nom", "reg-nom"]].drop_duplicates().reset_index(drop=True)
 
     miss4 = pd.merge(miss2, df_adm_final, on="address-complete-fr", how="inner")
+    logger.info("end query missing address")
 
     return miss4
+
+
+def subset_df(df: pd.DataFrame) -> dict:
+    """
+    This function divides the initial df into subsets which represent ca. 10 % of the original df.
+    The subsets are put into a dictionary with 10-11 pairs key-value.
+    Each key is the df subset name and each value is the df subset.
+    """
+    prct10 = int(round(len(df) / 10, 0))
+    dict_nb = {}
+    df = df.reset_index().drop(columns="index")
+    indices = list(df.index)
+    listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+    i = 1
+    for liste in listes_indices:
+        min_ind = np.min(liste)
+        max_ind = np.max(liste) + 1
+        dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+        i = i + 1
+
+    return dict_nb
+
+
+def res_futures(dict_nb: dict, query) -> pd.DataFrame:
+    """
+    This function applies the query function on each subset of the original df in a parallel way
+    It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
+    It returns a df with the IdRef.
+    """
+    global jointure
+    res = []
+    with concurrent.futures.ThreadPoolExecutor(max_workers=101, thread_name_prefix="thread") as executor:
+        # Start the load operations and mark each future with its URL
+        future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
+        for future in concurrent.futures.as_completed(future_to_req):
+            req = future_to_req[future]
+            try:
+                data = future.result()
+                res.append(data)
+                jointure = pd.concat(res)
+            except Exception as exc:
+                print('%r generated an exception: %s' % (req, exc), flush=True)
+
+    return jointure
+
+
+def read_xml(df_fles):
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start query INPI address")
+    liste2 = []
+
+    for fle in df_fles.itertuples():
+        file = fle.fullpath
+        print(file)
+        with open(file, "r") as f:
+            data = f.read()
+
+        elem_file = file.split("/")
+
+        if len(data) > 0:
+
+            bs_data = BeautifulSoup(data, "xml")
+
+            pn = bs_data.find("fr-patent-document")
+
+            pub_n = doc_nb(elem_file, pn)
+
+            appl = person_ref(bs_data, pub_n, pn)
+            appl = appl.drop_duplicates().reset_index(drop=True)
+            adresses = get_address(appl)
+            liste2.append(adresses)
+
+
+        else:
+            pass
+
+    ddresses = pd.concat(liste2)
+    ddresses = ddresses.drop_duplicates().reset_index(drop=True)
+
+    logger.info("end query INPI address")
+
+    return ddresses
 
 
 def create_df_address():
@@ -1033,35 +1140,9 @@ def create_df_address():
     df_files["file"] = df_files["fullpath"].str.split("/")
     df_files["pn"] = df_files["file"].apply(lambda a: [x.replace(".xml", "") for x in a if ".xml" in x][0])
     df_files = df_files.loc[df_files["pn"].isin(publication)]
-    dict_files = {"fullpath": list(df_files["fullpath"])}
+    sub_files = subset_df(df_files)
+    addresses = res_futures(sub_files, read_xml)
 
-    liste2 = []
-
-    for file in dict_files["fullpath"]:
-        print(file)
-        with open(file, "r") as f:
-            data = f.read()
-
-        elem_file = file.split("/")
-
-        if len(data) > 0:
-
-            bs_data = BeautifulSoup(data, "xml")
-
-            pn = bs_data.find("fr-patent-document")
-
-            pub_n = doc_nb(elem_file, pn)
-
-            appl = person_ref(bs_data, pub_n, pn)
-            appl = appl.drop_duplicates().reset_index(drop=True)
-            adresses = get_address(appl)
-            liste2.append(adresses)
-
-
-        else:
-            pass
-
-    addresses = pd.concat(liste2)
     addresses = addresses.drop_duplicates().reset_index(drop=True)
 
     if csv == "part_p08_address.csv":
@@ -1157,7 +1238,8 @@ def create_df_address():
     pourcentage = round(len(missing_fr2) / len(missing_fr) * 100, 2)
     print(f"Le pourcentage d'adresses manquantes pour les Français est de {pourcentage}.", flush=True)
 
-    missing2 = ad_missing(missing_fr2)
+    sub_missing = subset_df(missing_fr2)
+    missing2 = res_futures(sub_missing, ad_missing)
 
     addresses5 = addresses4.loc[~addresses4["key_appln_nr_person"].isin(missing2["key_appln_nr_person"])]
     addresses5 = pd.concat([addresses5, missing2], ignore_index=True)
