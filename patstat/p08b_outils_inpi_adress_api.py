@@ -380,7 +380,7 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     res_adm = []
     for _, r in df_nevite.iterrows():
         ad = r["address_complete_fr"]
-        res = requests.get(f"https://api_adresse.data.gouv.fr/search/?q={ad}&format=json")
+        res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json")
         if res.status_code != 200:
             print(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}", flush=True)
             tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
