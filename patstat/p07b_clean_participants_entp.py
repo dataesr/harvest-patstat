@@ -115,7 +115,10 @@ def get_clean_entp():
                                  right_on=['numpubli', 'nom']).drop(
         columns={'nom', 'numpubli'}).drop_duplicates()
     # on élimine les anciens siren erronés
-    part_entp1['siren'] = part_entp1['siren'].apply(clean_siren)
+    part_entp1.loc[part_entp1["siren"].notna(), "virgule"] = part_entp1.loc[part_entp1["siren"].notna(), "siren"].apply(
+        lambda a: "virgule" if ",, " in a else "non")
+    part_entp1.loc[part_entp1["virgule"] == "non", 'siren'] = part_entp1.loc[
+        part_entp1["virgule"] == "non", 'siren'].apply(clean_siren)
 
     part_entp1['siren_nouv'] = part_entp1['siren_nouv'].fillna('')
     part_entp1['siren_nouv'] = part_entp1['siren_nouv'].astype(str)
@@ -176,9 +179,10 @@ def get_clean_entp():
                                         part_entp_final['siren'])
 
     # on ne prend pas en compte les extrapolations de siren par psn_id pour les pays étrangers
+    part_entp_final.loc[
+        (~part_entp_final['country_corrected'].isin(['FR', ''])) & (part_entp_final["virgule"] == "non"), "siren"] = ""
 
-    part_entp_final['siren'] = np.where(part_entp_final['country_corrected'].isin({'FR', ''}),
-                                        part_entp_final['siren'], '')
+    part_entp_final = part_entp_final.drop(columns="virgule")
 
     part_entp_final.to_csv('part_entp_final.csv', sep='|', index=False)
     swift.upload_object('patstat', 'part_entp_final.csv')
