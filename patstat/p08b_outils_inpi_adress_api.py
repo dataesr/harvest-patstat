@@ -169,7 +169,7 @@ def person_ref(bs, pb_n, ptdoc):
     return df
 
 
-@retry(tries=3, delay=5, backoff=5)
+@retry(tries=20, delay=5, backoff=5)
 def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     df_per.loc[df_per["country"].isin(["XX", "FR", ""]), "f"] = df_per.loc[
         df_per["country"].isin(["XX", "FR", ""]), "postcode"].str.replace(r"^F-?\d+", "present", regex=True)
@@ -659,7 +659,7 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     return df_adm_final
 
 
-@retry(tries=3, delay=5, backoff=5)
+@retry(tries=20, delay=5, backoff=5)
 def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
     logger = get_logger(threading.current_thread().name)
     logger.info("start query missing address")
@@ -1082,7 +1082,7 @@ def read_xml(df_fles):
     return ddresses
 
 
-@retry(tries=3, delay=5, backoff=5)
+@retry(tries=10, delay=5, backoff=5)
 def req_paysage(df_pay: pd.DataFrame) -> pd.DataFrame:
     logger = get_logger(threading.current_thread().name)
     logger.info("start query paysage")
