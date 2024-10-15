@@ -75,7 +75,7 @@ def create_task_all(args):
         get_doi()
     if args.get('dwnp08', True):
         getp08()
-    if args.get("p08mongo", True):
+    if args.get("getp08b", True):
         getp08b()
 
 
