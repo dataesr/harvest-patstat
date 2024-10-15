@@ -20,30 +20,28 @@ def part_final():
 
     # load part_init, part, part_entp and part_individuals to merge them and create a single file with all participants
     part_init = pd.read_csv('part_init_p05.csv', sep='|', dtype=types.part_init_types, engine="python")
-    part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types)
+    part = pd.read_csv('part_p05.csv', sep='|', dtype=types.part_init_types, engine="python")
 
     part_entp = pd.read_csv('part_entp_final2.csv', sep='|',
-                            dtype=types.part_entp_types)[
-        ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'name_corrected',
-         'country_corrected', 'siren',
-         'siret', 'id_paysage', 'rnsr',
-         'grid', 'idref', 'oc', 'ror', 'sexe']].copy()
+                            dtype=types.part_entp_types, engine="python")[
+        ['key_appln_nr_person', 'doc_std_name', "doc_std_name_id", 'country_corrected', 'siren',
+         'siret', 'id_paysage', 'rnsr', 'grid', 'idref', 'oc', 'ror', 'sexe', 'name_corrected', 'name_corrige',
+         'category_libelle', 'esri']].copy()
 
     part_indiv = pd.read_csv('part_individuals_p06b.csv', sep='|',
-                             dtype=types.part_entp_types)[
-        ['key_appln_nr_person', 'country_corrected', 'doc_std_name', "doc_std_name_id", 'name_corrected', 'sexe',
-         'siren',
-         'siret', 'id_paysage', 'rnsr',
-         'grid', 'idref', 'oc', 'ror']].copy()
+                             dtype=types.part_entp_types, engine="python")[
+        ['key_appln_nr_person', 'country_corrected', 'doc_std_name', "doc_std_name_id", 'sexe',
+         'siren', 'siret', 'id_paysage', 'rnsr',
+         'grid', 'idref', 'oc', 'ror', 'name_corrected', 'name_corrige', 'category_libelle', 'esri']].copy()
 
     part_tmp = pd.concat([part_entp, part_indiv], sort=True)
 
     # keep only participants with ASCII names
 
-    particip = part[part['isascii']][
+    particip = part[part['islatin']][
         ['key_appln_nr_person', 'key_appln_nr', 'person_id', 'docdb_family_id', 'inpadoc_family_id',
          'earliest_filing_date', 'name_source', 'address_source',
-         'country_source', 'appln_auth', 'type', 'isascii']].merge(part_tmp,
+         'country_source', 'appln_auth', 'type', 'islatin']].merge(part_tmp,
                                                                    on='key_appln_nr_person',
                                                                    how='left')
 
@@ -53,8 +51,8 @@ def part_final():
     particip['id_personne'] = particip['key_appln_nr_person']
 
     # fill empty name_corrected with name_source
-    particip['name_corrected'] = np.where(particip['name_corrected'] == '', particip['name_source'],
-                                          particip['name_corrected'])
+    particip.loc[particip["name_corrected"] == "", "name_corrected"] = particip.loc[
+        particip["name_corrected"] == "", "name_corrige"]
 
     particip.loc[(particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret2"] = particip.loc[
         (particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret"].replace(r"\(\'|\'|\)", "",
@@ -99,10 +97,8 @@ def part_final():
 
     participants = particip[
         ['key_appln_nr', 'key_appln_nr_person', 'id_personne', 'type', 'sexe', 'doc_std_name',
-         "doc_std_name_id",
-         'name_source', 'name_corrected',
-         'address_source',
-         'country_source', 'country_corrected']]
+         "doc_std_name_id", 'name_source', 'address_source',
+         'country_source', 'country_corrected', 'name_corrected', 'category_libelle', 'esri']]
 
     participants.to_csv('participants.csv', sep='|', index=False, encoding="utf-8")
     swift.upload_object('patstat', 'participants.csv')
@@ -120,7 +116,7 @@ def part_final():
 
     # création de la table role
 
-    part_role = part_init[part_init['isascii']][['key_appln_nr_person', 'applt_seq_nr', 'invt_seq_nr']].rename(
+    part_role = part_init[part_init['islatin']][['key_appln_nr_person', 'applt_seq_nr', 'invt_seq_nr']].rename(
         columns={'applt_seq_nr': 'dep', 'invt_seq_nr': 'inv'})
 
     role1 = pd.melt(frame=part_role, id_vars='key_appln_nr_person', var_name='role')
