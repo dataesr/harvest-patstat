@@ -786,6 +786,22 @@ def clean_name(crt_prt: pd.DataFrame) -> pd.DataFrame:
         "é´",
         "é", regex=False)
 
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(
+        "UNIVERSIT? D’AIX-MARSEILLE",
+        "Université d\'Aix-Marseille", regex=False)
+
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(
+        "BUREAU D’?TUDES BIOLOGIQUES SCIENTIFIQUES ET M?DICALES",
+        "Bureau d\'études biologiques scientifiques et médicales", regex=False)
+
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(
+        "L’INSTITUT DE RECHERCHE EN SYSTEMES ELECTRONIQUES EMBARQUES",
+        "Institut de recherche en systèmes électroniques embarqués", regex=False)
+
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(
+        "COMMISSARIAT A L’ENERGIE ATOMIQUE ET AUX ENERGIES ALTERNATIVES",
+        "Commissariat à l’énergie atomique et aux énergies alternatives", regex=False)
+
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x92", "'", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x96", "", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x94", "", regex=True)
