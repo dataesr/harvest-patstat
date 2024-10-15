@@ -258,8 +258,8 @@ def get_sex_from_name_set(df_nom: pd.DataFrame) -> pd.DataFrame:
             print("--- %s seconds ---" % (time.time() - start_time))
         if count % 5000 == 0:
             pd.DataFrame.from_dict(dict_nom, orient='index').reset_index() \
-                .rename(columns={'index': 'name'}).to_csv('sex_names.csv', sep='|', index=False)
-    sex_table = pd.DataFrame.from_dict(dict_nom, orient='index').reset_index().rename(columns={'index': 'name'})
+                .rename(columns={'index': 'name_corrige'}).to_csv('sex_names.csv', sep='|', index=False)
+    sex_table = pd.DataFrame.from_dict(dict_nom, orient='index').reset_index().rename(columns={'index': 'name_corrige'})
 
     logger.info("end query gender")
     return sex_table
@@ -272,6 +272,10 @@ def get_clean_ind():
                            encoding="utf-8", engine="python")
 
     part_ind["name_corrige"] = part_ind["name_corrige"].fillna("")
+
+    part_ind.loc[part_ind["category_libelle"] == "", "category_libelle"] = "Personne physique"
+
+    part_ind.loc[part_ind["esri"] == "", "esri"] = "AUTRE"
 
     part_ind_name_nice = select_nice_name(part_ind.loc[part_ind['name_corrige'] != ''],
                                           'docdb_family_id', 'name',
@@ -313,7 +317,9 @@ def get_clean_ind():
 
     sex_table = pd.read_csv('sex_table.csv', sep='|')
 
-    part_individuals_fin = part_individuals.merge(sex_table, left_on='name_corrige', right_on='name', how='left')
+    # part_individuals = part_individuals.drop(columns="name")
+
+    part_individuals_fin = part_individuals.merge(sex_table, on='name_corrige', how='left')
 
     for col in part_individuals_fin.columns:
         part_individuals_fin[col] = part_individuals_fin[col].fillna('')
