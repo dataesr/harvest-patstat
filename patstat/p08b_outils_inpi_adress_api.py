@@ -4,6 +4,7 @@
 import os
 import re
 import concurrent.futures
+import json
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,7 @@ from timeit import default_timer as timer
 import logging
 import threading
 import sys
+import xmltodict
 from utils import swift
 
 # directory where the files are
@@ -167,6 +169,186 @@ def person_ref(bs, pb_n, ptdoc):
         df = df.rename(columns={col: col2})
 
     return df
+
+
+def cleaning_address(df: pd.DataFrame, col: str) -> pd.DataFrame:
+    df.loc[df[col] == "F-75014 PARIS", col] = "75014 PARIS"
+    df.loc[df[col] == "F-75015 PARIS", col] = "75015 PARIS"
+    df[col] = df[col].str.replace(r"f\-{0,}(\d+)", "\\1", case=False,
+                                  regex=True)
+    df[col] = df[col].str.replace(r"\"", " ", regex=True)
+    df[col] = df[col].str.replace(r"\'", " ", regex=True)
+    df[col] = df[col].str.replace(r"«", "", regex=True)
+    df[col] = df[col].str.replace(r"»", "", regex=True)
+    df[col] = df[col].str.replace(r"\'\'", "", regex=True)
+    df[col] = df[col].str.replace(r"\ufeff3", "", regex=True)
+    df[col] = df[col].str.replace(r"^-+\s?", "", regex=True)
+    df[col] = df[col].str.replace(r"^\.+\s?", "", regex=True)
+    df[col] = df[col].str.replace(r"^\/+\s?", "", regex=True)
+    df[col] = df[col].str.replace(r"&", " ", regex=True)
+    df[col] = df[col].str.replace(r",\s{0,}", " ", regex=True)
+    df[col] = df[col].str.replace(r"\_{1,}", " ", regex=True)
+    df[col] = df[col].str.replace(r"[c|C]\/[o|O]", "", regex=True)
+    df[col] = df[col].str.replace(r"\n", " ", regex=True)
+    df[col] = df[col].str.replace(r"\s+", " ", regex=True)
+    df[col] = df[col].str.replace(r"cedex\s{0,}\d{1,2}", "",
+                                  case=False, regex=True)
+    df[col] = df[col].apply(
+        lambda a: "".join(c if c.isalnum() or c == " " else " " for c in a))
+    df[col] = df[col].str.replace(r"\s+", " ", regex=True)
+    df[col] = df[col].str.lower()
+    df[col] = df[col].str.strip()
+
+    return df
+
+
+@retry(tries=20, delay=5, backoff=5)
+def call_api_adresse(df: pd.DataFrame) -> list:
+    lng = len(df)
+    lng2 = len(df)
+    res_adm = []
+    start = timer()
+    for _, r in df.iterrows():
+        prct = lng / lng2 * 100
+        if prct % 10 == 0:
+            print(f"Il reste {prct} % de requêtes à effectuer", flush=True)
+        ad = r["address_complete_fr"]
+        res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json")
+        if res.status_code != 200:
+            print(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}", flush=True)
+            tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
+            res_adm.append(tadm)
+        else:
+            res = res.json()
+            if "features" not in res.keys():
+                tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
+                res_adm.append(tadm)
+            else:
+                res2 = res["features"]
+                for r2 in res2:
+                    r2["address_complete_fr"] = ad
+                    tadm = pd.json_normalize(r2)
+                    res_adm.append(tadm)
+        lng = lng - 1
+
+    end = timer()
+    m, s = divmod(end - start, 60)
+    h, m = divmod(m, 60)
+    time_str = "%02d:%02d:%02d" % (h, m, s)
+    print(f"Durée de traitement : {time_str}", flush=True)
+
+    return res_adm
+
+
+def plmf(d_adm5: pd.DataFrame) -> pd.DataFrame:
+    d_adm5.loc[d_adm5["properties.district"].notna(), "ville"] = d_adm5.loc[
+        d_adm5["properties.district"].notna(), "properties.district"]
+    d_adm5.loc[d_adm5["properties.district"].isna(), "ville"] = d_adm5.loc[
+        d_adm5["properties.district"].isna(), "properties.city"]
+
+    d_adm5["properties.postcode"] = d_adm5["properties.postcode"].astype(object)
+
+    paris = pd.DataFrame(data={"code": ['75101',
+                                        '75102',
+                                        '75103',
+                                        '75104',
+                                        '75105',
+                                        '75106',
+                                        '75107',
+                                        '75108',
+                                        '75109',
+                                        '75110',
+                                        '75111',
+                                        '75112',
+                                        '75113',
+                                        '75114',
+                                        '75115',
+                                        '75116',
+                                        '75117',
+                                        '75118',
+                                        '75119',
+                                        '75120'],
+                               "postcode": ['75001',
+                                            '75002',
+                                            '75003',
+                                            '75004',
+                                            '75005',
+                                            '75006',
+                                            '75007',
+                                            '75008',
+                                            '75009',
+                                            '75010',
+                                            '75011',
+                                            '75012',
+                                            '75013',
+                                            '75014',
+                                            '75015',
+                                            '75116',
+                                            '75017',
+                                            '75018',
+                                            '75019',
+                                            '75020'],
+                               "ville2": [f"Paris {i + 1}e arrondissement" for i in range(20)]})
+
+    paris.loc[paris["code"] == "75101", "ville2"] = "Paris 1er arrondissement"
+
+    paris16 = pd.DataFrame(data={"code": ['75116'],
+                                 "postcode": ['75016'],
+                                 "ville2": "Paris 16e arrondissement"})
+
+    paris = pd.concat([paris, paris16], ignore_index=True)
+    paris = paris.sort_values(by=['code', 'postcode'])
+
+    lyon = pd.DataFrame(data={"code": [f'6938{i + 1}' for i in range(9)],
+                              "postcode": [f'6900{i + 1}' for i in range(9)],
+                              "ville2": [f"Lyon {i + 1}e arrondissement" for i in range(9)]})
+
+    lyon.loc[lyon["code"] == "69381", "ville2"] = "Lyon 1er arrondissement"
+
+    marseille = pd.DataFrame(data={"code": ['13201',
+                                            '13202',
+                                            '13203',
+                                            '13204',
+                                            '13205',
+                                            '13206',
+                                            '13207',
+                                            '13208',
+                                            '13209',
+                                            '13210', '13211', '13212', '13213', '13214', '13215', '13216'],
+                                   "postcode": ['13001',
+                                                '13002',
+                                                '13003',
+                                                '13004',
+                                                '13005',
+                                                '13006',
+                                                '13007',
+                                                '13008',
+                                                '13009',
+                                                '13010', '13011', '13012', '13013', '13014', '13015',
+                                                '13016'],
+                                   "ville2": [f"Marseille {i + 1}e arrondissement" for i in range(16)]})
+
+    marseille.loc[marseille["code"] == "13201", "ville2"] = "Marseille 1er arrondissement"
+
+    plm = pd.concat([paris, lyon, marseille], ignore_index=True)
+    plm = plm.rename(columns={"postcode": "properties.postcode"})
+
+    d_adm6 = pd.merge(d_adm5, plm, on="properties.postcode", how="left")
+
+    d_adm6.loc[
+        (d_adm6["code"].notna()) & (
+                d_adm6["code"] != d_adm6["properties.citycode"]), "properties.citycode"] = \
+        d_adm6.loc[(d_adm6["code"].notna()) & (d_adm6["code"] != d_adm6["properties.citycode"]), "code"]
+
+    d_adm6.loc[(d_adm6["code"].notna()) & (d_adm6["ville"] != d_adm6["ville2"]), "ville"] = \
+        d_adm6.loc[(d_adm6["code"].notna()) & (d_adm6["ville"] != d_adm6["ville2"]), "ville2"]
+
+    d_adm6["ad"] = d_adm6["properties.postcode"] + " " + d_adm6["properties.citycode"] + " " + d_adm6[
+        "ville"] + " " + d_adm6["properties.context"]
+
+    d_adm6 = d_adm6.drop(columns=["code", "ville2"])
+
+    return d_adm6
 
 
 @retry(tries=20, delay=5, backoff=5)
@@ -332,26 +514,7 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
 
     df_dico2 = pd.DataFrame(dico)
 
-    df_dico2.loc[df_dico2["address_complete_fr"] == "F-75014 PARIS", "address_complete_fr"] = "75014 PARIS"
-    df_dico2.loc[df_dico2["address_complete_fr"] == "F-75015 PARIS", "address_complete_fr"] = "75015 PARIS"
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"\"", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"«", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"»", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"\'\'", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"\ufeff3", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"^-+\s?", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"^\.+\s?", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"^\/+\s?", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"&", " ", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r",", " ", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"\_{1,}", " ", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"[c|C]\/[o|O]", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"\n", " ", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.replace(r"\s{2,}", "", regex=True)
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].apply(
-        lambda a: "".join(c for c in a if c.isalnum() or c == " "))
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.strip()
-    df_dico2["address_complete_fr"] = df_dico2["address_complete_fr"].str.lower()
+    df_dico2 = cleaning_address(df_dico2, "address_complete_fr")
 
     df_dico2 = df_dico2[['publication_number', 'address_1', 'address_2', 'address_3', 'mailcode',
                          'pobox', 'room', 'address_floor', 'building', 'street', 'city',
@@ -377,25 +540,7 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
     df_evite = df_dico2.loc[df_dico2["address_complete_fr"].isin(evite)]
     df_nevite = df_dico2.loc[~df_dico2["address_complete_fr"].isin(evite)]
 
-    res_adm = []
-    for _, r in df_nevite.iterrows():
-        ad = r["address_complete_fr"]
-        res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json")
-        if res.status_code != 200:
-            print(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}", flush=True)
-            tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
-            res_adm.append(tadm)
-        else:
-            res = res.json()
-            if "features" not in res.keys():
-                tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
-                res_adm.append(tadm)
-            else:
-                res2 = res["features"]
-                for r2 in res2:
-                    r2["address_complete_fr"] = ad
-                    tadm = pd.json_normalize(r2)
-                    res_adm.append(tadm)
+    res_adm = call_api_adresse(df_nevite)
 
     if len(res_adm) > 0:
         df_adm = pd.concat(res_adm, ignore_index=True)
@@ -442,112 +587,7 @@ def get_address(df_per: pd.DataFrame) -> pd.DataFrame:
 
                 df_adm5 = pd.merge(df_nevite, df_adm4, on="address_complete_fr", how="left")
 
-                df_adm5.loc[df_adm5["properties.district"].notna(), "ville"] = df_adm5.loc[
-                    df_adm5["properties.district"].notna(), "properties.district"]
-                df_adm5.loc[df_adm5["properties.district"].isna(), "ville"] = df_adm5.loc[
-                    df_adm5["properties.district"].isna(), "properties.city"]
-
-                df_adm5["properties.postcode"] = df_adm5["properties.postcode"].astype(object)
-
-                paris = pd.DataFrame(data={"code": ['75101',
-                                                    '75102',
-                                                    '75103',
-                                                    '75104',
-                                                    '75105',
-                                                    '75106',
-                                                    '75107',
-                                                    '75108',
-                                                    '75109',
-                                                    '75110',
-                                                    '75111',
-                                                    '75112',
-                                                    '75113',
-                                                    '75114',
-                                                    '75115',
-                                                    '75116',
-                                                    '75117',
-                                                    '75118',
-                                                    '75119',
-                                                    '75120'],
-                                           "postcode": ['75001',
-                                                        '75002',
-                                                        '75003',
-                                                        '75004',
-                                                        '75005',
-                                                        '75006',
-                                                        '75007',
-                                                        '75008',
-                                                        '75009',
-                                                        '75010',
-                                                        '75011',
-                                                        '75012',
-                                                        '75013',
-                                                        '75014',
-                                                        '75015',
-                                                        '75116',
-                                                        '75017',
-                                                        '75018',
-                                                        '75019',
-                                                        '75020'],
-                                           "ville2": [f"Paris {i + 1}e arrondissement" for i in range(20)]})
-
-                paris.loc[paris["code"] == "75101", "ville2"] = "Paris 1er arrondissement"
-
-                paris16 = pd.DataFrame(data={"code": ['75116'],
-                                             "postcode": ['75016'],
-                                             "ville2": "Paris 16e arrondissement"})
-
-                paris = pd.concat([paris, paris16], ignore_index=True)
-                paris = paris.sort_values(by=['code', 'postcode'])
-
-                lyon = pd.DataFrame(data={"code": [f'6938{i + 1}' for i in range(9)],
-                                          "postcode": [f'6900{i + 1}' for i in range(9)],
-                                          "ville2": [f"Lyon {i + 1}e arrondissement" for i in range(9)]})
-
-                lyon.loc[lyon["code"] == "69381", "ville2"] = "Lyon 1er arrondissement"
-
-                marseille = pd.DataFrame(data={"code": ['13201',
-                                                        '13202',
-                                                        '13203',
-                                                        '13204',
-                                                        '13205',
-                                                        '13206',
-                                                        '13207',
-                                                        '13208',
-                                                        '13209',
-                                                        '13210', '13211', '13212', '13213', '13214', '13215', '13216'],
-                                               "postcode": ['13001',
-                                                            '13002',
-                                                            '13003',
-                                                            '13004',
-                                                            '13005',
-                                                            '13006',
-                                                            '13007',
-                                                            '13008',
-                                                            '13009',
-                                                            '13010', '13011', '13012', '13013', '13014', '13015',
-                                                            '13016'],
-                                               "ville2": [f"Marseille {i + 1}e arrondissement" for i in range(16)]})
-
-                marseille.loc[marseille["code"] == "13201", "ville2"] = "Marseille 1er arrondissement"
-
-                plm = pd.concat([paris, lyon, marseille], ignore_index=True)
-                plm = plm.rename(columns={"postcode": "properties.postcode"})
-
-                df_adm6 = pd.merge(df_adm5, plm, on="properties.postcode", how="left")
-
-                df_adm6.loc[
-                    (df_adm6["code"].notna()) & (
-                            df_adm6["code"] != df_adm6["properties.citycode"]), "properties.citycode"] = \
-                    df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["code"] != df_adm6["properties.citycode"]), "code"]
-
-                df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville"] = \
-                    df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville2"]
-
-                df_adm6["ad"] = df_adm6["properties.postcode"] + " " + df_adm6["properties.citycode"] + " " + df_adm6[
-                    "ville"] + " " + df_adm6["properties.context"]
-
-                df_adm6 = df_adm6.drop(columns=["code", "ville2"])
+                df_adm6 = plmf(df_adm5)
 
                 df_adm62 = df_adm6[
                     ["publication_number", "sequence", "type_party", "ad"]].drop_duplicates().reset_index(
@@ -668,26 +708,8 @@ def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
 
     miss2["address_complete_fr2"] = miss2["address_source"].copy()
 
-    miss2.loc[miss2["address_complete_fr2"] == "F-75014 PARIS", "address_complete_fr2"] = "75014 PARIS"
-    miss2.loc[miss2["address_complete_fr2"] == "F-75015 PARIS", "address_complete_fr2"] = "75015 PARIS"
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"\"", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"«", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"»", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"\'\'", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"\ufeff3", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"^-+\s?", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"^\.+\s?", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"^\/+\s?", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"&", " ", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r",", " ", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"\_{1,}", " ", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"[c|C]\/[o|O]", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"\n", " ", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.replace(r"\s{2,}", "", regex=True)
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].apply(
-        lambda a: "".join(c for c in a if c.isalnum() or c == " "))
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.strip()
-    miss2["address_complete_fr2"] = miss2["address_complete_fr2"].str.lower()
+    miss2 = cleaning_address(miss2, "address_complete_fr2")
+
     miss2["len_ad"] = miss2["address_complete_fr2"].apply(lambda x: len(x))
     miss2 = miss2.loc[miss2["len_ad"] > 2]
 
@@ -711,37 +733,7 @@ def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
     lng = len(miss2)
     lng2 = len(miss2)
 
-    res_adm = []
-
-    start = timer()
-    for _, r in miss2.iterrows():
-        prct = lng / lng2 * 100
-        if prct % 10 == 0:
-            print(f"Il reste {prct} % de requêtes à effectuer")
-        ad = r["address_complete_fr"]
-        res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json")
-        if res.status_code != 200:
-            print(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}", flush=True)
-            tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
-            res_adm.append(tadm)
-        else:
-            res = res.json()
-            if "features" not in res.keys():
-                tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
-                res_adm.append(tadm)
-            else:
-                res2 = res["features"]
-                for r2 in res2:
-                    r2["address_complete_fr"] = ad
-                    tadm = pd.json_normalize(r2)
-                    res_adm.append(tadm)
-        lng = lng - 1
-
-    end = timer()
-    m, s = divmod(end - start, 60)
-    h, m = divmod(m, 60)
-    time_str = "%02d:%02d:%02d" % (h, m, s)
-    print(f"Durée de traitement : {time_str}")
+    res_adm = call_api_adresse(miss2)
 
     if len(res_adm) > 0:
         df_adm = pd.concat(res_adm, ignore_index=True)
@@ -788,112 +780,7 @@ def ad_missing(miss_fr2: pd.DataFrame) -> pd.DataFrame:
 
                 df_adm5 = pd.merge(miss2, df_adm4, on="address_complete_fr", how="left")
 
-                df_adm5.loc[df_adm5["properties.district"].notna(), "ville"] = df_adm5.loc[
-                    df_adm5["properties.district"].notna(), "properties.district"]
-                df_adm5.loc[df_adm5["properties.district"].isna(), "ville"] = df_adm5.loc[
-                    df_adm5["properties.district"].isna(), "properties.city"]
-
-                df_adm5["properties.postcode"] = df_adm5["properties.postcode"].astype(object)
-
-                paris = pd.DataFrame(data={"code": ['75101',
-                                                    '75102',
-                                                    '75103',
-                                                    '75104',
-                                                    '75105',
-                                                    '75106',
-                                                    '75107',
-                                                    '75108',
-                                                    '75109',
-                                                    '75110',
-                                                    '75111',
-                                                    '75112',
-                                                    '75113',
-                                                    '75114',
-                                                    '75115',
-                                                    '75116',
-                                                    '75117',
-                                                    '75118',
-                                                    '75119',
-                                                    '75120'],
-                                           "postcode": ['75001',
-                                                        '75002',
-                                                        '75003',
-                                                        '75004',
-                                                        '75005',
-                                                        '75006',
-                                                        '75007',
-                                                        '75008',
-                                                        '75009',
-                                                        '75010',
-                                                        '75011',
-                                                        '75012',
-                                                        '75013',
-                                                        '75014',
-                                                        '75015',
-                                                        '75116',
-                                                        '75017',
-                                                        '75018',
-                                                        '75019',
-                                                        '75020'],
-                                           "ville2": [f"Paris {i + 1}e arrondissement" for i in range(20)]})
-
-                paris.loc[paris["code"] == "75101", "ville2"] = "Paris 1er arrondissement"
-
-                paris16 = pd.DataFrame(data={"code": ['75116'],
-                                             "postcode": ['75016'],
-                                             "ville2": "Paris 16e arrondissement"})
-
-                paris = pd.concat([paris, paris16], ignore_index=True)
-                paris = paris.sort_values(by=['code', 'postcode'])
-
-                lyon = pd.DataFrame(data={"code": [f'6938{i + 1}' for i in range(9)],
-                                          "postcode": [f'6900{i + 1}' for i in range(9)],
-                                          "ville2": [f"Lyon {i + 1}e arrondissement" for i in range(9)]})
-
-                lyon.loc[lyon["code"] == "69381", "ville2"] = "Lyon 1er arrondissement"
-
-                marseille = pd.DataFrame(data={"code": ['13201',
-                                                        '13202',
-                                                        '13203',
-                                                        '13204',
-                                                        '13205',
-                                                        '13206',
-                                                        '13207',
-                                                        '13208',
-                                                        '13209',
-                                                        '13210', '13211', '13212', '13213', '13214', '13215', '13216'],
-                                               "postcode": ['13001',
-                                                            '13002',
-                                                            '13003',
-                                                            '13004',
-                                                            '13005',
-                                                            '13006',
-                                                            '13007',
-                                                            '13008',
-                                                            '13009',
-                                                            '13010', '13011', '13012', '13013', '13014', '13015',
-                                                            '13016'],
-                                               "ville2": [f"Marseille {i + 1}e arrondissement" for i in range(16)]})
-
-                marseille.loc[marseille["code"] == "13201", "ville2"] = "Marseille 1er arrondissement"
-
-                plm = pd.concat([paris, lyon, marseille], ignore_index=True)
-                plm = plm.rename(columns={"postcode": "properties.postcode"})
-
-                df_adm6 = pd.merge(df_adm5, plm, on="properties.postcode", how="left")
-
-                df_adm6.loc[
-                    (df_adm6["code"].notna()) & (
-                            df_adm6["code"] != df_adm6["properties.citycode"]), "properties.citycode"] = \
-                    df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["code"] != df_adm6["properties.citycode"]), "code"]
-
-                df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville"] = \
-                    df_adm6.loc[(df_adm6["code"].notna()) & (df_adm6["ville"] != df_adm6["ville2"]), "ville2"]
-
-                df_adm6["ad"] = df_adm6["properties.postcode"] + " " + df_adm6["properties.citycode"] + " " + df_adm6[
-                    "ville"] + " " + df_adm6["properties.context"]
-
-                df_adm6 = df_adm6.drop(columns=["code", "ville2"])
+                df_adm6 = plmf(df_adm5)
 
                 df_adm62 = df_adm6[
                     ["address_complete_fr", "ad"]].drop_duplicates().reset_index(
@@ -1344,6 +1231,576 @@ def create_paysage(pays: pd.DataFrame) -> pd.DataFrame:
     return pays4
 
 
+def get_applicant(res_part1, pn_) -> pd.DataFrame:
+    global df1
+    if isinstance(res_part1, dict):
+        if isinstance(res_part1["reg:applicant"], list):
+            df1 = pd.json_normalize([res_part1], record_path=["reg:applicant"],
+                                    meta=["@change-date", "@change-gazette-num"])
+            df1 = df1.drop(
+                columns=["@app-type", "@designation", "reg:nationality.reg:country", "reg:residence.reg:country"])
+
+            df1 = df1.fillna("")
+
+            col_address = []
+
+            for col in list(df1.columns):
+                if col.startswith("reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df1["address"] = df1[col_address[0]]
+            for i in range(1, len(col_address)):
+                df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                df1["address"] = df1["address"].apply(lambda a: a.strip())
+
+            for col in col_address:
+                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                df1 = df1.rename(columns={col: name})
+
+            df1 = df1.rename(columns={"@sequence": "sequence",
+                                      "reg:addressbook.@cdsid": "cdsid",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country"})
+            df1["pn"] = pn_
+
+        else:
+            df1 = pd.json_normalize([res_part1])
+            df1 = df1.drop(columns=["reg:applicant.@app-type",
+                                    "reg:applicant.@designation",
+                                    "reg:applicant.reg:nationality.reg:country",
+                                    "reg:applicant.reg:residence.reg:country"])
+
+            df1 = df1.fillna("")
+
+            col_address = []
+
+            for col in list(df1.columns):
+                if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df1["address"] = df1[col_address[0]]
+            for i in range(1, len(col_address)):
+                df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                df1["address"] = df1["address"].apply(lambda a: a.strip())
+
+            # df1 = df1.drop(columns=col_address)
+
+            for col in col_address:
+                name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                df1 = df1.rename(columns={col: name})
+
+            df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
+                                      "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                      "reg:applicant.reg:addressbook.reg:name": "name",
+                                      "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+            df1["pn"] = pn_
+
+    else:
+        set_liste = [isinstance(item["reg:applicant"], list) for item in res_part1]
+        set_liste = set(set_liste)
+        if len(set_liste) == 1 and True in set_liste:
+            df1 = pd.json_normalize(res_part1, record_path=["reg:applicant"],
+                                    meta=["@change-date", "@change-gazette-num"])
+            df1 = df1.drop(
+                columns=["@app-type", "@designation", "reg:nationality.reg:country", "reg:residence.reg:country"])
+
+            df1 = df1.fillna("")
+
+            col_address = []
+
+            for col in list(df1.columns):
+                if col.startswith("reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df1["address"] = df1[col_address[0]]
+            for i in range(1, len(col_address)):
+                df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                df1["address"] = df1["address"].apply(lambda a: a.strip())
+
+            # df1 = df1.drop(columns=col_address)
+
+            for col in col_address:
+                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                df1 = df1.rename(columns={col: name})
+
+            df1 = df1.rename(columns={"@sequence": "sequence",
+                                      "reg:addressbook.@cdsid": "cdsid",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country"})
+            df1["pn"] = pn_
+
+        elif len(set_liste) > 1 and True in set_liste:
+            liste_part = []
+            for item in res_part1:
+                if isinstance(item["reg:applicant"], list):
+                    tmp = pd.json_normalize(item, record_path=["reg:applicant"],
+                                            meta=["@change-date", "@change-gazette-num"])
+                    tmp = tmp.drop(
+                        columns=["@app-type", "@designation", "reg:nationality.reg:country",
+                                 "reg:residence.reg:country"])
+
+                    tmp = tmp.fillna("")
+
+                    col_address = []
+
+                    for col in list(tmp.columns):
+                        if col.startswith("reg:addressbook.reg:address.reg:address-"):
+                            col_address.append(col)
+
+                    tmp["address"] = tmp[col_address[0]]
+                    for i in range(1, len(col_address)):
+                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+
+                    tmp = tmp.drop(
+                        columns=col_address)
+
+                    tmp = tmp.rename(columns={"@sequence": "sequence",
+                                              "reg:addressbook.@cdsid": "cdsid",
+                                              "reg:addressbook.reg:name": "name",
+                                              "reg:addressbook.reg:address.reg:country": "country"})
+                    liste_part.append(tmp)
+                else:
+                    tmp = pd.json_normalize(item)
+                    tmp = tmp.drop(columns=["reg:applicant.@app-type",
+                                            "reg:applicant.@designation",
+                                            "reg:applicant.reg:nationality.reg:country",
+                                            "reg:applicant.reg:residence.reg:country"])
+
+                    tmp = tmp.fillna("")
+
+                    col_address = []
+
+                    for col in list(tmp.columns):
+                        if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
+                            col_address.append(col)
+
+                    tmp["address"] = tmp[col_address[0]]
+                    for i in range(1, len(col_address)):
+                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+
+                    # df1 = df1.drop(columns=col_address)
+
+                    for col in col_address:
+                        name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                        tmp = tmp.rename(columns={col: name})
+
+                    # tmp = tmp.drop(
+                    #     columns=col_address)
+
+                    tmp = tmp.rename(columns={"reg:applicant.@sequence": "sequence",
+                                              "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                              "reg:applicant.reg:addressbook.reg:name": "name",
+                                              "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                    liste_part.append(tmp)
+
+            df1 = pd.concat(liste_part)
+            df1["pn"] = pn_
+
+        else:
+            df1 = pd.json_normalize(res_part1)
+            df1 = df1.drop(columns=["reg:applicant.@app-type",
+                                    "reg:applicant.@designation",
+                                    "reg:applicant.reg:nationality.reg:country",
+                                    "reg:applicant.reg:residence.reg:country"])
+
+            df1 = df1.fillna("")
+
+            col_address = []
+
+            for col in list(df1.columns):
+                if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df1["address"] = df1[col_address[0]]
+            for i in range(1, len(col_address)):
+                df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                df1["address"] = df1["address"].apply(lambda a: a.strip())
+
+            # df1 = df1.drop(columns=col_address)
+
+            for col in col_address:
+                name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                df1 = df1.rename(columns={col: name})
+
+            df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
+                                      "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                      "reg:applicant.reg:addressbook.reg:name": "name",
+                                      "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+
+            df1["pn"] = pn_
+
+    return df1
+
+
+def get_inventor(res_part1, pn_) -> pd.DataFrame:
+    global df3
+    if isinstance(res_part1, dict):
+        if isinstance(res_part1["reg:inventor"], list):
+            df3 = pd.json_normalize([res_part1], record_path=["reg:inventor"],
+                                    meta=["@change-date", "@change-gazette-num"])
+
+            df3 = df3.fillna("")
+
+            col_address = []
+
+            for col in list(df3.columns):
+                if col.startswith("reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df3["address"] = df3[col_address[0]]
+            for i in range(1, len(col_address)):
+                df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                df3["address"] = df3["address"].apply(lambda a: a.strip())
+
+            for col in col_address:
+                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                df3 = df3.rename(columns={col: name})
+
+            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                      "reg:inventor.reg:addressbook.reg:name": "name",
+                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country",
+                                      "@sequence": "sequence"})
+            df3["pn"] = pn_
+
+        else:
+            df3 = pd.json_normalize([res_part1])
+
+            df3 = df3.fillna("")
+
+            col_address = []
+
+            for col in list(df3.columns):
+                if col.startswith("reg:inventor.reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df3["address"] = df3[col_address[0]]
+            for i in range(1, len(col_address)):
+                df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                df3["address"] = df3["address"].apply(lambda a: a.strip())
+
+            # df3 = df3.drop(columns=col_address)
+
+            for col in col_address:
+                name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
+                df3 = df3.rename(columns={col: name})
+
+            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                      "reg:inventor.reg:addressbook.reg:name": "name",
+                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country",
+                                      "@sequence": "sequence"})
+            df3["pn"] = pn_
+
+    else:
+        set_liste = [isinstance(item["reg:inventor"], list) for item in res_part1]
+        set_liste = set(set_liste)
+        if len(set_liste) == 1 and True in set_liste:
+            df3 = pd.json_normalize(res_part1, record_path=["reg:inventor"],
+                                    meta=["@change-date", "@change-gazette-num"])
+
+            df3 = df3.fillna("")
+
+            col_address = []
+
+            for col in list(df3.columns):
+                if col.startswith("reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df3["address"] = df3[col_address[0]]
+            for i in range(1, len(col_address)):
+                df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                df3["address"] = df3["address"].apply(lambda a: a.strip())
+
+            # df3 = df3.drop(columns=col_address)
+
+            for col in col_address:
+                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                df3 = df3.rename(columns={col: name})
+
+            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                      "reg:inventor.reg:addressbook.reg:name": "name",
+                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country",
+                                      "@sequence": "sequence"})
+            df3["pn"] = pn_
+
+        elif len(set_liste) > 1 and True in set_liste:
+            liste_part = []
+            for item in res_part1:
+                if isinstance(item["reg:inventor"], list):
+                    tmp = pd.json_normalize(item, record_path=["reg:inventor"],
+                                            meta=["@change-date", "@change-gazette-num"])
+
+                    tmp = tmp.fillna("")
+
+                    col_address = []
+
+                    for col in list(tmp.columns):
+                        if col.startswith("reg:addressbook.reg:address.reg:address-"):
+                            col_address.append(col)
+
+                    tmp["address"] = tmp[col_address[0]]
+                    for i in range(1, len(col_address)):
+                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+
+                    tmp = tmp.drop(
+                        columns=col_address)
+
+                    tmp = tmp.rename(columns={"reg:inventor.@sequence": "sequence",
+                                              "reg:inventor.reg:addressbook.reg:name": "name",
+                                              "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                              "reg:addressbook.reg:name": "name",
+                                              "reg:addressbook.reg:address.reg:country": "country",
+                                              "@sequence": "sequence"})
+                    liste_part.append(tmp)
+                else:
+                    tmp = pd.json_normalize(item)
+
+                    tmp = tmp.fillna("")
+
+                    col_address = []
+
+                    for col in list(tmp.columns):
+                        if col.startswith("reg:inventor.reg:addressbook.reg:address.reg:address-"):
+                            col_address.append(col)
+
+                    tmp["address"] = tmp[col_address[0]]
+                    for i in range(1, len(col_address)):
+                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+
+                    # df3 = df3.drop(columns=col_address)
+
+                    for col in col_address:
+                        name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
+                        df3 = df3.rename(columns={col: name})
+
+                    # tmp = tmp.drop(
+                    #     columns=col_address)
+
+                    tmp = tmp.rename(columns={"reg:inventor.@sequence": "sequence",
+                                              "reg:inventor.reg:addressbook.reg:name": "name",
+                                              "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                              "reg:addressbook.reg:name": "name",
+                                              "reg:addressbook.reg:address.reg:country": "country",
+                                              "@sequence": "sequence"})
+                    liste_part.append(tmp)
+
+            df3 = pd.concat(liste_part)
+            df3["pn"] = pn_
+
+        else:
+            df3 = pd.json_normalize(res_part1)
+
+            df3 = df3.fillna("")
+
+            col_address = []
+
+            for col in list(df3.columns):
+                if col.startswith("reg:inventor.reg:addressbook.reg:address.reg:address-"):
+                    col_address.append(col)
+
+            df3["address"] = df3[col_address[0]]
+            for i in range(1, len(col_address)):
+                df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                df3["address"] = df3["address"].apply(lambda a: a.strip())
+
+            # df3 = df3.drop(columns=col_address)
+
+            for col in col_address:
+                name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
+                df3 = df3.rename(columns={col: name})
+
+            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                      "reg:inventor.reg:addressbook.reg:name": "name",
+                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                      "reg:addressbook.reg:name": "name",
+                                      "reg:addressbook.reg:address.reg:country": "country",
+                                      "@sequence": "sequence"})
+
+            df3["pn"] = pn_
+
+    return df3
+
+
+def recursive_items(dictionary):
+    for key, value in dictionary.items():
+        if isinstance(value, dict):
+            yield (key, value)
+            yield from recursive_items(value)
+        else:
+            yield (key, value)
+
+
+def recursive_inventors(djson2):
+    clefs = ["ops:world-patent-data", "ops:register-search", "reg:register-documents", "reg:register-document",
+             "reg:bibliographic-data", "reg:parties", "reg:inventors"]
+
+    if isinstance(djson2, list):
+        for item in djson2:
+            liste2 = []
+            for key, value in recursive_items(item):
+                if key in clefs:
+                    liste2.append(key)
+            for clef in liste2:
+                item = item.get(clef)
+                yield from recursive_items(item)
+
+    return item
+
+
+def df_applicant(rt, pn_) -> pd.DataFrame:
+    """
+    Create dataframe with applicants
+    """
+    data = xmltodict.parse(rt.content)
+    djson = json.dumps(data)
+    djson2 = json.loads(djson)
+
+    global df1
+
+    try:
+        ret1 = \
+            djson2["ops:world-patent-data"]["ops:register-search"]["reg:register-documents"]["reg:register-document"][
+                "reg:bibliographic-data"]["reg:parties"]["reg:applicants"]
+        df1 = get_applicant(ret1, pn_)
+    except:
+        liste = []
+        clefs = ["ops:world-patent-data", "ops:register-search", "reg:register-documents", "reg:register-document",
+                 "reg:bibliographic-data", "reg:parties", "reg:applicants"]
+        for key, value in recursive_items(djson2):
+            if key in clefs:
+                liste.append(key)
+
+        for item in liste:
+            djson2 = djson2.get(item)
+
+        if isinstance(djson2, list):
+            for item in djson2:
+                liste2 = []
+                for key, value in recursive_items(item):
+                    if key in clefs:
+                        liste2.append(key)
+                for clef in liste2:
+                    item = item.get(clef)
+                df1 = get_applicant(item, pn_)
+
+    return df1
+
+
+def df_inventor(rt, pn_) -> pd.DataFrame:
+    """
+    Create dataframe with applicants
+    """
+    data = xmltodict.parse(rt.content)
+    djson = json.dumps(data)
+    djson2 = json.loads(djson)
+
+    global df2
+
+    try:
+        ret1 = \
+            djson2["ops:world-patent-data"]["ops:register-search"]["reg:register-documents"]["reg:register-document"][
+                "reg:bibliographic-data"]["reg:parties"]["reg:inventors"]
+        df2 = get_inventor(ret1, pn_)
+    except:
+        liste = []
+        clefs = ["ops:world-patent-data", "ops:register-search", "reg:register-documents", "reg:register-document",
+                 "reg:bibliographic-data", "reg:parties", "reg:inventors"]
+        for key, value in recursive_items(djson2):
+            if key in clefs:
+                liste.append(key)
+
+        for item in liste:
+            djson2 = djson2.get(item)
+
+        if isinstance(djson2, list):
+            for item in djson2:
+                liste2 = []
+                for key, value in recursive_items(item):
+                    if key in clefs:
+                        liste2.append(key)
+                for clef in liste2:
+                    item = item.get(clef)
+                if isinstance(item, dict):
+                    if "reg:inventor" in item.keys():
+                        df2 = get_inventor(item, pn_)
+                elif isinstance(item, list):
+                    for it in item:
+                        liste3 = []
+                        for key, value in recursive_items(it):
+                            if key in clefs:
+                                liste3.append(key)
+                        for clef in liste3:
+                            it = it.get(clef)
+                        if isinstance(it, dict):
+                            if "reg:inventor" in it.keys():
+                                df2 = get_inventor(it, pn_)
+                else:
+                    df2 = pd.DataFrame(data={"pn": [pn_]})
+
+    return df2
+
+
+@retry(tries=3, delay=5, backoff=5)
+def get_token_oeb():
+    """
+    Get token OEB
+    """
+    token_url = 'https://ops.epo.org/3.2/auth/accesstoken'
+    key = os.getenv("OPS_ADDRESS_PART")
+    data = {'grant_type': 'client_credentials'}
+    headers = {'Authorization': key, 'Content-Type': 'application/x-www-form-urlencoded'}
+
+    r = requests.post(token_url, data=data, headers=headers)
+
+    rs = r.content.decode()
+    response = json.loads(rs)
+
+    tken = f"Bearer {response.get('access_token')}"
+
+    return tken
+
+
+@retry(tries=3, delay=5, backoff=5)
+def get_part(pn: str, tkn: str) -> pd.DataFrame:
+    """
+    Get applicants from EPO query with publication number
+    """
+    global d_app, d_inv
+    ret1 = requests.get(f"http://ops.epo.org/3.2/rest-services/register/search/biblio?q=pn%3D{pn}",
+                        headers={"Authorization": tkn})
+
+    status = ret1.status_code
+    if status != 200:
+        if ret1.text == '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' \
+                        '<fault xmlns="http://ops.epo.org">\n    <code>SERVER.EntityNotFound</code>\n' \
+                        '    <message>No results found</message>\n</fault>\n':
+            pass
+        elif ret1.text == '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n' \
+                          '<fault xmlns="http://ops.epo.org">\n' \
+                          '<code>CLIENT.InvalidQuery</code>\n' \
+                          '<message>The request was invalid</message>\n' \
+                          '</fault>':
+            pass
+        else:
+            print(f"Le code d'erreur est {status}.")
+            pass
+    else:
+        print("URL successfully accessed", flush=True)
+        d_app = df_applicant(ret1, pn)
+        d_inv = df_inventor(ret1, pn)
+
+    return d_app, d_inv
+
+
 def create_df_address():
     # set working directory
     os.chdir(DATA_PATH)
@@ -1366,6 +1823,9 @@ def create_df_address():
         part = part.drop(columns="appln_publn_number")
 
     if "part_p08_address.csv" in files:
+        for col in list(part.columns):
+            col2 = col.replace("-", "_")
+            part = part.rename(columns={col: col2})
         key_presents = list(
             part.loc[(part["address_complete_fr"].notna()) & (part["com_code"].notna()), "key_appln_nr"].unique())
         pat_fr = patents.loc[(patents["appln_auth"] == "FR") & (~patents["key_appln_nr"].isin(key_presents))]
@@ -1579,7 +2039,7 @@ def create_df_address():
     addresses7["id_paysage"] = addresses7["id_paysage"].str.replace("XjdyB", "xJdyB", regex=False)
 
     paysage = addresses7.loc[
-        (part["country_corrected"].isin(["FR", ""])) & (part["com-code"]=="") & (part["id_paysage"]!="")]
+        (addresses7["country_corrected"].isin(["FR", ""])) & (addresses7["com-code"]=="") & (addresses7["id_paysage"]!="")]
 
     paysage2 = create_paysage(paysage)
 
