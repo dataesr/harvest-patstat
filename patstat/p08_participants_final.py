@@ -54,6 +54,9 @@ def part_final():
     particip.loc[particip["name_corrected"] == "", "name_corrected"] = particip.loc[
         particip["name_corrected"] == "", "name_corrige"]
 
+    particip.loc[particip["name_corrected"] == "", "name_corrected"] = particip.loc[
+        particip["name_corrected"] == "", "name_source"]
+
     particip.loc[(particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret2"] = particip.loc[
         (particip["siret"].notna()) & (particip["siret"].str.findall(r"\(\'")), "siret"].replace(r"\(\'|\'|\)", "",
                                                                                                  regex=True).str.split(
