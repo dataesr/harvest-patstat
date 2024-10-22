@@ -1142,91 +1142,95 @@ def create_paysage(pays: pd.DataFrame) -> pd.DataFrame:
 
     oui["liste"] = oui["id_paysage"].str.split(",, ")
 
-    liste_persons = []
+    if len(oui) > 0:
 
-    persons = list(oui["key_appln_nr_person"].unique())
+        liste_persons = []
 
-    for person in persons:
-        temp = oui.loc[oui["key_appln_nr_person"] == person]
-        idp = temp["id_paysage"].unique()[0]
-        dico = {"key_appln_nr_person": person, "id_paysage": idp}
+        persons = list(oui["key_appln_nr_person"].unique())
 
-        com2 = []
-        ville2 = []
-        depid2 = []
-        depn2 = []
-        reg2 = []
-        for item in temp["liste"].values[0]:
-            if item == "":
-                com2.append("")
-                ville2.append("")
-                depid2.append("")
-                depn2.append("")
-                reg2.append("")
-            elif item and item != "":
-                comv = temp.loc[temp["ids_paysage"] == item, "com_code"]
-                villev = temp.loc[temp["ids_paysage"] == item, "ville"]
-                depidv = temp.loc[temp["ids_paysage"] == item, "dep_id"]
-                depnv = temp.loc[temp["ids_paysage"] == item, "dep_nom"]
-                regv = temp.loc[temp["ids_paysage"] == item, "reg_nom"]
+        for person in persons:
+            temp = oui.loc[oui["key_appln_nr_person"] == person]
+            idp = temp["id_paysage"].unique()[0]
+            dico = {"key_appln_nr_person": person, "id_paysage": idp}
 
-                if len(comv) > 0:
-                    com2.append(comv.values[0])
+            com2 = []
+            ville2 = []
+            depid2 = []
+            depn2 = []
+            reg2 = []
+            for item in temp["liste"].values[0]:
+                if item == "":
+                    com2.append("")
+                    ville2.append("")
+                    depid2.append("")
+                    depn2.append("")
+                    reg2.append("")
+                elif item and item != "":
+                    comv = temp.loc[temp["ids_paysage"] == item, "com_code"]
+                    villev = temp.loc[temp["ids_paysage"] == item, "ville"]
+                    depidv = temp.loc[temp["ids_paysage"] == item, "dep_id"]
+                    depnv = temp.loc[temp["ids_paysage"] == item, "dep_nom"]
+                    regv = temp.loc[temp["ids_paysage"] == item, "reg_nom"]
+
+                    if len(comv) > 0:
+                        com2.append(comv.values[0])
+                    else:
+                        com2.append("")
+
+                    if len(villev) > 0:
+                        ville2.append(villev.values[0])
+                    else:
+                        ville2.append("")
+
+                    if len(depidv) > 0:
+                        depid2.append(depidv.values[0])
+                    else:
+                        depid2.append("")
+
+                    if len(depnv) > 0:
+                        depn2.append(depnv.values[0])
+                    else:
+                        depn2.append("")
+
+                    if len(regv) > 0:
+                        reg2.append(regv.values[0])
+                    else:
+                        reg2.append("")
                 else:
                     com2.append("")
-
-                if len(villev) > 0:
-                    ville2.append(villev.values[0])
-                else:
                     ville2.append("")
-
-                if len(depidv) > 0:
-                    depid2.append(depidv.values[0])
-                else:
                     depid2.append("")
-
-                if len(depnv) > 0:
-                    depn2.append(depnv.values[0])
-                else:
                     depn2.append("")
-
-                if len(regv) > 0:
-                    reg2.append(regv.values[0])
-                else:
                     reg2.append("")
-            else:
-                com2.append("")
-                ville2.append("")
-                depid2.append("")
-                depn2.append("")
-                reg2.append("")
 
-        com = ",, ".join(com2)
-        ville = ",, ".join(ville2)
-        depid = ",, ".join(depid2)
-        depn = ",, ".join(depn2)
-        reg = ",, ".join(reg2)
+            com = ",, ".join(com2)
+            ville = ",, ".join(ville2)
+            depid = ",, ".join(depid2)
+            depn = ",, ".join(depn2)
+            reg = ",, ".join(reg2)
 
-        dico["com_code"] = com
-        dico["ville"] = ville
-        dico["dep_id"] = depid
-        dico["dep_nom"] = depn
-        dico["reg_nom"] = reg
+            dico["com_code"] = com
+            dico["ville"] = ville
+            dico["dep_id"] = depid
+            dico["dep_nom"] = depn
+            dico["reg_nom"] = reg
 
-        liste_persons.append(dico)
+            liste_persons.append(dico)
 
-    df_virgule = pd.DataFrame(data=liste_persons)
-    df_virgule2 = pd.merge(
-        pays3.drop(
-            columns=["ids_paysage", "id_api", "virgule", "com_code", "ville", "dep_id", "dep_nom", "reg_nom"]),
-        df_virgule,
-        on=["key_appln_nr_person", "id_paysage"], how="inner").drop_duplicates().reset_index(drop=True)
+        df_virgule = pd.DataFrame(data=liste_persons)
+        df_virgule2 = pd.merge(
+            pays3.drop(
+                columns=["ids_paysage", "id_api", "virgule", "com_code", "ville", "dep_id", "dep_nom", "reg_nom"]),
+            df_virgule,
+            on=["key_appln_nr_person", "id_paysage"], how="inner").drop_duplicates().reset_index(drop=True)
 
-    pays4 = pays3.drop(columns=["ids_paysage", "id_api", "virgule"])
-    pays4 = pays4.loc[
-        ~pays4["key_appln_nr_person"].isin(df_virgule2["key_appln_nr_person"])].drop_duplicates().reset_index(
-        drop=True)
-    pays4 = pd.concat([pays4, df_virgule2], ignore_index=True)
+        pays4 = pays3.drop(columns=["ids_paysage", "id_api", "virgule"])
+        pays4 = pays4.loc[
+            ~pays4["key_appln_nr_person"].isin(df_virgule2["key_appln_nr_person"])].drop_duplicates().reset_index(
+            drop=True)
+        pays4 = pd.concat([pays4, df_virgule2], ignore_index=True)
+    else:
+        pays4 = pays3.drop(columns=["ids_paysage", "id_api", "virgule"])
 
     return pays4
 
@@ -2048,17 +2052,239 @@ def create_df_address():
 
     addresses8 = addresses8.fillna("")
 
-    addresses8.to_csv("part_p08_address2.csv", index=False, sep="|", encoding="utf-8")
-    swift.upload_object('patstat', 'part_p08_address2.csv')
-
     missing_fr5 = addresses8.loc[(addresses8["country_corrected"].isin(["FR", ""]))]
     missing_fr6 = missing_fr5.loc[missing_fr5["com_code"] == ""]
 
-    missing_fr6.to_csv("missing_fr_address2.csv", index=False, sep="|", encoding="utf-8")
-    swift.upload_object('patstat', 'missing_fr_address2.csv')
-
     pourcentage2 = round(len(missing_fr6) / len(missing_fr5) * 100, 2)
     print(f"Le 2ème pourcentage d'adresses manquantes pour les Français est de {pourcentage2}.", flush=True)
+
+    missing_oeb = patents.loc[patents["key_appln_nr"].isin(missing_fr6["key_appln_nr"])]
+
+    missing_fr6["liste_key_person"] = missing_fr6["key_appln_nr_person"].str.split("_")
+    missing_fr6["applt_seq_nr"] = missing_fr6["liste_key_person"].apply(lambda a: int(a[-2]))
+    missing_fr6["invt_seq_nr"] = missing_fr6["liste_key_person"].apply(lambda a: int(a[-1]))
+    missing_fr6 = missing_fr6.drop(columns="liste_key_person")
+    missing_fr6["type_party"] = missing_fr6.apply(
+        lambda a: "applicant" if a["applt_seq_nr"] > 0 and a["invt_seq_nr"] == 0 else "inventor", axis=1)
+    missing_fr6["sequence"] = missing_fr6.apply(
+        lambda a: a["applt_seq_nr"] if a["type_party"] == "applicant" else a["invt_seq_nr"], axis=1)
+
+    pat_oeb = missing_oeb[["key_appln_nr", "appln_auth", "appln_publn_number"]].drop_duplicates().reset_index(drop=True)
+    pat_oeb = pat_oeb.loc[pat_oeb["appln_auth"].isin(["EP", "WO"])]
+    pat_oeb["pn"] = pat_oeb["appln_auth"] + pat_oeb["appln_publn_number"]
+    pat_oeb = pat_oeb.drop(columns=["appln_auth", "appln_publn_number"])
+
+    missing_fr6 = pd.merge(missing_fr6, pat_oeb, on="key_appln_nr", how="left")
+
+    pubon = list(pat_oeb["pn"].unique())
+
+    lpart = []
+
+    for pno in pubon:
+        tkn = get_token_oeb()
+        print(pno)
+        appln_prio, inv_prio = get_part(pno, tkn)
+        appln_prio["type_party"] = "applicant"
+        inv_prio["type_party"] = "inventor"
+        prt_ops = pd.concat([appln_prio, inv_prio], ignore_index=True)
+        prt_ops["sequence"] = prt_ops["sequence"].astype(int)
+        prt_ops2 = prt_ops.loc[prt_ops["country"] == "FR"].reset_index().drop(columns="index")
+        if len(prt_ops) > 0:
+            if len(set(prt_ops["@change-gazette-num"])) == 1:
+                prt_ops2 = prt_ops2[
+                    ["sequence", "name", "@change-date", "@change-gazette-num", "address", "pn",
+                     "type_party"]].drop_duplicates().reset_index(drop=True)
+                prt_ops2["address_complete_fr"] = prt_ops2["address"].copy()
+                prt_ops2 = cleaning_address(prt_ops2, "address_complete_fr")
+                lpart.append(prt_ops2)
+            else:
+                prt_ops2["@change-date2"] = prt_ops2["@change-date"].apply(pd.to_datetime)
+                mdate = prt_ops2["@change-date2"].min()
+                prt_ops2 = prt_ops2.loc[prt_ops2["@change-date2"] == mdate]
+                prt_ops2 = prt_ops2[
+                    ["sequence", "name", "@change-date", "@change-gazette-num", "address", "pn", "type_party",
+                     "@change-date2"]].drop_duplicates().reset_index(drop=True)
+                prt_ops2["address_complete_fr"] = prt_ops2["address"].copy()
+                prt_ops2 = cleaning_address(prt_ops2, "address_complete_fr")
+                lpart.append(prt_ops2)
+
+    part_ops2 = pd.concat(lpart, ignore_index=True)
+    part_ops2["sequence"] = part_ops2["sequence"].astype(int)
+    part_ops2 = part_ops2[["sequence", "name", "@change-date", "@change-gazette-num", "address", "pn", "type_party",
+                           "@change-date2"]].drop_duplicates().reset_index(drop=True)
+    part_ops2["address_complete_fr"] = part_ops2["address"].copy()
+
+    part_ops3 = pd.merge(
+        missing_fr6.drop(columns=["address_complete_fr", "com_code", "ville", "dep_id", "dep_nom", "reg_nom"]),
+        part_ops2,
+        on=["pn", "type_party", "sequence"], how="inner")
+
+    res_adm = call_api_adresse(part_ops2)
+
+    if len(res_adm) > 0:
+        df_adm = pd.concat(res_adm, ignore_index=True)
+
+        colonnes = ["feature", "geometry.type", "geometry.coordinates", "properties.id", "properties.banId",
+                    "properties.name", "properties.x", "properties.y", "properties.type", "properties.importance",
+                    "properties.housenumber", "properties.street"]
+        for col in colonnes:
+            if col in df_adm.columns:
+                df_adm = df_adm.drop(columns=col)
+
+        if "properties.label" in df_adm.columns:
+            df_adm2 = df_adm.loc[~df_adm["properties.label"].isin(["1 Cote Guy de Maupassant 76380 Canteleu"])]
+            df_adm2 = df_adm2.loc[df_adm2["properties.score"] >= 0.5]
+            ad_max = df_adm2[["address_complete_fr", "properties.score"]].groupby(
+                "address_complete_fr").max().reset_index()
+            df_adm2 = pd.merge(df_adm2, ad_max, on=["address_complete_fr", "properties.score"], how="inner")
+
+            if len(df_adm2) == 0:
+                df_adm_final = df_adm.copy()
+                df_adm_final["dep_id"] = ""
+                df_adm_final["dep_nom"] = ""
+                df_adm_final["reg_nom"] = ""
+                df_adm_final["com_code"] = ""
+                df_adm_final["ville"] = ""
+                df_adm_final = df_adm_final.fillna("")
+            else:
+                max_score = df_adm2[["address_complete_fr", "properties.score"]].groupby(
+                    "address_complete_fr").max().reset_index().drop_duplicates().reset_index(drop=True)
+
+                df_adm3 = pd.merge(df_adm2, max_score, on=["address_complete_fr", "properties.score"],
+                                   how="inner").sort_values(
+                    "address_complete_fr").reset_index(drop=True)
+
+                col_miss = ["properties.postcode", "properties.citycode", "properties.city",
+                            "properties.context", "properties.district"]
+                for col in col_miss:
+                    if col not in df_adm3.columns:
+                        df_adm3[col] = np.nan
+
+                df_adm4 = df_adm3[
+                    ["address_complete_fr", "properties.postcode", "properties.citycode", "properties.city",
+                     "properties.context", "properties.district"]].drop_duplicates().reset_index(drop=True)
+
+                df_adm5 = pd.merge(part_ops3, df_adm4, on="address_complete_fr", how="left")
+
+                df_adm6 = plmf(df_adm5)
+
+                df_adm62 = df_adm6[
+                    ["address_complete_fr", "ad"]].drop_duplicates().reset_index(
+                    drop=True)
+
+                df_adm6_compe = df_adm62.groupby(["address_complete_fr"]).nunique(
+                    dropna=False).reset_index().rename(columns={"ad": "compte"})
+
+                df_adm6_compe_u = df_adm6_compe.loc[df_adm6_compe["compte"] == 1].reset_index(drop=True)
+
+                df_adm6_u = pd.merge(df_adm6, df_adm6_compe_u, on="address_complete_fr",
+                                     how="inner").drop(
+                    columns=["compte", "ad",
+                             "properties.postcode", "properties.city",
+                             "properties.district"]).drop_duplicates().reset_index(drop=True)
+
+                df_adm6_compe_m = df_adm6_compe.loc[df_adm6_compe["compte"] > 1].reset_index(drop=True)
+
+                if len(df_adm6_compe_m) > 0:
+                    df_adm6m = pd.merge(df_adm6, df_adm6_compe_m, on="address_complete_fr",
+                                        how="inner")
+
+                    dico = {}
+
+                    for _, r in df_adm6m.iterrows():
+                        ids = r["address_complete_fr"]
+                        pc = r["properties.postcode"]
+                        city = r["properties.city"]
+
+                        if ids not in dico:
+                            dico[ids] = {"ids": [], "city": []}
+
+                        dico[ids]["ids"].append(ids)
+
+                        if city not in dico[ids]["city"]:
+                            dico[ids]["city"].append(city)
+
+                    res = []
+                    for ids in dico:
+                        lng = len(dico[ids]["city"])
+                        if lng == 1:
+                            df_ids = pd.DataFrame(data={"ids": ids, "city": dico[ids]["city"]})
+                            res.append(df_ids)
+
+                    df_city = pd.concat(res).reset_index(drop=True)
+
+                    df_adm63 = df_adm6[["address_complete_fr", "properties.citycode",
+                                        "properties.context", "ville",
+                                        "address_complete_fr"]].drop_duplicates().reset_index(
+                        drop=True)
+                    df_adm64 = df_adm63.copy()
+                    df_adm64 = pd.merge(df_adm64, df_city, on="address_complete_fr", how="inner").drop(
+                        columns="city").drop_duplicates().reset_index(
+                        drop=True)
+
+                    df_adm7 = pd.concat([df_adm6_u, df_adm64], ignore_index=True)
+
+                if "df_adm7" in locals():
+                    df_adm_final = df_adm7.copy()
+                else:
+                    df_adm_final = df_adm6_u
+
+                df_adm_final = df_adm_final.fillna("")
+
+                df_adm_final = df_adm_final.rename(columns={"properties.citycode": "com_code"})
+                df_adm_final["liste_context"] = df_adm_final["properties.context"].str.split(", ")
+                df_adm_final["dep_id"] = df_adm_final["liste_context"].apply(
+                    lambda a: a[0] if isinstance(a, list) and len(a) == 3 else "")
+                df_adm_final["dep_nom"] = df_adm_final["liste_context"].apply(
+                    lambda a: a[1] if isinstance(a, list) and len(a) == 3 else "")
+                df_adm_final["reg_nom"] = df_adm_final["liste_context"].apply(
+                    lambda a: a[2] if isinstance(a, list) and len(a) == 3 else "")
+                df_adm_final["dep_id"] = df_adm_final["dep_id"].apply(
+                    lambda a: "0" + a if len(a) == 1 and a != "" else a)
+                df_adm_final["dep_id"] = df_adm_final["dep_id"].apply(
+                    lambda a: "0" + a if len(a) == 2 and a != "" else a)
+                df_adm_final["dep_id"] = df_adm_final["dep_id"].apply(
+                    lambda a: "D" + a if len(a) == 3 and a != "" else a)
+                df_adm_final = df_adm_final.drop(columns=["properties.context", "liste_context"])
+        else:
+            df_adm_final = df_adm.copy()
+            df_adm_final["dep_id"] = ""
+            df_adm_final["dep_nom"] = ""
+            df_adm_final["reg_nom"] = ""
+            df_adm_final["com_code"] = ""
+            df_adm_final["ville"] = ""
+            df_adm_final = df_adm_final.fillna("")
+    else:
+        df_adm_final = part_ops3.copy()
+        df_adm_final["dep_id"] = ""
+        df_adm_final["dep_nom"] = ""
+        df_adm_final["reg_nom"] = ""
+        df_adm_final["com_code"] = ""
+        df_adm_final["ville"] = ""
+        df_adm_final = df_adm_final.fillna("")
+
+    df_adm_final = df_adm_final[
+        ["address_complete_fr", "com_code", "ville", "dep_id",
+         "dep_nom", "reg_nom"]].drop_duplicates().reset_index(drop=True)
+
+    part_ops4 = pd.merge(part_ops3, df_adm_final, on="address_complete_fr", how="inner")
+    part_ops4 = part_ops4.drop(columns=["pn", "name", "@change-date", "@change-gazette-num", "address", "@change-date2"])
+
+    addresses9 = addresses8.loc[~addresses8["key_appln_nr_person"].isin(part_ops4["key_appln_nr_person"])]
+    addresses9 = pd.concat([addresses9, part_ops4], ignore_index=True)
+
+    addresses9 = addresses9.fillna("")
+
+    addresses9.to_csv("part_p08_address2.csv", index=False, sep="|", encoding="utf-8")
+    swift.upload_object('patstat', 'part_p08_address2.csv')
+
+    missing_fr7 = addresses9.loc[(addresses9["country_corrected"].isin(["FR", ""]))]
+    missing_fr8 = missing_fr7.loc[missing_fr7["com_code"] == ""]
+
+    pourcentage3 = round(len(missing_fr8) / len(missing_fr7) * 100, 2)
+    print(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage2}.", flush=True)
+    missing_fr8.to_csv("missing_fr_address2.csv", index=False, sep="|", encoding="utf-8")
+    swift.upload_object('patstat', 'missing_fr_address2.csv')
 
 
 
