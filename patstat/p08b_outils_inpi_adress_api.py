@@ -2043,7 +2043,7 @@ def create_df_address():
     addresses7["id_paysage"] = addresses7["id_paysage"].str.replace("XjdyB", "xJdyB", regex=False)
 
     paysage = addresses7.loc[
-        (addresses7["country_corrected"].isin(["FR", ""])) & (addresses7["com-code"]=="") & (addresses7["id_paysage"]!="")]
+        (addresses7["country_corrected"].isin(["FR", ""])) & (addresses7["com_code"]=="") & (addresses7["id_paysage"]!="")]
 
     paysage2 = create_paysage(paysage)
 
