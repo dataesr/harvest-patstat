@@ -2087,6 +2087,7 @@ def create_df_address():
         appln_prio["type_party"] = "applicant"
         inv_prio["type_party"] = "inventor"
         prt_ops = pd.concat([appln_prio, inv_prio], ignore_index=True)
+        prt_ops = prt_ops.loc[prt_ops["sequence"] != ""]
         prt_ops["sequence"] = prt_ops["sequence"].astype(int)
         prt_ops2 = prt_ops.loc[prt_ops["country"] == "FR"].reset_index().drop(columns="index")
         if len(prt_ops) > 0:
