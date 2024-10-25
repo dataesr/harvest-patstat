@@ -1252,20 +1252,27 @@ def get_applicant(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df1["address"] = df1[col_address[0]]
-            for i in range(1, len(col_address)):
-                df1["address"] = df1["address"] + " " + df1[col_address[i]]
-                df1["address"] = df1["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df1["address"] = df1[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                    df1["address"] = df1["address"].apply(lambda a: a.strip())
 
-            for col in col_address:
-                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
-                df1 = df1.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                    df1 = df1.rename(columns={col: name})
 
-            df1 = df1.rename(columns={"@sequence": "sequence",
-                                      "reg:addressbook.@cdsid": "cdsid",
-                                      "reg:addressbook.reg:name": "name",
-                                      "reg:addressbook.reg:address.reg:country": "country"})
-            df1["pn"] = pn_
+                df1 = df1.rename(columns={"@sequence": "sequence",
+                                          "reg:addressbook.@cdsid": "cdsid",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country"})
+                df1["pn"] = pn_
+            else:
+                df1 = df1.rename(columns={"@sequence": "sequence",
+                                          "reg:addressbook.@cdsid": "cdsid",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country"})
+                df1["pn"] = pn_
 
         else:
             df1 = pd.json_normalize([res_part1])
@@ -1282,22 +1289,29 @@ def get_applicant(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df1["address"] = df1[col_address[0]]
-            for i in range(1, len(col_address)):
-                df1["address"] = df1["address"] + " " + df1[col_address[i]]
-                df1["address"] = df1["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df1["address"] = df1[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                    df1["address"] = df1["address"].apply(lambda a: a.strip())
 
-            # df1 = df1.drop(columns=col_address)
+                # df1 = df1.drop(columns=col_address)
 
-            for col in col_address:
-                name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
-                df1 = df1.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                    df1 = df1.rename(columns={col: name})
 
-            df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
-                                      "reg:applicant.reg:addressbook.@cdsid": "cdsid",
-                                      "reg:applicant.reg:addressbook.reg:name": "name",
-                                      "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
-            df1["pn"] = pn_
+                df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
+                                          "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                          "reg:applicant.reg:addressbook.reg:name": "name",
+                                          "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                df1["pn"] = pn_
+            else:
+                df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
+                                          "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                          "reg:applicant.reg:addressbook.reg:name": "name",
+                                          "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                df1["pn"] = pn_
 
     else:
         set_liste = [isinstance(item["reg:applicant"], list) for item in res_part1]
@@ -1316,22 +1330,29 @@ def get_applicant(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df1["address"] = df1[col_address[0]]
-            for i in range(1, len(col_address)):
-                df1["address"] = df1["address"] + " " + df1[col_address[i]]
-                df1["address"] = df1["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df1["address"] = df1[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                    df1["address"] = df1["address"].apply(lambda a: a.strip())
 
-            # df1 = df1.drop(columns=col_address)
+                # df1 = df1.drop(columns=col_address)
 
-            for col in col_address:
-                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
-                df1 = df1.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                    df1 = df1.rename(columns={col: name})
 
-            df1 = df1.rename(columns={"@sequence": "sequence",
-                                      "reg:addressbook.@cdsid": "cdsid",
-                                      "reg:addressbook.reg:name": "name",
-                                      "reg:addressbook.reg:address.reg:country": "country"})
-            df1["pn"] = pn_
+                df1 = df1.rename(columns={"@sequence": "sequence",
+                                          "reg:addressbook.@cdsid": "cdsid",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country"})
+                df1["pn"] = pn_
+            else:
+                df1 = df1.rename(columns={"@sequence": "sequence",
+                                          "reg:addressbook.@cdsid": "cdsid",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country"})
+                df1["pn"] = pn_
 
         elif len(set_liste) > 1 and True in set_liste:
             liste_part = []
@@ -1351,19 +1372,26 @@ def get_applicant(res_part1, pn_) -> pd.DataFrame:
                         if col.startswith("reg:addressbook.reg:address.reg:address-"):
                             col_address.append(col)
 
-                    tmp["address"] = tmp[col_address[0]]
-                    for i in range(1, len(col_address)):
-                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
-                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+                    if len(col_address) > 0:
+                        tmp["address"] = tmp[col_address[0]]
+                        for i in range(1, len(col_address)):
+                            tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                            tmp["address"] = tmp["address"].apply(lambda a: a.strip())
 
-                    tmp = tmp.drop(
-                        columns=col_address)
+                        tmp = tmp.drop(
+                            columns=col_address)
 
-                    tmp = tmp.rename(columns={"@sequence": "sequence",
-                                              "reg:addressbook.@cdsid": "cdsid",
-                                              "reg:addressbook.reg:name": "name",
-                                              "reg:addressbook.reg:address.reg:country": "country"})
-                    liste_part.append(tmp)
+                        tmp = tmp.rename(columns={"@sequence": "sequence",
+                                                  "reg:addressbook.@cdsid": "cdsid",
+                                                  "reg:addressbook.reg:name": "name",
+                                                  "reg:addressbook.reg:address.reg:country": "country"})
+                        liste_part.append(tmp)
+                    else:
+                        tmp = tmp.rename(columns={"@sequence": "sequence",
+                                                  "reg:addressbook.@cdsid": "cdsid",
+                                                  "reg:addressbook.reg:name": "name",
+                                                  "reg:addressbook.reg:address.reg:country": "country"})
+                        liste_part.append(tmp)
                 else:
                     tmp = pd.json_normalize(item)
                     tmp = tmp.drop(columns=["reg:applicant.@app-type",
@@ -1379,25 +1407,32 @@ def get_applicant(res_part1, pn_) -> pd.DataFrame:
                         if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
                             col_address.append(col)
 
-                    tmp["address"] = tmp[col_address[0]]
-                    for i in range(1, len(col_address)):
-                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
-                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+                    if len(col_address) > 0:
+                        tmp["address"] = tmp[col_address[0]]
+                        for i in range(1, len(col_address)):
+                            tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                            tmp["address"] = tmp["address"].apply(lambda a: a.strip())
 
-                    # df1 = df1.drop(columns=col_address)
+                        # df1 = df1.drop(columns=col_address)
 
-                    for col in col_address:
-                        name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
-                        tmp = tmp.rename(columns={col: name})
+                        for col in col_address:
+                            name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                            tmp = tmp.rename(columns={col: name})
 
-                    # tmp = tmp.drop(
-                    #     columns=col_address)
+                        # tmp = tmp.drop(
+                        #     columns=col_address)
 
-                    tmp = tmp.rename(columns={"reg:applicant.@sequence": "sequence",
-                                              "reg:applicant.reg:addressbook.@cdsid": "cdsid",
-                                              "reg:applicant.reg:addressbook.reg:name": "name",
-                                              "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
-                    liste_part.append(tmp)
+                        tmp = tmp.rename(columns={"reg:applicant.@sequence": "sequence",
+                                                  "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                                  "reg:applicant.reg:addressbook.reg:name": "name",
+                                                  "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                        liste_part.append(tmp)
+                    else:
+                        tmp = tmp.rename(columns={"reg:applicant.@sequence": "sequence",
+                                                  "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                                  "reg:applicant.reg:addressbook.reg:name": "name",
+                                                  "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                        liste_part.append(tmp)
 
             df1 = pd.concat(liste_part)
             df1["pn"] = pn_
@@ -1417,23 +1452,31 @@ def get_applicant(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:applicant.reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df1["address"] = df1[col_address[0]]
-            for i in range(1, len(col_address)):
-                df1["address"] = df1["address"] + " " + df1[col_address[i]]
-                df1["address"] = df1["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df1["address"] = df1[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df1["address"] = df1["address"] + " " + df1[col_address[i]]
+                    df1["address"] = df1["address"].apply(lambda a: a.strip())
 
-            # df1 = df1.drop(columns=col_address)
+                # df1 = df1.drop(columns=col_address)
 
-            for col in col_address:
-                name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
-                df1 = df1.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:applicant.reg:addressbook.reg:address.reg:", "", col)
+                    df1 = df1.rename(columns={col: name})
 
-            df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
-                                      "reg:applicant.reg:addressbook.@cdsid": "cdsid",
-                                      "reg:applicant.reg:addressbook.reg:name": "name",
-                                      "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+                df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
+                                          "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                          "reg:applicant.reg:addressbook.reg:name": "name",
+                                          "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
 
-            df1["pn"] = pn_
+                df1["pn"] = pn_
+            else:
+                df1 = df1.rename(columns={"reg:applicant.@sequence": "sequence",
+                                          "reg:applicant.reg:addressbook.@cdsid": "cdsid",
+                                          "reg:applicant.reg:addressbook.reg:name": "name",
+                                          "reg:applicant.reg:addressbook.reg:address.reg:country": "country"})
+
+                df1["pn"] = pn_
 
     return df1
 
@@ -1453,22 +1496,31 @@ def get_inventor(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df3["address"] = df3[col_address[0]]
-            for i in range(1, len(col_address)):
-                df3["address"] = df3["address"] + " " + df3[col_address[i]]
-                df3["address"] = df3["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df3["address"] = df3[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                    df3["address"] = df3["address"].apply(lambda a: a.strip())
 
-            for col in col_address:
-                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
-                df3 = df3.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                    df3 = df3.rename(columns={col: name})
 
-            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
-                                      "reg:inventor.reg:addressbook.reg:name": "name",
-                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
-                                      "reg:addressbook.reg:name": "name",
-                                      "reg:addressbook.reg:address.reg:country": "country",
-                                      "@sequence": "sequence"})
-            df3["pn"] = pn_
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+                df3["pn"] = pn_
+            else:
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+                df3["pn"] = pn_
 
         else:
             df3 = pd.json_normalize([res_part1])
@@ -1481,24 +1533,33 @@ def get_inventor(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:inventor.reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df3["address"] = df3[col_address[0]]
-            for i in range(1, len(col_address)):
-                df3["address"] = df3["address"] + " " + df3[col_address[i]]
-                df3["address"] = df3["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df3["address"] = df3[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                    df3["address"] = df3["address"].apply(lambda a: a.strip())
 
-            # df3 = df3.drop(columns=col_address)
+                # df3 = df3.drop(columns=col_address)
 
-            for col in col_address:
-                name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
-                df3 = df3.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
+                    df3 = df3.rename(columns={col: name})
 
-            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
-                                      "reg:inventor.reg:addressbook.reg:name": "name",
-                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
-                                      "reg:addressbook.reg:name": "name",
-                                      "reg:addressbook.reg:address.reg:country": "country",
-                                      "@sequence": "sequence"})
-            df3["pn"] = pn_
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+                df3["pn"] = pn_
+            else:
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+                df3["pn"] = pn_
 
     else:
         set_liste = [isinstance(item["reg:inventor"], list) for item in res_part1]
@@ -1515,24 +1576,33 @@ def get_inventor(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df3["address"] = df3[col_address[0]]
-            for i in range(1, len(col_address)):
-                df3["address"] = df3["address"] + " " + df3[col_address[i]]
-                df3["address"] = df3["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df3["address"] = df3[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                    df3["address"] = df3["address"].apply(lambda a: a.strip())
 
-            # df3 = df3.drop(columns=col_address)
+                # df3 = df3.drop(columns=col_address)
 
-            for col in col_address:
-                name = re.sub("reg:addressbook.reg:address.reg:", "", col)
-                df3 = df3.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:addressbook.reg:address.reg:", "", col)
+                    df3 = df3.rename(columns={col: name})
 
-            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
-                                      "reg:inventor.reg:addressbook.reg:name": "name",
-                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
-                                      "reg:addressbook.reg:name": "name",
-                                      "reg:addressbook.reg:address.reg:country": "country",
-                                      "@sequence": "sequence"})
-            df3["pn"] = pn_
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+                df3["pn"] = pn_
+            else:
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+                df3["pn"] = pn_
 
         elif len(set_liste) > 1 and True in set_liste:
             liste_part = []
@@ -1575,30 +1645,39 @@ def get_inventor(res_part1, pn_) -> pd.DataFrame:
                         if col.startswith("reg:inventor.reg:addressbook.reg:address.reg:address-"):
                             col_address.append(col)
 
-                    tmp["address"] = tmp[col_address[0]]
-                    for i in range(1, len(col_address)):
-                        tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
-                        tmp["address"] = tmp["address"].apply(lambda a: a.strip())
+                    if len(col_address) > 0:
+                        tmp["address"] = tmp[col_address[0]]
+                        for i in range(1, len(col_address)):
+                            tmp["address"] = tmp["address"] + " " + tmp[col_address[i]]
+                            tmp["address"] = tmp["address"].apply(lambda a: a.strip())
 
-                    # df3 = df3.drop(columns=col_address)
+                        # df3 = df3.drop(columns=col_address)
 
-                    for col in col_address:
-                        name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
-                        df3 = df3.rename(columns={col: name})
+                        for col in col_address:
+                            name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
+                            df3 = df3.rename(columns={col: name})
 
-                    # tmp = tmp.drop(
-                    #     columns=col_address)
+                        # tmp = tmp.drop(
+                        #     columns=col_address)
 
-                    tmp = tmp.rename(columns={"reg:inventor.@sequence": "sequence",
-                                              "reg:inventor.reg:addressbook.reg:name": "name",
-                                              "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
-                                              "reg:addressbook.reg:name": "name",
-                                              "reg:addressbook.reg:address.reg:country": "country",
-                                              "@sequence": "sequence"})
-                    liste_part.append(tmp)
+                        tmp = tmp.rename(columns={"reg:inventor.@sequence": "sequence",
+                                                  "reg:inventor.reg:addressbook.reg:name": "name",
+                                                  "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                                  "reg:addressbook.reg:name": "name",
+                                                  "reg:addressbook.reg:address.reg:country": "country",
+                                                  "@sequence": "sequence"})
+                        liste_part.append(tmp)
+                    else:
+                        tmp = tmp.rename(columns={"reg:inventor.@sequence": "sequence",
+                                                  "reg:inventor.reg:addressbook.reg:name": "name",
+                                                  "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                                  "reg:addressbook.reg:name": "name",
+                                                  "reg:addressbook.reg:address.reg:country": "country",
+                                                  "@sequence": "sequence"})
+                        liste_part.append(tmp)
 
-            df3 = pd.concat(liste_part)
-            df3["pn"] = pn_
+                df3 = pd.concat(liste_part)
+                df3["pn"] = pn_
 
         else:
             df3 = pd.json_normalize(res_part1)
@@ -1611,25 +1690,35 @@ def get_inventor(res_part1, pn_) -> pd.DataFrame:
                 if col.startswith("reg:inventor.reg:addressbook.reg:address.reg:address-"):
                     col_address.append(col)
 
-            df3["address"] = df3[col_address[0]]
-            for i in range(1, len(col_address)):
-                df3["address"] = df3["address"] + " " + df3[col_address[i]]
-                df3["address"] = df3["address"].apply(lambda a: a.strip())
+            if len(col_address) > 0:
+                df3["address"] = df3[col_address[0]]
+                for i in range(1, len(col_address)):
+                    df3["address"] = df3["address"] + " " + df3[col_address[i]]
+                    df3["address"] = df3["address"].apply(lambda a: a.strip())
 
-            # df3 = df3.drop(columns=col_address)
+                # df3 = df3.drop(columns=col_address)
 
-            for col in col_address:
-                name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
-                df3 = df3.rename(columns={col: name})
+                for col in col_address:
+                    name = re.sub("reg:inventor.reg:addressbook.reg:address.reg:", "", col)
+                    df3 = df3.rename(columns={col: name})
 
-            df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
-                                      "reg:inventor.reg:addressbook.reg:name": "name",
-                                      "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
-                                      "reg:addressbook.reg:name": "name",
-                                      "reg:addressbook.reg:address.reg:country": "country",
-                                      "@sequence": "sequence"})
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
 
-            df3["pn"] = pn_
+                df3["pn"] = pn_
+            else:
+                df3 = df3.rename(columns={"reg:inventor.@sequence": "sequence",
+                                          "reg:inventor.reg:addressbook.reg:name": "name",
+                                          "reg:inventor.reg:addressbook.reg:address.reg:country": "country",
+                                          "reg:addressbook.reg:name": "name",
+                                          "reg:addressbook.reg:address.reg:country": "country",
+                                          "@sequence": "sequence"})
+
+                df3["pn"] = pn_
 
     return df3
 
@@ -2264,6 +2353,9 @@ def create_df_address():
 
     addresses8 = addresses8.fillna("")
 
+    addresses8.to_csv("part_p08_address2.csv", index=False, sep="|", encoding="utf-8")
+    swift.upload_object('patstat', 'part_p08_address2.csv')
+
     missing_fr5 = addresses8.loc[(addresses8["country_corrected"].isin(["FR", ""]))]
     missing_fr6 = missing_fr5.loc[missing_fr5["com_code"] == ""]
 
@@ -2293,40 +2385,39 @@ def create_df_address():
 
     df_pubon = pd.DataFrame(data={"pn": pubon})
     sub_pubon = subset_df(df_pubon)
-    try:
-        part_ops = res_futures(sub_pubon, req_ops_oeb)
+    part_ops = res_futures(sub_pubon, req_ops_oeb)
 
-        part_ops2 = pd.merge(
+    part_ops2 = pd.merge(
             missing_fr6.drop(columns=["address_complete_fr", "com_code", "ville", "dep_id", "dep_nom", "reg_nom"]),
             part_ops,
             on=["pn", "type_party", "sequence"], how="inner")
 
-        sub_ops2 = subset_df(part_ops2)
+    sub_ops2 = subset_df(part_ops2)
 
-        part_ops3 = res_futures(sub_ops2, adresses_ops_oeb)
+    part_ops3 = res_futures(sub_ops2, adresses_ops_oeb)
 
-        addresses9 = addresses8.loc[~addresses8["key_appln_nr_person"].isin(part_ops3["key_appln_nr_person"])]
-        addresses9 = pd.concat([addresses9, part_ops3], ignore_index=True)
+    addresses9 = addresses8.loc[~addresses8["key_appln_nr_person"].isin(part_ops3["key_appln_nr_person"])]
+    addresses9 = pd.concat([addresses9, part_ops3], ignore_index=True)
 
-        ad_siren = addresses9.loc[addresses9["siren"].notna(), ["docdb_family_id", "siren", "com_code",
+    ad_siren = addresses9.loc[addresses9["siren"].notna(), ["docdb_family_id", "siren", "com_code",
                                                                 "ville",
                                                                 "dep_id",
                                                                 "dep_nom",
                                                                 "reg_nom"]].drop_duplicates().reset_index(
             drop=True)
 
-        ad_siren = ad_siren.loc[ad_siren["com_code"].notna()].drop_duplicates().reset_index(drop=True)
-        ad_siren = ad_siren.loc[ad_siren["com_code"] != ""].drop_duplicates().reset_index(drop=True)
+    ad_siren = ad_siren.loc[ad_siren["com_code"].notna()].drop_duplicates().reset_index(drop=True)
+    ad_siren = ad_siren.loc[ad_siren["com_code"] != ""].drop_duplicates().reset_index(drop=True)
 
-        ad_siren_compte = ad_siren[["docdb_family_id", "siren", "com_code"]].groupby(["docdb_family_id", "siren"]).nunique(
+    ad_siren_compte = ad_siren[["docdb_family_id", "siren", "com_code"]].groupby(["docdb_family_id", "siren"]).nunique(
             dropna=False).reset_index().rename(
             columns={"com_code": "compte"})
 
-        com_codeu = ad_siren_compte.loc[ad_siren_compte["compte"] == 1].reset_index(drop=True)
+    com_codeu = ad_siren_compte.loc[ad_siren_compte["compte"] == 1].reset_index(drop=True)
 
-        ad_sirenu = pd.merge(ad_siren, com_codeu, on=["docdb_family_id", "siren"], how="inner").drop(columns="compte")
+    ad_sirenu = pd.merge(ad_siren, com_codeu, on=["docdb_family_id", "siren"], how="inner").drop(columns="compte")
 
-        addresses_siren_pm = addresses9.loc[
+    addresses_siren_pm = addresses9.loc[
             (addresses9["siren"].isin(com_codeu["siren"])) & (addresses9["type"] == "pm") & (
                 addresses9["com_code"].isna())].drop(columns=["com_code",
                                                               "ville",
@@ -2334,13 +2425,13 @@ def create_df_address():
                                                               "dep_nom",
                                                               "reg_nom"]).drop_duplicates().reset_index(drop=True)
 
-        addresses_siren_pm = pd.merge(addresses_siren_pm, ad_sirenu, on=["docdb_family_id", "siren"], how="inner")
+    addresses_siren_pm = pd.merge(addresses_siren_pm, ad_sirenu, on=["docdb_family_id", "siren"], how="inner")
 
-        reste_addresses = addresses9.loc[~addresses9["key_appln_nr_person"].isin(addresses_siren_pm["key_appln_nr_person"])]
+    reste_addresses = addresses9.loc[~addresses9["key_appln_nr_person"].isin(addresses_siren_pm["key_appln_nr_person"])]
 
-        addresses10 = pd.concat([addresses_siren_pm, reste_addresses], ignore_index=True)
+    addresses10 = pd.concat([addresses_siren_pm, reste_addresses], ignore_index=True)
 
-        fam_name = addresses10.loc[addresses10["com_code"].notna(), ["docdb_family_id", "name_corrected",
+    fam_name = addresses10.loc[addresses10["com_code"].notna(), ["docdb_family_id", "name_corrected",
                                                                    "com_code",
                                                                    "ville",
                                                                    "dep_id",
@@ -2348,16 +2439,16 @@ def create_df_address():
                                                                    "reg_nom"]].drop_duplicates().reset_index(
             drop=True)
 
-        fam_name_compte = fam_name[["docdb_family_id", "name_corrected", "com_code"]].groupby(
+    fam_name_compte = fam_name[["docdb_family_id", "name_corrected", "com_code"]].groupby(
             ["docdb_family_id", "name_corrected"]).nunique(dropna=False).reset_index().rename(
             columns={"com_code": "compte"})
 
-        com_nomu = fam_name_compte.loc[fam_name_compte["compte"] == 1]
+    com_nomu = fam_name_compte.loc[fam_name_compte["compte"] == 1]
 
-        fam_nameu = pd.merge(fam_name, com_nomu, on=["docdb_family_id", "name_corrected"], how="inner")
-        fam_nameu = fam_nameu.drop(columns=["compte"])
+    fam_nameu = pd.merge(fam_name, com_nomu, on=["docdb_family_id", "name_corrected"], how="inner")
+    fam_nameu = fam_nameu.drop(columns=["compte"])
 
-        addresses_fam_name = pd.merge(addresses10.loc[addresses10["com_code"].isna()].drop(columns=["com_code",
+    addresses_fam_name = pd.merge(addresses10.loc[addresses10["com_code"].isna()].drop(columns=["com_code",
                                                                                                   "ville",
                                                                                                   "dep_id",
                                                                                                   "dep_nom",
@@ -2366,23 +2457,19 @@ def create_df_address():
                                       how="inner").sort_values(
             ["docdb_family_id", "key_appln_nr_person"]).drop_duplicates().reset_index(drop=True)
 
-        reste_addresses2 = addresses10.loc[
+    reste_addresses2 = addresses10.loc[
             ~addresses10["key_appln_nr_person"].isin(addresses_fam_name["key_appln_nr_person"])]
 
-        addresses11 = pd.concat([addresses_fam_name, reste_addresses2], ignore_index=True)
-        addresses11 = addresses11.fillna("")
+    addresses11 = pd.concat([addresses_fam_name, reste_addresses2], ignore_index=True)
+    addresses11 = addresses11.fillna("")
 
-        addresses11.to_csv("part_p08_address2.csv", index=False, sep="|", encoding="utf-8")
-        swift.upload_object('patstat', 'part_p08_address2.csv')
+    addresses11.to_csv("part_p08_address2.csv", index=False, sep="|", encoding="utf-8")
+    swift.upload_object('patstat', 'part_p08_address2.csv')
 
-        missing_fr7 = addresses11.loc[(addresses11["country_corrected"].isin(["FR", ""]))]
-        missing_fr8 = missing_fr7.loc[missing_fr7["com_code"] == ""]
+    missing_fr7 = addresses11.loc[(addresses11["country_corrected"].isin(["FR", ""]))]
+    missing_fr8 = missing_fr7.loc[missing_fr7["com_code"] == ""]
 
-        pourcentage3 = round(len(missing_fr8) / len(missing_fr7) * 100, 2)
-        print(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage3}.", flush=True)
-        missing_fr8.to_csv("missing_fr_address2.csv", index=False, sep="|", encoding="utf-8")
-        swift.upload_object('patstat', 'missing_fr_address2.csv')
-    except:
-        print("Echec OPS OEB ; utilise données issues requêtes Paysage", flush=True)
-        addresses8.to_csv("part_p08_address2.csv", index=False, sep="|", encoding="utf-8")
-        swift.upload_object('patstat', 'part_p08_address2.csv')
+    pourcentage3 = round(len(missing_fr8) / len(missing_fr7) * 100, 2)
+    print(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage3}.", flush=True)
+    missing_fr8.to_csv("missing_fr_address2.csv", index=False, sep="|", encoding="utf-8")
+    swift.upload_object('patstat', 'missing_fr_address2.csv')
