@@ -1900,7 +1900,7 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
 def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
     logger = get_logger(threading.current_thread().name)
     logger.info("start query OPS OEB")
-    pubon = list(df["pn"].unique())
+    pubon = list(df.loc[df["appln_auth"].isin(["WO", "EP"]), "pn"].unique())
     lpart = []
 
     for pno in pubon:
@@ -2535,7 +2535,7 @@ def create_df_address():
 
     missing_fr6 = pd.merge(missing_fr6, pat_oeb, on="key_appln_nr", how="left")
 
-    pubon = list(pat_oeb["pn"].unique())
+    pubon = list(pat_oeb.loc[pat_oeb["appln_auth"].isin(["WO", "EP"]), "pn"].unique())
     print(f"Nombre de numéros de publication à chercher : {len(pubon)}.", flush=True)
 
     part_ops = req_ops_oeb(missing_fr6)
