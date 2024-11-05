@@ -2529,13 +2529,13 @@ def create_df_address():
         lambda a: a["applt_seq_nr"] if a["type_party"] == "applicant" else a["invt_seq_nr"], axis=1)
 
     pat_oeb = missing_oeb[["key_appln_nr", "appln_auth", "appln_publn_number"]].drop_duplicates().reset_index(drop=True)
-    # pat_oeb = pat_oeb.loc[pat_oeb["appln_auth"].isin(["EP", "WO"])]
+    pat_oeb = pat_oeb.loc[pat_oeb["appln_auth"].isin(["EP", "WO"])]
     pat_oeb["pn"] = pat_oeb["appln_auth"] + pat_oeb["appln_publn_number"]
     pat_oeb = pat_oeb.drop(columns=["appln_auth", "appln_publn_number"])
 
     missing_fr6 = pd.merge(missing_fr6, pat_oeb, on="key_appln_nr", how="left")
 
-    pubon = list(pat_oeb.loc[pat_oeb["appln_auth"].isin(["WO", "EP"]), "pn"].unique())
+    pubon = list(pat_oeb["pn"].unique())
     print(f"Nombre de numéros de publication à chercher : {len(pubon)}.", flush=True)
 
     part_ops = req_ops_oeb(missing_fr6)
