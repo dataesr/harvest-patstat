@@ -206,6 +206,8 @@ def cleaning_address(df: pd.DataFrame, col: str) -> pd.DataFrame:
 
 @retry(tries=20, delay=5, backoff=5)
 def call_api_adresse(df: pd.DataFrame) -> list:
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start call_api_adresse")
     lng = len(df)
     lng2 = len(df)
     res_adm = []
@@ -213,11 +215,11 @@ def call_api_adresse(df: pd.DataFrame) -> list:
     for _, r in df.iterrows():
         prct = lng / lng2 * 100
         if prct % 10 == 0:
-            print(f"Il reste {prct} % de requêtes à effectuer", flush=True)
+            logger.info(f"Il reste {prct} % de requêtes à effectuer")
         ad = r["address_complete_fr"]
         res = requests.get(f"https://api-adresse.data.gouv.fr/search/?q={ad}&format=json")
         if res.status_code != 200:
-            print(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}", flush=True)
+            logger.info(f"L'adresse {ad} a renvoyé l'erreur {res.status_code}")
             tadm = pd.DataFrame(data={"address_complete_fr": [ad]})
             res_adm.append(tadm)
         else:
@@ -237,7 +239,9 @@ def call_api_adresse(df: pd.DataFrame) -> list:
     m, s = divmod(end - start, 60)
     h, m = divmod(m, 60)
     time_str = "%02d:%02d:%02d" % (h, m, s)
-    print(f"Durée de traitement : {time_str}", flush=True)
+    logger.info(f"Durée de traitement : {time_str}")
+
+    logger.info("end call_api_adresse")
 
     return res_adm
 
@@ -916,6 +920,8 @@ def res_futures(dict_nb: dict, query) -> pd.DataFrame:
     It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
     It returns a df with the IdRef.
     """
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start res_futures")
     global jointure
     res = []
     with concurrent.futures.ThreadPoolExecutor(max_workers=101, thread_name_prefix="thread") as executor:
@@ -928,7 +934,9 @@ def res_futures(dict_nb: dict, query) -> pd.DataFrame:
                 res.append(data)
                 jointure = pd.concat(res)
             except Exception as exc:
-                print('%r generated an exception: %s' % (req, exc), flush=True)
+                logger.info('%r generated an exception: %s' % (req, exc))
+
+    logger.info("end res_futures")
 
     return jointure
 
@@ -1869,6 +1877,8 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
     """
     Get applicants from EPO query with publication number
     """
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start get_part")
     global d_app, d_inv
     ret1 = requests.get(f"http://ops.epo.org/3.2/rest-services/register/search/biblio?q=pn%3D{pn}",
                         headers={"Authorization": tkn})
@@ -1886,12 +1896,14 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
                           '</fault>':
             pass
         else:
-            print(f"Le code d'erreur est {status}.")
+            logger.info(f"Le code d'erreur est {status}.")
             pass
     else:
-        print("URL successfully accessed", flush=True)
+        logger.info("URL successfully accessed")
         d_app = df_applicant(ret1, pn)
         d_inv = df_inventor(ret1, pn)
+
+    logger.info("end get_part")
 
     return d_app, d_inv
 
@@ -1900,12 +1912,18 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
 def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
     logger = get_logger(threading.current_thread().name)
     logger.info("start query OPS OEB")
+    start = timer()
     pubon = list(df.loc[df["appln_auth"].isin(["WO", "EP"]), "pn"].unique())
+    lng = len(pubon)
+    lng2 = len(pubon)
     lpart = []
 
     for pno in pubon:
+        prct = lng / lng2 * 100
+        if prct % 10 == 0:
+            logger.info(f"Il reste {prct} % de requêtes à effectuer")
         tkn = get_token_oeb()
-        print(pno)
+        logger.info(pno)
         try:
             appln_prio, inv_prio = get_part(pno, tkn)
             appln_prio["type_party"] = "applicant"
@@ -2252,8 +2270,16 @@ def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
         except:
             pass
 
+        lng = lng - 1
+
     pt_ops2 = pd.concat(lpart, ignore_index=True)
     pt_ops2 = pt_ops2.drop_duplicates().reset_index(drop=True)
+
+    end = timer()
+    m, s = divmod(end - start, 60)
+    h, m = divmod(m, 60)
+    time_str = "%02d:%02d:%02d" % (h, m, s)
+    logger.info(f"Durée de traitement : {time_str}")
 
     logger.info("end query OPS OEB")
 
@@ -2261,6 +2287,8 @@ def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
 
 
 def create_df_address():
+    logger = get_logger(threading.current_thread().name)
+    logger.info("start create_df_address")
     # set working directory
     os.chdir(DATA_PATH)
 
@@ -2421,7 +2449,7 @@ def create_df_address():
     swift.upload_object('patstat', 'missing_fr_address.csv')
 
     pourcentage = round(len(missing_fr2) / len(missing_fr) * 100, 2)
-    print(f"Le pourcentage d'adresses manquantes pour les Français est de {pourcentage}.", flush=True)
+    logger.info(f"Le pourcentage d'adresses manquantes pour les Français est de {pourcentage}.")
 
     sub_missing = subset_df(missing_fr2)
     missing2 = res_futures(sub_missing, ad_missing)
@@ -2515,7 +2543,7 @@ def create_df_address():
     missing_fr6 = missing_fr5.loc[missing_fr5["com_code"] == ""]
 
     pourcentage2 = round(len(missing_fr6) / len(missing_fr5) * 100, 2)
-    print(f"Le 2ème pourcentage d'adresses manquantes pour les Français est de {pourcentage2}.", flush=True)
+    logger.info(f"Le 2ème pourcentage d'adresses manquantes pour les Français est de {pourcentage2}.")
 
     missing_oeb = patents.loc[patents["key_appln_nr"].isin(missing_fr6["key_appln_nr"])]
 
@@ -2536,7 +2564,7 @@ def create_df_address():
     missing_fr6 = pd.merge(missing_fr6, pat_oeb, on="key_appln_nr", how="left")
 
     pubon = list(pat_oeb["pn"].unique())
-    print(f"Nombre de numéros de publication à chercher : {len(pubon)}.", flush=True)
+    logger.info(f"Nombre de numéros de publication à chercher : {len(pubon)}.")
 
     part_ops = req_ops_oeb(missing_fr6)
 
@@ -2634,6 +2662,6 @@ def create_df_address():
     missing_fr8 = missing_fr7.loc[missing_fr7["com_code"] == ""]
 
     pourcentage3 = round(len(missing_fr8) / len(missing_fr7) * 100, 2)
-    print(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage3}.", flush=True)
+    logger.info(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage3}.")
     missing_fr8.to_csv("missing_fr_address3.csv", index=False, sep="|", encoding="utf-8")
     swift.upload_object('patstat', 'missing_fr_address3.csv')
