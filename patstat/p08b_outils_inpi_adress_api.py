@@ -1913,6 +1913,19 @@ def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
     logger = get_logger(threading.current_thread().name)
     logger.info("start query OPS OEB")
     start = timer()
+    if "address_complete_fr" in df.columns:
+        df = df.drop(columns="address_complete_fr")
+    if "com_code" in df.columns:
+        df = df.drop(columns="com_code")
+    if "ville" in df.columns:
+        df = df.drop(columns="ville")
+    if "dep_id" in df.columns:
+        df = df.drop(columns="dep_id")
+    if "dep_nom" in df.columns:
+        df = df.drop(columns="dep_nom")
+    if "reg_nom" in df.columns:
+        df = df.drop(columns="reg_nom")
+
     pubon = list(df.loc[df["appln_auth"].isin(["WO", "EP"]), "pn"].unique())
     lng = len(pubon)
     lng2 = len(pubon)
