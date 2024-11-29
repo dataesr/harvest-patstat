@@ -1910,8 +1910,9 @@ def get_part(pn: str, tkn: str) -> pd.DataFrame:
 
 @retry(tries=20, delay=5, backoff=5)
 def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
-    logger = get_logger(threading.current_thread().name)
-    logger.info("start query OPS OEB")
+    # logger = get_logger(threading.current_thread().name)
+    # logger.info("start query OPS OEB")
+    print("start query OPS OEB", flush=True)
     start = timer()
     if "address_complete_fr" in df.columns:
         df = df.drop(columns="address_complete_fr")
@@ -1934,9 +1935,11 @@ def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
     for pno in pubon:
         prct = lng / lng2 * 100
         if prct % 10 == 0:
-            logger.info(f"Il reste {prct} % de requêtes à effectuer")
+            # logger.info(f"Il reste {prct} % de requêtes à effectuer")
+            print(f"Il reste {prct} % de requêtes à effectuer", flush=True)
         tkn = get_token_oeb()
-        logger.info(pno)
+        # logger.info(pno)
+        print(f"Numéro de publication : {pno}", flush=True)
         try:
             appln_prio, inv_prio = get_part(pno, tkn)
             appln_prio["type_party"] = "applicant"
@@ -2292,9 +2295,11 @@ def req_ops_oeb(df: pd.DataFrame) -> pd.DataFrame:
     m, s = divmod(end - start, 60)
     h, m = divmod(m, 60)
     time_str = "%02d:%02d:%02d" % (h, m, s)
-    logger.info(f"Durée de traitement : {time_str}")
+    # logger.info(f"Durée de traitement : {time_str}")
+    print(f"Durée de traitement : {time_str}", flush=True)
 
-    logger.info("end query OPS OEB")
+    # logger.info("end query OPS OEB")
+    print("end query OPS OEB", flush=True)
 
     return pt_ops2
 
@@ -2579,7 +2584,11 @@ def create_df_address():
     pubon = list(pat_oeb["pn"].unique())
     logger.info(f"Nombre de numéros de publication à chercher : {len(pubon)}.")
 
-    part_ops = req_ops_oeb(missing_fr6)
+    sub_misfr6 = subset_df(missing_fr6)
+
+    part_ops = res_futures(sub_misfr6, req_ops_oeb)
+
+    # part_ops = req_ops_oeb(missing_fr6)
 
     addresses9 = addresses8.loc[~addresses8["key_appln_nr_person"].isin(part_ops["key_appln_nr_person"])]
     addresses9 = pd.concat([addresses9, part_ops], ignore_index=True)
