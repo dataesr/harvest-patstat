@@ -2192,17 +2192,11 @@ def siren_oeb_bodacc():
 
     ###################################################################################################################
     # INSEE
-    res = requests.post("https://api.insee.fr/token",
-                        data="grant_type=client_credentials",
-                        auth=(os.getenv("SIRENE_API_KEY"), os.getenv("SIRENE_API_SECRET")))
-
     liste_etab = []
-
-    token = res.json()['access_token']
-    api_call_headers = {'Authorization': 'Bearer ' + token}
+    api_call_headers = {"X-INSEE-Api-Key-Integration": os.getenv("SIRENE_API_KEY")}
 
     for _, r in name_address.iterrows():
-        url = f'https://api.insee.fr/entreprises/sirene/V3.11/siret?q=denominationUniteLegale:"{r.name_propre}"'
+        url = f'https://api.insee.fr/api-sirene/3.11/siret?q=denominationUniteLegale:"{r.name_propre}"'
         rinit = requests.get(url, headers=api_call_headers, verify=False)
         if rinit.status_code == 200:
             rep = pd.json_normalize(rinit.json()["etablissements"])

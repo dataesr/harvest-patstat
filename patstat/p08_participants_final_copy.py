@@ -260,17 +260,11 @@ def idref(prt):
     df3 = df2.loc[df2["type"] == "siret"]
     df3 = df3.rename(columns={"value": "siret"})
 
-    res = requests.post("https://api.insee.fr/token",
-                        data="grant_type=client_credentials",
-                        auth=(os.getenv("SIRENE_API_KEY"), os.getenv("SIRENE_API_SECRET")))
-
     liste_etab = []
-
-    token = res.json()['access_token']
-    api_call_headers = {'Authorization': 'Bearer ' + token}
+    api_call_headers = api_call_headers = {"X-INSEE-Api-Key-Integration": os.getenv("SIRENE_API_KEY")}
 
     for _, r in df3.iterrows():
-        url = f'https://api.insee.fr/entreprises/sirene/V3/siret?q=siret:{r.siret}'
+        url = f'https://api.insee.fr/api-sirene/3.11/siret?q=siret:{r.siret}'
         rinit = requests.get(url, headers=api_call_headers, verify=False)
         if rinit.status_code == 200:
             rep = pd.json_normalize(rinit.json()["etablissements"])
