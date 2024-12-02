@@ -2587,6 +2587,8 @@ def create_df_address():
     sub_misfr6 = subset_df(missing_fr6)
 
     part_ops = res_futures(sub_misfr6, req_ops_oeb)
+    part_ops.to_csv("part_ops.csv", index=False, sep="|", encoding="utf-8")
+    swift.upload_object('patstat', 'part_ops.csv')
 
     # part_ops = req_ops_oeb(missing_fr6)
 
