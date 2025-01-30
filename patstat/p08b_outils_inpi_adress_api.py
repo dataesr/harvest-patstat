@@ -2563,129 +2563,129 @@ def create_df_address():
     pourcentage2 = round(len(missing_fr6) / len(missing_fr5) * 100, 2)
     logger.info(f"Le 2ème pourcentage d'adresses manquantes pour les Français est de {pourcentage2}.")
 
-    missing_oeb = patents.loc[patents["key_appln_nr"].isin(missing_fr6["key_appln_nr"])]
-
-    missing_fr6["liste_key_person"] = missing_fr6["key_appln_nr_person"].str.split("_")
-    missing_fr6["applt_seq_nr"] = missing_fr6["liste_key_person"].apply(lambda a: int(a[-2]))
-    missing_fr6["invt_seq_nr"] = missing_fr6["liste_key_person"].apply(lambda a: int(a[-1]))
-    missing_fr6 = missing_fr6.drop(columns="liste_key_person")
-    missing_fr6["type_party"] = missing_fr6.apply(
-        lambda a: "applicant" if a["applt_seq_nr"] > 0 and a["invt_seq_nr"] == 0 else "inventor", axis=1)
-    missing_fr6["sequence"] = missing_fr6.apply(
-        lambda a: a["applt_seq_nr"] if a["type_party"] == "applicant" else a["invt_seq_nr"], axis=1)
-
-    pat_oeb = missing_oeb[["key_appln_nr", "appln_auth", "appln_publn_number"]].drop_duplicates().reset_index(drop=True)
-    pat_oeb = pat_oeb.loc[pat_oeb["appln_auth"].isin(["EP", "WO"])]
-    pat_oeb["pn"] = pat_oeb["appln_auth"] + pat_oeb["appln_publn_number"]
-    pat_oeb = pat_oeb.drop(columns=["appln_auth", "appln_publn_number"])
-
-    missing_fr6 = pd.merge(missing_fr6, pat_oeb, on="key_appln_nr", how="left")
-
-    pubon = list(pat_oeb["pn"].unique())
-    logger.info(f"Nombre de numéros de publication à chercher : {len(pubon)}.")
-
-    sub_misfr6 = subset_df(missing_fr6)
-
-    part_ops = res_futures(sub_misfr6, req_ops_oeb)
-    part_ops.to_csv("part_ops.csv", index=False, sep="|", encoding="utf-8")
-    swift.upload_object('patstat', 'part_ops.csv')
-
-    # part_ops = req_ops_oeb(missing_fr6)
-
-    addresses9 = addresses8.loc[~addresses8["key_appln_nr_person"].isin(part_ops["key_appln_nr_person"])]
-    addresses9 = pd.concat([addresses9, part_ops], ignore_index=True)
-
-    ad_siren = addresses9.loc[addresses9["siren"].notna(), ["docdb_family_id", "siren", "com_code",
-                                                            "ville",
-                                                            "dep_id",
-                                                            "dep_nom",
-                                                            "reg_nom"]].drop_duplicates().reset_index(
-        drop=True)
-
-    ad_siren = ad_siren.loc[ad_siren["com_code"].notna()].drop_duplicates().reset_index(drop=True)
-    ad_siren = ad_siren.loc[ad_siren["com_code"] != ""].drop_duplicates().reset_index(drop=True)
-
-    ad_siren_compte = ad_siren[["docdb_family_id", "siren", "com_code"]].groupby(["docdb_family_id", "siren"]).nunique(
-        dropna=False).reset_index().rename(
-        columns={"com_code": "compte"})
-
-    com_codeu = ad_siren_compte.loc[ad_siren_compte["compte"] == 1].reset_index(drop=True)
-
-    ad_sirenu = pd.merge(ad_siren, com_codeu, on=["docdb_family_id", "siren"], how="inner").drop(columns="compte")
-
-    addresses_siren_pm = addresses9.loc[
-        (addresses9["siren"].isin(com_codeu["siren"])) & (addresses9["type"] == "pm") & (
-            addresses9["com_code"].isna())].drop(columns=["com_code",
-                                                          "ville",
-                                                          "dep_id",
-                                                          "dep_nom",
-                                                          "reg_nom"]).drop_duplicates().reset_index(drop=True)
-
-    addresses_siren_pm = pd.merge(addresses_siren_pm, ad_sirenu, on=["docdb_family_id", "siren"], how="inner")
-
-    reste_addresses = addresses9.loc[~addresses9["key_appln_nr_person"].isin(addresses_siren_pm["key_appln_nr_person"])]
-
-    addresses10 = pd.concat([addresses_siren_pm, reste_addresses], ignore_index=True)
-
-    fam_name = addresses10.loc[addresses10["com_code"].notna(), ["docdb_family_id", "name_corrected",
-                                                                 "com_code",
-                                                                 "ville",
-                                                                 "dep_id",
-                                                                 "dep_nom",
-                                                                 "reg_nom"]].drop_duplicates().reset_index(
-        drop=True)
-
-    fam_name_compte = fam_name[["docdb_family_id", "name_corrected", "com_code"]].groupby(
-        ["docdb_family_id", "name_corrected"]).nunique(dropna=False).reset_index().rename(
-        columns={"com_code": "compte"})
-
-    com_nomu = fam_name_compte.loc[fam_name_compte["compte"] == 1]
-
-    fam_nameu = pd.merge(fam_name, com_nomu, on=["docdb_family_id", "name_corrected"], how="inner")
-    fam_nameu = fam_nameu.drop(columns=["compte"])
-
-    addresses_fam_name = pd.merge(addresses10.loc[addresses10["com_code"].isna()].drop(columns=["com_code",
-                                                                                                "ville",
-                                                                                                "dep_id",
-                                                                                                "dep_nom",
-                                                                                                "reg_nom"]), fam_nameu,
-                                  on=["docdb_family_id", "name_corrected"],
-                                  how="inner").sort_values(
-        ["docdb_family_id", "key_appln_nr_person"]).drop_duplicates().reset_index(drop=True)
-
-    reste_addresses2 = addresses10.loc[
-        ~addresses10["key_appln_nr_person"].isin(addresses_fam_name["key_appln_nr_person"])]
-
-    addresses11 = pd.concat([addresses_fam_name, reste_addresses2], ignore_index=True)
-    addresses11 = addresses11.fillna("")
-
-    communes = get_communes()
-
-    communes2 = communes[["COM_CODE", "DEP_ID", "DEP_NOM", "REG_NOM"]].drop_duplicates().reset_index(drop=True)
-
-    addresses11 = pd.merge(addresses11, communes2, left_on="com_code", right_on="COM_CODE", how="left")
-
-    addresses11.loc[(addresses11["com_code"] != "") & (addresses11["dep_id"] == "") & (
-        addresses11["DEP_ID"].notan()), "dep_id"] = addresses11.loc[
-        (addresses11["com_code"] != "") & (addresses11["dep_id"] == "") & (addresses11["DEP_ID"].notan()), "DEP_ID"]
-
-    addresses11.loc[(addresses11["com_code"] != "") & (addresses11["dep_nom"] == "") & (
-        addresses11["DEP_NOM"].notan()), "dep_nom"] = addresses11.loc[
-        (addresses11["com_code"] != "") & (addresses11["dep_nom"] == "") & (addresses11["DEP_NOM"].notan()), "DEP_NOM"]
-
-    addresses11.loc[(addresses11["com_code"] != "") & (addresses11["reg_nom"] == "") & (
-        addresses11["REG_NOM"].notan()), "reg_nom"] = addresses11.loc[
-        (addresses11["com_code"] != "") & (addresses11["reg_nom"] == "") & (addresses11["REG_NOM"].notan()), "REG_NOM"]
-
-    addresses11 = addresses11.drop(columns=["COM_CODE", "DEP_ID", "DEP_NOM", "REG_NOM"])
-
-    addresses11.to_csv("part_p08_address3.csv", index=False, sep="|", encoding="utf-8")
-    swift.upload_object('patstat', 'part_p08_address3.csv')
-
-    missing_fr7 = addresses11.loc[(addresses11["country_corrected"].isin(["FR", ""]))]
-    missing_fr8 = missing_fr7.loc[missing_fr7["com_code"] == ""]
-
-    pourcentage3 = round(len(missing_fr8) / len(missing_fr7) * 100, 2)
-    logger.info(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage3}.")
-    missing_fr8.to_csv("missing_fr_address3.csv", index=False, sep="|", encoding="utf-8")
-    swift.upload_object('patstat', 'missing_fr_address3.csv')
+    # missing_oeb = patents.loc[patents["key_appln_nr"].isin(missing_fr6["key_appln_nr"])]
+    #
+    # missing_fr6["liste_key_person"] = missing_fr6["key_appln_nr_person"].str.split("_")
+    # missing_fr6["applt_seq_nr"] = missing_fr6["liste_key_person"].apply(lambda a: int(a[-2]))
+    # missing_fr6["invt_seq_nr"] = missing_fr6["liste_key_person"].apply(lambda a: int(a[-1]))
+    # missing_fr6 = missing_fr6.drop(columns="liste_key_person")
+    # missing_fr6["type_party"] = missing_fr6.apply(
+    #     lambda a: "applicant" if a["applt_seq_nr"] > 0 and a["invt_seq_nr"] == 0 else "inventor", axis=1)
+    # missing_fr6["sequence"] = missing_fr6.apply(
+    #     lambda a: a["applt_seq_nr"] if a["type_party"] == "applicant" else a["invt_seq_nr"], axis=1)
+    #
+    # pat_oeb = missing_oeb[["key_appln_nr", "appln_auth", "appln_publn_number"]].drop_duplicates().reset_index(drop=True)
+    # pat_oeb = pat_oeb.loc[pat_oeb["appln_auth"].isin(["EP", "WO"])]
+    # pat_oeb["pn"] = pat_oeb["appln_auth"] + pat_oeb["appln_publn_number"]
+    # pat_oeb = pat_oeb.drop(columns=["appln_auth", "appln_publn_number"])
+    #
+    # missing_fr6 = pd.merge(missing_fr6, pat_oeb, on="key_appln_nr", how="left")
+    #
+    # pubon = list(pat_oeb["pn"].unique())
+    # logger.info(f"Nombre de numéros de publication à chercher : {len(pubon)}.")
+    #
+    # sub_misfr6 = subset_df(missing_fr6)
+    #
+    # part_ops = res_futures(sub_misfr6, req_ops_oeb)
+    # part_ops.to_csv("part_ops.csv", index=False, sep="|", encoding="utf-8")
+    # swift.upload_object('patstat', 'part_ops.csv')
+    #
+    # # part_ops = req_ops_oeb(missing_fr6)
+    #
+    # addresses9 = addresses8.loc[~addresses8["key_appln_nr_person"].isin(part_ops["key_appln_nr_person"])]
+    # addresses9 = pd.concat([addresses9, part_ops], ignore_index=True)
+    #
+    # ad_siren = addresses9.loc[addresses9["siren"].notna(), ["docdb_family_id", "siren", "com_code",
+    #                                                         "ville",
+    #                                                         "dep_id",
+    #                                                         "dep_nom",
+    #                                                         "reg_nom"]].drop_duplicates().reset_index(
+    #     drop=True)
+    #
+    # ad_siren = ad_siren.loc[ad_siren["com_code"].notna()].drop_duplicates().reset_index(drop=True)
+    # ad_siren = ad_siren.loc[ad_siren["com_code"] != ""].drop_duplicates().reset_index(drop=True)
+    #
+    # ad_siren_compte = ad_siren[["docdb_family_id", "siren", "com_code"]].groupby(["docdb_family_id", "siren"]).nunique(
+    #     dropna=False).reset_index().rename(
+    #     columns={"com_code": "compte"})
+    #
+    # com_codeu = ad_siren_compte.loc[ad_siren_compte["compte"] == 1].reset_index(drop=True)
+    #
+    # ad_sirenu = pd.merge(ad_siren, com_codeu, on=["docdb_family_id", "siren"], how="inner").drop(columns="compte")
+    #
+    # addresses_siren_pm = addresses9.loc[
+    #     (addresses9["siren"].isin(com_codeu["siren"])) & (addresses9["type"] == "pm") & (
+    #         addresses9["com_code"].isna())].drop(columns=["com_code",
+    #                                                       "ville",
+    #                                                       "dep_id",
+    #                                                       "dep_nom",
+    #                                                       "reg_nom"]).drop_duplicates().reset_index(drop=True)
+    #
+    # addresses_siren_pm = pd.merge(addresses_siren_pm, ad_sirenu, on=["docdb_family_id", "siren"], how="inner")
+    #
+    # reste_addresses = addresses9.loc[~addresses9["key_appln_nr_person"].isin(addresses_siren_pm["key_appln_nr_person"])]
+    #
+    # addresses10 = pd.concat([addresses_siren_pm, reste_addresses], ignore_index=True)
+    #
+    # fam_name = addresses10.loc[addresses10["com_code"].notna(), ["docdb_family_id", "name_corrected",
+    #                                                              "com_code",
+    #                                                              "ville",
+    #                                                              "dep_id",
+    #                                                              "dep_nom",
+    #                                                              "reg_nom"]].drop_duplicates().reset_index(
+    #     drop=True)
+    #
+    # fam_name_compte = fam_name[["docdb_family_id", "name_corrected", "com_code"]].groupby(
+    #     ["docdb_family_id", "name_corrected"]).nunique(dropna=False).reset_index().rename(
+    #     columns={"com_code": "compte"})
+    #
+    # com_nomu = fam_name_compte.loc[fam_name_compte["compte"] == 1]
+    #
+    # fam_nameu = pd.merge(fam_name, com_nomu, on=["docdb_family_id", "name_corrected"], how="inner")
+    # fam_nameu = fam_nameu.drop(columns=["compte"])
+    #
+    # addresses_fam_name = pd.merge(addresses10.loc[addresses10["com_code"].isna()].drop(columns=["com_code",
+    #                                                                                             "ville",
+    #                                                                                             "dep_id",
+    #                                                                                             "dep_nom",
+    #                                                                                             "reg_nom"]), fam_nameu,
+    #                               on=["docdb_family_id", "name_corrected"],
+    #                               how="inner").sort_values(
+    #     ["docdb_family_id", "key_appln_nr_person"]).drop_duplicates().reset_index(drop=True)
+    #
+    # reste_addresses2 = addresses10.loc[
+    #     ~addresses10["key_appln_nr_person"].isin(addresses_fam_name["key_appln_nr_person"])]
+    #
+    # addresses11 = pd.concat([addresses_fam_name, reste_addresses2], ignore_index=True)
+    # addresses11 = addresses11.fillna("")
+    #
+    # communes = get_communes()
+    #
+    # communes2 = communes[["COM_CODE", "DEP_ID", "DEP_NOM", "REG_NOM"]].drop_duplicates().reset_index(drop=True)
+    #
+    # addresses11 = pd.merge(addresses11, communes2, left_on="com_code", right_on="COM_CODE", how="left")
+    #
+    # addresses11.loc[(addresses11["com_code"] != "") & (addresses11["dep_id"] == "") & (
+    #     addresses11["DEP_ID"].notan()), "dep_id"] = addresses11.loc[
+    #     (addresses11["com_code"] != "") & (addresses11["dep_id"] == "") & (addresses11["DEP_ID"].notan()), "DEP_ID"]
+    #
+    # addresses11.loc[(addresses11["com_code"] != "") & (addresses11["dep_nom"] == "") & (
+    #     addresses11["DEP_NOM"].notan()), "dep_nom"] = addresses11.loc[
+    #     (addresses11["com_code"] != "") & (addresses11["dep_nom"] == "") & (addresses11["DEP_NOM"].notan()), "DEP_NOM"]
+    #
+    # addresses11.loc[(addresses11["com_code"] != "") & (addresses11["reg_nom"] == "") & (
+    #     addresses11["REG_NOM"].notan()), "reg_nom"] = addresses11.loc[
+    #     (addresses11["com_code"] != "") & (addresses11["reg_nom"] == "") & (addresses11["REG_NOM"].notan()), "REG_NOM"]
+    #
+    # addresses11 = addresses11.drop(columns=["COM_CODE", "DEP_ID", "DEP_NOM", "REG_NOM"])
+    #
+    # addresses11.to_csv("part_p08_address3.csv", index=False, sep="|", encoding="utf-8")
+    # swift.upload_object('patstat', 'part_p08_address3.csv')
+    #
+    # missing_fr7 = addresses11.loc[(addresses11["country_corrected"].isin(["FR", ""]))]
+    # missing_fr8 = missing_fr7.loc[missing_fr7["com_code"] == ""]
+    #
+    # pourcentage3 = round(len(missing_fr8) / len(missing_fr7) * 100, 2)
+    # logger.info(f"Le 3ème pourcentage d'adresses manquantes pour les Français est de {pourcentage3}.")
+    # missing_fr8.to_csv("missing_fr_address3.csv", index=False, sep="|", encoding="utf-8")
+    # swift.upload_object('patstat', 'missing_fr_address3.csv')
