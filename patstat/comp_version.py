@@ -111,6 +111,8 @@ def get_json():
     inventeur = part.copy()
     inventeur = inventeur.loc[inventeur["key_appln_nr_person"].isin(inv)]
 
+    df_pseudo = pd.DataFrame(data={"id_pseudo": liste_pseudo})
+
     deposant = part.copy()
     deposant = deposant.loc[deposant["key_appln_nr_person"].isin(dep)]
     deposant["virgules"] = deposant["name_corrected"].apply(lambda a: "virgules" if ",, " in a else "")
@@ -124,28 +126,27 @@ def get_json():
         columns={"liste_name": "name_corrected", "liste_siren": "siren",
                  "liste_paysage": "id_paysage"}).drop_duplicates().reset_index(drop=True)
     dep_virg2 = dep_virg2[deposant.columns].drop(columns="virgules")
-    lkeysv = liste_pseudo[0:len(dep_virg2)]
-    df = pd.DataFrame(data={"id_pseudo": lkeysv}).reset_index()
     dep_virg2 = dep_virg2.reset_index()
-    dep_virg2 = pd.merge(dep_virg2, df, on="index", how="left").drop(columns="index")
 
-    dep_aut = deposant.loc[~deposant["key_appln_nr_person"].isin(dep_virg["key_appln_nr_person"])]
+    df_pseudo = df_pseudo.reset_index()
 
-    keys = pd.concat([dep_aut["key_appln_nr_person"], inventeur["key_appln_nr_person"]], ignore_index=True)
-    keys = pd.DataFrame(data=keys)
-    keys = keys.drop_duplicates()
-    lkeys = liste_pseudo[len(dep_virg2) + 1:len(keys)]
-    df2 = pd.DataFrame(data={"id_pseudo": lkeys})
-    keys2 = pd.concat([keys, df2], axis=1, ignore_index=True).rename(columns={0: "key_appln_nr_person", 1: "id_pseudo"})
+    dep_virg3 = pd.merge(dep_virg2, df_pseudo, on="index", how="left").drop(columns="index")
+    df_pseudo2 = df_pseudo.loc[~df_pseudo["id_pseudo"].isin(dep_virg3["id_pseudo"])]
+    df_pseudo2 = df_pseudo2.drop(columns="index").reset_index()
 
-    dep_aut = pd.merge(dep_aut, keys2, on="key_appln_nr_person", how="inner").drop(columns="virgules").drop_duplicates()
-    inventeur = pd.merge(inventeur, keys2, on="key_appln_nr_person", how="inner").drop_duplicates()
+    dep_aut = deposant.loc[~deposant["key_appln_nr_person"].isin(dep_virg["key_appln_nr_person"])].reset_index(
+        drop=True)
+    dep_aut = dep_aut.reset_index()
 
-    non_multi = part.loc[part["key_appln_nr_person"].isin(keys["key_appln_nr_person"])]
-    non_multi = pd.merge(non_multi, keys2, on="key_appln_nr_person", how="inner").drop_duplicates()
-    part2 = pd.concat([dep_virg2, non_multi], ignore_index=True).drop_duplicates()
+    dep_aut2 = pd.merge(dep_aut, df_pseudo2, on="index", how="left").drop(columns="index")
+    df_pseudo3 = df_pseudo2.loc[~df_pseudo2["id_pseudo"].isin(dep_aut2["id_pseudo"])]
+    df_pseudo3 = df_pseudo3.drop(columns="index").reset_index()
 
-    deposant2 = pd.concat([dep_virg2, dep_aut], ignore_index=True).drop_duplicates()
+    inventeur = inventeur.reset_index()
+
+    inventeur2 = pd.merge(inventeur, df_pseudo3, on="index", how="left").drop(columns="index")
+
+    deposant2 = pd.concat([dep_virg3, dep_aut2], ignore_index=True).drop_duplicates()
 
     pat_dict = {}
     for row in fam_techno.itertuples():
@@ -294,14 +295,16 @@ def get_json():
         if family_id not in depaffilition_dict:
             depaffilition_dict[family_id] = dep_dict
 
+    res = []
+
     for family_id in depaffilition_dict:
         new_elt = {'family_id': family_id, 'applicants': depaffilition_dict[family_id]}
         res.append(new_elt)
 
     df_depaffiliation = pd.DataFrame(res)
 
-    part_dep = pd.merge(part2, df_depaffiliation, left_on="id_pseudo", right_on="family_id", how="left").drop(
-        columns="family_id")
+    part_dep = pd.merge(deposant2[["docdb_family_id", "id_pseudo"]], df_depaffiliation, left_on="id_pseudo",
+                        right_on="family_id", how="left").drop(columns="family_id")
 
     dep_dict = {}
     for row in part_dep.itertuples():
@@ -321,7 +324,7 @@ def get_json():
     fam_dep = jointure(fam, df_dep)
 
     invaffilition_dict = {}
-    for row in inventeur.itertuples():
+    for row in inventeur2.itertuples():
         family_id = row.id_pseudo
         paysage = row.id_paysage
         idref = row.idref
@@ -353,8 +356,8 @@ def get_json():
 
     df_invaffiliation = pd.DataFrame(res)
 
-    part_inv = pd.merge(part2, df_invaffiliation, left_on="id_pseudo", right_on="family_id", how="left").drop(
-        columns="family_id")
+    part_inv = pd.merge(inventeur2[["docdb_family_id", "id_pseudo"]], df_invaffiliation, left_on="id_pseudo",
+                        right_on="family_id", how="left").drop(columns="family_id")
 
     inv_dict = {}
     for row in part_inv.itertuples():
