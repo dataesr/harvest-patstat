@@ -400,5 +400,5 @@ def get_json():
                  "date_first_granted": "grantedDate"})
     for str_field in ["id", "inpadocFamily"]:
         fam_final[str_field] = fam_final[str_field].apply(lambda x: str(x))
-    fam_final.to_json("fam_final_json.jsonl", orient="records", lines=True, encoding="utf-8")
+    fam_final.to_json("fam_final_json.jsonl", orient="records", lines=True)
     swift.upload_object('patstat', 'fam_final_json.jsonl')
