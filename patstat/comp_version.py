@@ -99,7 +99,7 @@ def get_json():
     dep = set(role.loc[role["role"] == "dep", "key_appln_nr_person"])
     inv = set(role.loc[role["role"] == "inv", "key_appln_nr_person"])
 
-    liste_pseudo = list_id(6, 3000000)
+    liste_pseudo = list_id(6, 3500000)
 
     depextra = list(part.loc[(part["key_appln_nr_person"].isin(inv)) & (part["type"] == "pm") & (
         part["id_paysage"].notna()), "key_appln_nr_person"].unique())
@@ -128,11 +128,11 @@ def get_json():
     dep_virg2 = dep_virg2[deposant.columns].drop(columns="virgules")
     dep_virg2 = dep_virg2.reset_index()
 
-    df_pseudo = df_pseudo.reset_index()
+    df_pseudo = df_pseudo.reset_index().drop(columns="index").reset_index()
 
     dep_virg3 = pd.merge(dep_virg2, df_pseudo, on="index", how="left").drop(columns="index")
     df_pseudo2 = df_pseudo.loc[~df_pseudo["id_pseudo"].isin(dep_virg3["id_pseudo"])]
-    df_pseudo2 = df_pseudo2.drop(columns="index").reset_index()
+    df_pseudo2 = df_pseudo2.drop(columns="index").reset_index().drop(columns="index").reset_index()
 
     dep_aut = deposant.loc[~deposant["key_appln_nr_person"].isin(dep_virg["key_appln_nr_person"])].reset_index(
         drop=True)
@@ -140,9 +140,9 @@ def get_json():
 
     dep_aut2 = pd.merge(dep_aut, df_pseudo2, on="index", how="left").drop(columns="index")
     df_pseudo3 = df_pseudo2.loc[~df_pseudo2["id_pseudo"].isin(dep_aut2["id_pseudo"])]
-    df_pseudo3 = df_pseudo3.drop(columns="index").reset_index()
+    df_pseudo3 = df_pseudo3.drop(columns="index").reset_index().drop(columns="index").reset_index()
 
-    inventeur = inventeur.reset_index()
+    inventeur = inventeur.reset_index().drop(columns="index").reset_index()
 
     inventeur2 = pd.merge(inventeur, df_pseudo3, on="index", how="left").drop(columns="index")
 
@@ -252,7 +252,7 @@ def get_json():
 
     depaffilition_dict = {}
     for row in deposant2.itertuples():
-        family_id = row.id_pseudo
+        family_id = row.docdb_family_id
         grid = row.grid
         paysage = row.id_paysage
         siren = row.siren
@@ -293,7 +293,10 @@ def get_json():
             dep_dict["ids"] = ids
 
         if family_id not in depaffilition_dict:
-            depaffilition_dict[family_id] = dep_dict
+            depaffilition_dict[family_id] = []
+            depaffilition_dict[family_id].append(dep_dict)
+        else:
+            depaffilition_dict[family_id].append(dep_dict)
 
     res = []
 
@@ -303,17 +306,15 @@ def get_json():
 
     df_depaffiliation = pd.DataFrame(res)
 
-    part_dep = pd.merge(deposant2[["docdb_family_id", "id_pseudo"]], df_depaffiliation, left_on="id_pseudo",
-                        right_on="family_id", how="left").drop(columns="family_id")
-
     dep_dict = {}
-    for row in part_dep.itertuples():
-        family_id = row.docdb_family_id
+    for row in df_depaffiliation.itertuples():
+        family_id = row.family_id
         if family_id not in dep_dict:
             dep_dict[family_id] = []
-        elt = row.applicants
-        if elt is not np.nan and elt not in dep_dict[family_id]:
-            dep_dict[family_id].append(elt)
+
+        for item in row.applicants:
+            if item is not np.nan and item not in dep_dict[family_id]:
+                dep_dict[family_id].append(item)
 
     res = []
     for family_id in dep_dict:
@@ -325,7 +326,7 @@ def get_json():
 
     invaffilition_dict = {}
     for row in inventeur2.itertuples():
-        family_id = row.id_pseudo
+        family_id = row.docdb_family_id
         paysage = row.id_paysage
         idref = row.idref
         ids = []
@@ -348,25 +349,28 @@ def get_json():
             inv_dict["ids"] = ids
 
         if family_id not in invaffilition_dict:
-            invaffilition_dict[family_id] = inv_dict
+            invaffilition_dict[family_id] = []
+            invaffilition_dict[family_id].append(inv_dict)
+        else:
+            invaffilition_dict[family_id].append(inv_dict)
 
+    res = []
     for family_id in invaffilition_dict:
         new_elt = {'family_id': family_id, 'inventors': invaffilition_dict[family_id]}
         res.append(new_elt)
 
     df_invaffiliation = pd.DataFrame(res)
 
-    part_inv = pd.merge(inventeur2[["docdb_family_id", "id_pseudo"]], df_invaffiliation, left_on="id_pseudo",
-                        right_on="family_id", how="left").drop(columns="family_id")
-
     inv_dict = {}
-    for row in part_inv.itertuples():
-        family_id = row.docdb_family_id
+    for row in df_invaffiliation.itertuples():
+        family_id = row.family_id
         if family_id not in inv_dict:
             inv_dict[family_id] = []
+
         elt = row.inventors
-        if elt is not np.nan and elt not in dep_dict[family_id]:
-            inv_dict[family_id].append(elt)
+        for item in elt:
+            if item is not np.nan and item not in inv_dict[family_id]:
+                inv_dict[family_id].append(item)
 
     res = []
     for family_id in inv_dict:
@@ -396,5 +400,5 @@ def get_json():
                  "date_first_granted": "grantedDate"})
     for str_field in ["id", "inpadocFamily"]:
         fam_final[str_field] = fam_final[str_field].apply(lambda x: str(x))
-    fam_final.to_json("fam_final_json.jsonl", orient="records", lines=True)
+    fam_final.to_json("fam_final_json.jsonl", orient="records", lines=True, encoding="utf-8")
     swift.upload_object('patstat', 'fam_final_json.jsonl')
