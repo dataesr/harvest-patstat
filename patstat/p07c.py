@@ -498,7 +498,7 @@ def address_api(t_ad: pd.DataFrame, col: str) -> pd.DataFrame:
                 if len(df) > 0:
                     smax = df["properties.score"].max()
                     df = df.loc[df["properties.score"] == smax]
-                    df["address"] = r["query"]
+                    df["address"] = adresse
 
                     renomme = {}
                     liste_cols = ["properties.label", "properties.housenumber", "properties.name",
