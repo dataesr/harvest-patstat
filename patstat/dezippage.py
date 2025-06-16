@@ -53,31 +53,30 @@ def delete_files(pth, reg):
 
 def unzip():
     path = DATA_PATH
-    # selects the zipped folders to unzip (everything except the documentation)
-    zipped_folders = select_files(path, r"data_PATSTAT_Global_\d+_.+\.zip")
+    # selects the zipped folders to unzip
+    zipped_folders = select_files(path, r"tls(204|211|201|206|207|209|225|224|203|202|212|214)_")
     # unzips the folders
     unzip_folders(path, zipped_folders)
 
-    # selects the subfolders
-    subfolders = select_files(path,
-                              r"tls(204|211|201|206|207|209|225|224|203|202|212|214)_part\d{2}\.zip")
-    # unzips the subfolders
-    unzip_folders(path, subfolders)
+    # lists all the CSV files and rename them (model tls\d{3}_part\d{2}
+    list_csv = glob.glob(path + r"*.csv")
+    for csv in list_csv:
+        new_name = csv.split("_")[0] + "_" + csv.split("_")[-1]
+        os.rename(csv, new_name)
 
-    # removes the end of the subfolders to get table names from PATSTAT Global database
-    table_names = list(map(lambda a: re.sub(r"_part\d+.zip", "", a), subfolders))
+    # removes the end of the folders to get table names from PATSTAT Global database
+    table_names = list(map(lambda a: re.sub(r"_.+_?.+?_part\d+.zip", "", a), zipped_folders))
 
-    # creates a dataframe to connect each file to its subfolder and table
-    file_names = pd.DataFrame({"subfolders": subfolders, "table_names": table_names})
-    file_names["file_names"] = file_names["subfolders"].apply(lambda a: re.sub(r".zip", ".csv", a), 1)
+    # creates a dataframe to connect each file to its folder and table
+    file_names = pd.DataFrame({"subfolders": zipped_folders, "table_names": table_names})
+    file_names["file_names"] = file_names["subfolders"].apply(lambda a: a.split("_")[0] + "_" + a.split("_")[-1])
+    file_names["file_names"] = file_names["file_names"].str.replace("zip", "csv", regex=False)
 
     # moves each file into a folder corresponding to its table in PATSTAT Global database
-    for item in range(len(file_names["subfolders"])):
-        os.makedirs(file_names["table_names"][item], exist_ok=True)
-        shutil.move(file_names["file_names"][item], file_names["table_names"][item])
+    for _, r in file_names.iterrows():
+        os.makedirs(r["table_names"], exist_ok=True)
+        shutil.move(r["file_names"], r["table_names"])
 
-    delete_files(DATA_PATH, r"index_documentation_scripts_PATSTAT_Global_*")
-
-    delete_files(DATA_PATH, r"data_PATSTAT_Global_*")
+    delete_files(DATA_PATH, r"*.txt")
 
     delete_files(DATA_PATH, r"*.zip")
