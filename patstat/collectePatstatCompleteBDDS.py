@@ -128,6 +128,8 @@ def delete_files(pth, reg):
 def harvest_patstat():
     # get edition number and the file id numbers and names
     edition, list_files = ed_number(URL_PATSTAT + URL_FILES)
+    list_files = [_zip for _zip in list_files if
+                  re.match(r"tls(204|211|201|206|207|209|225|224|203|202|212|214)_", _zip["itemName"])]
 
     # set working directory
     os.chdir(DATA_PATH)

@@ -60,6 +60,7 @@ def unzip():
 
     # lists all the CSV files and rename them (model tls\d{3}_part\d{2}
     list_csv = glob.glob(path + r"*.csv")
+    list_csv = [_zip for _zip in list_csv if re.match(path + r"tls\d{3}.+\.csv", _zip)]
     for csv in list_csv:
         new_name = csv.split("_")[0] + "_" + csv.split("_")[-1]
         os.rename(csv, new_name)
@@ -77,6 +78,6 @@ def unzip():
         os.makedirs(r["table_names"], exist_ok=True)
         shutil.move(r["file_names"], r["table_names"])
 
-    delete_files(DATA_PATH, r"*.txt")
+    # delete_files(DATA_PATH, r"*.txt")
 
     delete_files(DATA_PATH, r"*.zip")
