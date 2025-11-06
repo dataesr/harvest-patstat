@@ -815,6 +815,7 @@ def clean_name(crt_prt: pd.DataFrame) -> pd.DataFrame:
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x8c", "ï", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x87", "ç", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x93", "ô", regex=True)
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"Ã", "É", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"Ã\x80", "À", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x95", "ò", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\x90", "É", regex=True)
