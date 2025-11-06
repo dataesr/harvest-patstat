@@ -16,8 +16,8 @@ def familles_ri_file():
                        sep="|", encoding="utf-8", engine="python", dtype=types.partfin_types)
     part.to_csv("part_p08_backup.csv", sep="|", index=False)
 
-    swift.download_object('patstat', 'corrections_familles_brevets_py.xlsx',
-                          'corrections_familles_brevets_py.xlsx')
+    swift.download_object('patstat', 'corrections_familles_brevets.xlsx',
+                          'corrections_familles_brevets.xlsx')
     corrections = pd.read_excel("corrections_familles_brevets.xlsx", engine="openpyxl",
                                 sheet_name="corrections_familles_brevets_py",
                                 dtype={"isin": str, "cols": str, "vals": str})
