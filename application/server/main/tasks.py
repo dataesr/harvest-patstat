@@ -4,8 +4,8 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     p04_families, p05_create_participants_xgboost, p05b_clean_participants, p06_clean_participants_individuals, \
     p07a_get_siren_inpi, p07b_clean_participants_entp, p08_participants_final, p00_outils_inpi_adress, \
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
-    p08_participants_final_copy, loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing, \
-    correction_type, p09_geoloc, p08b_outils_inpi_adress_api
+    loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing, \
+    correction_type, p09_geoloc, p08b_outils_inpi_adress_api, p08b_familles_ri_file, get_doi_from_patent
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -18,6 +18,12 @@ def create_task_doi(args):
     logger.debug("create_task_doi")
     liste = args.get("liste")
     get_patent_from_doi.get_patents_common_doi(liste)
+
+
+def create_task_publis():
+    logger.debug("create_task_publis")
+    get_doi_from_patent.get_patents_common_doi()
+    logger.debug("DOI publis")
 
 
 def create_task_ef():
@@ -75,6 +81,8 @@ def create_task_all(args):
         get_doi()
     if args.get('dwnp08', True):
         getp08()
+    if args.get('correctp08b', True):
+        get_correction()
     if args.get("getp08b", True):
         getp08b()
 
@@ -186,3 +194,7 @@ def create_task_geo():
 def getp08b():
     p08b_outils_inpi_adress_api.create_df_address()
     logger.debug("p08b: success")
+
+def get_correction():
+    p08b_familles_ri_file.familles_ri_file()
+    logger.debug("familles_ri_file: success")
