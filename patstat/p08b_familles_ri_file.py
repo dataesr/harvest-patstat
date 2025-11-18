@@ -105,8 +105,21 @@ def familles_ri_file():
     corr3.to_csv("corrections_familles_brevets_python2.csv", sep=";", encoding="utf-8", index=False)
 
     part.loc[part["type"] == "pp", ["category_libelle", "esri"]] = ["Personne physique", "AUTRE"]
+    part.loc[
+        (part["type"] == "pm") & (part["category_libelle"].isna()) & (part["esri"].isna()), [
+            "category_libelle", "esri", "sexe"]] = ["Personne morale", "AUTRE", np.nan]
     part.loc[(part["type"] == "pm") & (part["category_libelle"] == "Personne physique"), "category_libelle"] = np.nan
     part.loc[(part["type"] == "pp") & (part["siren"].notna()), "siren"] = np.nan
-    part.loc[part["type"] == "pm", ["category_libelle", "esri", "sexe"]] = ["Personne morale", "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"]=="AUTRE") & (part["category_libelle"].isna()), [
+        "category_libelle", "esri", "sexe"]] = ["Personne morale",
+                                                "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"].isna()) & (part["category_libelle"] == "Personne morale"), [
+        "category_libelle", "esri", "sexe"]] = ["Personne morale",
+                                                "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"]=="AUTRE"), ["category_libelle", "esri", "sexe"]] = ["Personne morale",
+                                                "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"].isna()), ["category_libelle", "esri", "sexe"]] = [
+        "Personne morale",
+        "AUTRE", np.nan]
     part.to_csv("part_p08.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'part_p08.csv')
