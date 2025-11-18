@@ -115,16 +115,52 @@ def get_json():
 
     deposant = part.copy()
     deposant = deposant.loc[deposant["key_appln_nr_person"].isin(dep)]
-    deposant["virgules"] = deposant["name_corrected"].apply(lambda a: "virgules" if ",, " in a else "")
+    deposant["virgules"] = deposant["name_corrected"].apply(lambda a: "virgules" if ",," in a else "")
     dep_virg = deposant.loc[
         (deposant["virgules"] == "virgules") & (deposant["siren"] != "")]
-    dep_virg["liste_name"] = dep_virg["name_corrected"].str.split(",, ")
-    dep_virg["liste_siren"] = dep_virg["siren"].str.split(",, ")
-    dep_virg["liste_paysage"] = dep_virg["id_paysage"].str.split(",, ")
-    dep_virg2 = dep_virg.explode(["liste_name", "liste_siren", "liste_paysage"])
-    dep_virg2 = dep_virg2.drop(columns=["name_corrected", "siren", "id_paysage"]).rename(
+    dep_virg["liste_name"] = dep_virg["name_corrected"].str.split(r",,\s{0,}", regex=True)
+    dep_virg["liste_siren"] = dep_virg["siren"].str.split(r",,\s{0,}", regex=True)
+    dep_virg["liste_paysage"] = dep_virg["id_paysage"].str.split(r",,\s{0,}", regex=True)
+
+    dep_virg["liste_grid"] = dep_virg["grid"].str.split(r",,\s{0,}", regex=True)
+    dep_virg["liste_idref"] = dep_virg["idref"].str.split(r",,\s{0,}", regex=True)
+    dep_virg["liste_ror"] = dep_virg["ror"].str.split(r",,\s{0,}", regex=True)
+
+    dep_virg.loc[dep_virg["liste_paysage"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_paysage"].isna(), "liste_name"]
+    dep_virg.loc[dep_virg["liste_paysage"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_paysage"].isna(), "missing"].apply(lambda a: ["" for x in a])
+    dep_virg.loc[dep_virg["liste_paysage"].isna(), "liste_paysage"] = dep_virg.loc[
+        dep_virg["liste_paysage"].isna(), "missing"]
+
+    dep_virg.loc[dep_virg["liste_grid"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_grid"].isna(), "liste_name"]
+    dep_virg.loc[dep_virg["liste_grid"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_grid"].isna(), "missing"].apply(lambda a: ["" for x in a])
+    dep_virg.loc[dep_virg["liste_grid"].isna(), "liste_grid"] = dep_virg.loc[
+        dep_virg["liste_grid"].isna(), "missing"]
+
+    dep_virg.loc[dep_virg["liste_idref"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_idref"].isna(), "liste_name"]
+    dep_virg.loc[dep_virg["liste_idref"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_idref"].isna(), "missing"].apply(lambda a: ["" for x in a])
+    dep_virg.loc[dep_virg["liste_idref"].isna(), "liste_idref"] = dep_virg.loc[
+        dep_virg["liste_idref"].isna(), "missing"]
+
+    dep_virg.loc[dep_virg["liste_ror"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_ror"].isna(), "liste_name"]
+    dep_virg.loc[dep_virg["liste_ror"].isna(), "missing"] = dep_virg.loc[
+        dep_virg["liste_ror"].isna(), "missing"].apply(lambda a: ["" for x in a])
+    dep_virg.loc[dep_virg["liste_ror"].isna(), "liste_ror"] = dep_virg.loc[
+        dep_virg["liste_ror"].isna(), "missing"]
+
+    dep_virg = dep_virg.drop(columns="missing")
+    dep_virg2 = dep_virg.explode(
+        ["liste_name", "liste_siren", "liste_paysage", "liste_grid", "liste_idref", "liste_ror"])
+    dep_virg2 = dep_virg2.drop(columns=["name_corrected", "siren", "id_paysage", "grid", "idref", "ror"]).rename(
         columns={"liste_name": "name_corrected", "liste_siren": "siren",
-                 "liste_paysage": "id_paysage"}).drop_duplicates().reset_index(drop=True)
+                 "liste_paysage": "id_paysage", "liste_grid": "grid", "liste_idref": "idref",
+                 "liste_ror": "ror"}).drop_duplicates().reset_index(drop=True)
     dep_virg2 = dep_virg2[deposant.columns].drop(columns="virgules")
     dep_virg2 = dep_virg2.reset_index()
 
