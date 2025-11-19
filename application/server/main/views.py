@@ -39,13 +39,10 @@ def harvest_doi():
 
 @main_blueprint.route('/harvest_publis', methods=['POST'])
 def harvest_publis():
-    logger.debug("Get args")
-    args = request.get_json(force=True)
-
     with Connection(redis.from_url(current_app.config['REDIS_URL'])):
         logger.debug("Connect Redis")
         q = Queue(name='patents', default_timeout=default_timeout, result_ttl=default_timeout)
-        task = q.enqueue(create_task_publis, args)
+        task = q.enqueue(create_task_publis)
     logger.debug("End task")
     response_object = {'status': 'success', 'data': {'task_id': task.get_id()}}
     return jsonify(response_object), 202
