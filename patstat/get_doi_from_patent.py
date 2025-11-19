@@ -19,7 +19,7 @@ def get_patents_common_doi():
     os.chdir(DATA_PATH)
 
     logger.info("Get French patents")
-    patents = pd.read_csv(f"patents.csv", sep="|", encoding="utf-8", engine="python",
+    patents = pd.read_csv(f"patent.csv", sep="|", encoding="utf-8", engine="python",
                           dtype=types.patent_types)
 
     pat = patents[["key_appln_nr", "appln_id", "docdb_family_id"]].drop_duplicates().reset_index(drop=True)
