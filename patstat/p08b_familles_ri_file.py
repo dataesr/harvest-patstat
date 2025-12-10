@@ -16,6 +16,14 @@ def familles_ri_file():
                        sep="|", encoding="utf-8", engine="python", dtype=types.partfin_types)
     part.to_csv("part_p08_backup.csv", sep="|", index=False)
 
+    swift.download_object('patstat', 'part_init_p05.csv', 'part_init_p05.csv')
+    old_part = pd.read_csv("part_init_p05.csv",
+                           sep='|',
+                           dtype=types.part_init_types,
+                           encoding="utf-8",
+                           engine="python")
+    old_part = old_part.drop_duplicates()
+
     swift.download_object('patstat', 'corrections_familles_brevets.xlsx',
                           'corrections_familles_brevets.xlsx')
     corrections = pd.read_excel("corrections_familles_brevets.xlsx", engine="openpyxl",
@@ -98,8 +106,10 @@ def familles_ri_file():
         ldico2["vals"].append(r.vals)
         if len(lcols) > 1:
             part.loc[part["key_appln_nr_person"].isin(lisin), lcols] = lvals
+            old_part.loc[old_part["key_appln_nr_person"].isin(lisin), lcols] = lvals
         else:
             part.loc[part["key_appln_nr_person"].isin(lisin), r.cols] = r.vals
+            old_part.loc[old_part["key_appln_nr_person"].isin(lisin), r.cols] = r.vals
 
     corr3 = pd.DataFrame(data=ldico2)
     corr3.to_csv("corrections_familles_brevets_python2.csv", sep=";", encoding="utf-8", index=False)
@@ -123,3 +133,25 @@ def familles_ri_file():
         "AUTRE", np.nan]
     part.to_csv("part_p08.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'part_p08.csv')
+
+    part.loc[part["type"] == "pp", ["category_libelle", "esri"]] = ["Personne physique", "AUTRE"]
+    part.loc[
+        (part["type"] == "pm") & (part["category_libelle"].isna()) & (part["esri"].isna()), [
+            "category_libelle", "esri", "sexe"]] = ["Personne morale", "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["category_libelle"] == "Personne physique"), "category_libelle"] = np.nan
+    part.loc[(part["type"] == "pp") & (part["siren"].notna()), "siren"] = np.nan
+    part.loc[(part["type"] == "pm") & (part["esri"] == "AUTRE") & (part["category_libelle"].isna()), [
+        "category_libelle", "esri", "sexe"]] = ["Personne morale",
+                                                "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"].isna()) & (part["category_libelle"] == "Personne morale"), [
+        "category_libelle", "esri", "sexe"]] = ["Personne morale",
+                                                "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"] == "AUTRE"), ["category_libelle", "esri", "sexe"]] = [
+        "Personne morale",
+        "AUTRE", np.nan]
+    part.loc[(part["type"] == "pm") & (part["esri"].isna()), ["category_libelle", "esri", "sexe"]] = [
+        "Personne morale",
+        "AUTRE", np.nan]
+
+    old_part.to_csv("part_init_p05.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'part_init_p05.csv')
