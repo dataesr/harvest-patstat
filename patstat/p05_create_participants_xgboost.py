@@ -875,6 +875,8 @@ def clean_name(crt_prt: pd.DataFrame) -> pd.DataFrame:
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("ë{umlaut over ( )}", "é", regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("M{circumflex over (D)}DICALE", "MÉDICALE",
                                                                   regex=False)
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("TÃ\x9cRKE, Thomas", "TÜRKE, Thomas",
+                                                                  regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("|", "", regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(" ¨ ¢ ", "A", regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("¤", "", regex=False)
@@ -883,6 +885,7 @@ def clean_name(crt_prt: pd.DataFrame) -> pd.DataFrame:
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\xad", "", regex=True)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("Ã³", "Ó", regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("Å", "À", regex=False)
+    crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace("Ϊ", "Ï", regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(" −", "", regex=False)
     crt_prt2["name_clean2"] = crt_prt2["name_clean2"].str.replace(r"\s?\}$", "", regex=True)
     crt_prt2.loc[crt_prt2["name_clean2"] != "B<>COM", "name_clean2"] = crt_prt2.loc[
@@ -1366,6 +1369,6 @@ def start_part():
     part_init2.to_csv("part_init_p05.csv", sep="|", index=False)
     swift.upload_object('patstat', 'part_init_p05.csv')
 
-    part_init3 = part_init2.drop(columns={"applt_seq_nr", "invt_seq_nr"}).drop_duplicates()
+    part_init3 = part_init2.drop(columns=["applt_seq_nr", "invt_seq_nr"]).drop_duplicates()
     part_init3.to_csv("part_p05.csv", sep="|", index=False)
     swift.upload_object('patstat', 'part_p05.csv')
