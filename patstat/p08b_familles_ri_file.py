@@ -134,22 +134,22 @@ def familles_ri_file():
     part.to_csv("part_p08.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'part_p08.csv')
 
-    part.loc[part["type"] == "pp", ["category_libelle", "esri"]] = ["Personne physique", "AUTRE"]
-    part.loc[
-        (part["type"] == "pm") & (part["category_libelle"].isna()) & (part["esri"].isna()), [
+    old_part.loc[old_part["type"] == "pp", ["category_libelle", "esri"]] = ["Personne physique", "AUTRE"]
+    old_part.loc[
+        (old_part["type"] == "pm") & (old_part["category_libelle"].isna()) & (old_part["esri"].isna()), [
             "category_libelle", "esri", "sexe"]] = ["Personne morale", "AUTRE", np.nan]
-    part.loc[(part["type"] == "pm") & (part["category_libelle"] == "Personne physique"), "category_libelle"] = np.nan
-    part.loc[(part["type"] == "pp") & (part["siren"].notna()), "siren"] = np.nan
-    part.loc[(part["type"] == "pm") & (part["esri"] == "AUTRE") & (part["category_libelle"].isna()), [
+    old_part.loc[(old_part["type"] == "pm") & (old_part["category_libelle"] == "Personne physique"), "category_libelle"] = np.nan
+    old_part.loc[(old_part["type"] == "pp") & (old_part["siren"].notna()), "siren"] = np.nan
+    old_part.loc[(old_part["type"] == "pm") & (old_part["esri"] == "AUTRE") & (old_part["category_libelle"].isna()), [
         "category_libelle", "esri", "sexe"]] = ["Personne morale",
                                                 "AUTRE", np.nan]
-    part.loc[(part["type"] == "pm") & (part["esri"].isna()) & (part["category_libelle"] == "Personne morale"), [
+    old_part.loc[(old_part["type"] == "pm") & (old_part["esri"].isna()) & (old_part["category_libelle"] == "Personne morale"), [
         "category_libelle", "esri", "sexe"]] = ["Personne morale",
                                                 "AUTRE", np.nan]
-    part.loc[(part["type"] == "pm") & (part["esri"] == "AUTRE"), ["category_libelle", "esri", "sexe"]] = [
+    old_part.loc[(old_part["type"] == "pm") & (old_part["esri"] == "AUTRE"), ["category_libelle", "esri", "sexe"]] = [
         "Personne morale",
         "AUTRE", np.nan]
-    part.loc[(part["type"] == "pm") & (part["esri"].isna()), ["category_libelle", "esri", "sexe"]] = [
+    old_part.loc[(old_part["type"] == "pm") & (old_part["esri"].isna()), ["category_libelle", "esri", "sexe"]] = [
         "Personne morale",
         "AUTRE", np.nan]
 
