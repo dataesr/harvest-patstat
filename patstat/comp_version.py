@@ -293,7 +293,7 @@ def get_json():
         paysage = row.id_paysage
         siren = row.siren
         idref = row.idref
-        rnsr = row.rnsr
+        ror = row.ror
         ids = []
         if grid is not np.nan:
             idd = {"id": grid, "type": "grid"}
@@ -307,8 +307,8 @@ def get_json():
         if idref is not np.nan:
             idd = {"id": idref, "type": "idref"}
             ids.append(idd)
-        if rnsr is not np.nan:
-            idd = {"id": rnsr, "type": "rnsr"}
+        if ror is not np.nan:
+            idd = {"id": ror, "type": "ror"}
             ids.append(idd)
 
         name = row.name_corrected
