@@ -7,6 +7,7 @@
 import os
 import random
 import string
+import copy
 
 import numpy as np
 import pandas as pd
@@ -67,6 +68,162 @@ def get_json():
     patent["key_appln_nr"] = patent["key_appln_nr"].apply(lambda a: a.strip())
     for f_date in ["appln_filing_date", "appln_publn_date", "grant_publn_date"]:
         patent[f_date] = patent[f_date].apply(to_date_str)
+
+    publi = pd.read_csv("publi_oa.csv", sep="|", encoding="utf-8", engine="python", dtype=types.oa_types)
+    publi[
+        ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
+         "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
+         "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
+         "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]] = publi[
+        ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
+         "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
+         "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
+         "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]].fillna("")
+
+    publi_dict = {}
+    for r in publi.itertuples():
+        family_id = r.docdb_family_id
+        authid = r.id
+        doi = r.doi_clean
+        author = r.display_name
+        orcid = r.orcid
+        title = r.display_name_title
+        language = r.language
+        type = r.type
+        year = r.publication_year
+        isoa = r.is_oa
+        pdf = r.pdf_url
+        journal = r.raw_source_name
+        oajournal = r.id_source
+        issn = r.issn_l
+        host = r.host_organization_name
+        idins = r.id_ins
+        ins = r.display_name_ins
+        rorins = r.ror_ins
+        country = r.country_code_ins
+        typeins = r.type_ins
+        idpaysage = r.id_paysage
+        idref = r.idref_ins
+        grid = r.grid
+        siren = r.siren
+        siret = r.siret
+
+        affil_dict = {}
+        if idins != "":
+            if idins not in affil_dict:
+                ids = []
+                idd = {"id": idins, "type": "oa"}
+                ids.append(idd)
+                if rorins != "":
+                    idd = {"id": rorins, "type": "ror"}
+                    ids.append(idd)
+                if idpaysage != "":
+                    idd = {"id": idpaysage, "type": "id_paysage"}
+                    ids.append(idd)
+                if idref != "":
+                    idd = {"id": idref, "type": "idref"}
+                    ids.append(idd)
+                if grid != "":
+                    idd = {"id": grid, "type": "grid"}
+                    ids.append(idd)
+                if siren != "":
+                    idd = {"id": siren, "type": "siren"}
+                    ids.append(idd)
+                if siret != "":
+                    idd = {"id": siret, "type": "siret"}
+                    ids.append(idd)
+                affil_dict[idins] = {"name": ins, "country": country, "typeIns": typeins, "ids": ids}
+
+        auth_dict = {}
+        if author != "":
+            if author not in auth_dict:
+                auth_dict[author] = {"name": author}
+                if affil_dict != dict():
+                    auth_dict[author]["affiliations"] = affil_dict
+                ids = []
+                if authid != "":
+                    idd = {"id": authid, "type": "oa"}
+                    ids.append(idd)
+                if orcid != "":
+                    idd = {"id": orcid, "type": "orcid"}
+                    ids.append(idd)
+                if ids != []:
+                    auth_dict[author]["ids"] = ids
+
+        journal_dict = {}
+        if journal != "":
+            if journal not in journal_dict:
+                journal_dict[journal] = {"name": journal}
+                ids = []
+                if oajournal != "":
+                    idd = {"id": oajournal, "type": "oa"}
+                    ids.append(idd)
+                if issn != "":
+                    idd = {"id": issn, "type": "issn"}
+                    ids.append(idd)
+                if ids != []:
+                    journal_dict[journal]["ids"] = ids
+
+        pub_dict = {}
+        if doi != "":
+            if doi not in pub_dict:
+                pub_dict[doi] = {"title": title, "language": language, "doi": doi, "type": type,
+                                 "publicationYear": year, "isOa": isoa, "pdfUrl": pdf, "hostOrganizationName": host}
+                if journal_dict != dict():
+                    pub_dict[doi]["journals"] = []
+                    if journal_dict not in pub_dict[doi]["journals"]:
+                        pub_dict[doi]["journals"].append(journal_dict)
+                if auth_dict != dict():
+                    pub_dict[doi]["authors"] = []
+                    if auth_dict not in pub_dict[doi]["authors"]:
+                        pub_dict[doi]["authors"].append(auth_dict)
+
+        if family_id not in publi_dict:
+            publi_dict[family_id] = {}
+
+        if doi not in publi_dict[family_id]:
+            publi_dict[family_id][doi] = {"title": title, "language": language, "doi": doi, "type": type,
+                                          "publicationYear": year, "isOa": isoa, "pdfUrl": pdf,
+                                          "hostOrganizationName": host}
+
+        if journal_dict != dict():
+            publi_dict[family_id][doi]["journals"] = journal_dict
+
+        if auth_dict != dict() and "authors" not in list(publi_dict[family_id][doi].keys()):
+            publi_dict[family_id][doi]["authors"] = [auth_dict]
+        elif auth_dict != dict() and auth_dict not in publi_dict[family_id][doi]["authors"]:
+            publi_dict[family_id][doi]["authors"].append(auth_dict)
+
+    publi_dict2 = {}
+    for family_id in publi_dict:
+        if family_id not in publi_dict2:
+            publi_dict2[family_id] = []
+        for doi in publi_dict[family_id]:
+            publi_dict2[family_id].append(copy.deepcopy(publi_dict[family_id][doi]))
+
+        for item in publi_dict2[family_id]:
+            if "journals" in item:
+                journal_list = []
+                for it in item["journals"]:
+                    journal_list.append(item["journals"][it])
+                item["journals"] = journal_list
+            if "authors" in item:
+                author_list = []
+                for it in item["authors"]:
+                    for author in it:
+                        if "affiliations" in list(it[author].keys()):
+                            affiliation_list = []
+                            for aff in it[author]["affiliations"]:
+                                affiliation_list.append(it[author]["affiliations"][aff])
+                            it[author]["affiliations"] = affiliation_list
+                        author_list.append(it[author])
+                    item["authors"] = author_list
+
+    res = []
+    for family_id in publi_dict2:
+        new_elt = {'family_id': family_id, 'publications': publi_dict2[family_id]}
+        res.append(new_elt)
+    df_publi = pd.DataFrame(res)
 
     # patent[["appln_filing_date", "appln_publn_date", "grant_publn_date"]] = patent[
     #    ["appln_filing_date", "appln_publn_date", "grant_publn_date"]].apply(pd.to_datetime)
@@ -415,7 +572,8 @@ def get_json():
     df_inv = pd.DataFrame(res)
 
     fam_inv = jointure(fam_dep, df_inv)
-    fam_titles = jointure(fam_inv, df_title)
+    fam_publi = jointure(fam_inv, df_publi)
+    fam_titles = jointure(fam_publi, df_title)
     fam_sum = jointure(fam_titles, df_abstract)
     fam_cpc = jointure(fam_sum, df_fam)
     fam_pat = jointure(fam_cpc, df_pat)
