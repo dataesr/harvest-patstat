@@ -172,14 +172,18 @@ def get_patents_common_doi():
                                                           case=False)
     tls214["doi_clean"] = tls214["doi_clean"].str.replace("10.4271/ 2009-01-11 43",
                                                           "10.4271/2009-01-1143", regex=False, case=False)
-    tls214["doi_clean"] = tls214.loc[tls214[
-                                         "npl_biblio"] == "B. RADERBAUER, A. WYSS: \'Tunnel excavation material as rescource for underground power plantes and concrete dam constructions\', GEOMECHANICS AND TUNNELLING, vol. 7, no. 5, 1 October 2014 (2014-10-01), Berlin, pages 451 - 460, XP002805733, ISSN: 1865-7362, Retrieved from the Internet <URL:https://onlinelibrary.wiley.com/doi/10.1002/geot.201400040> [retrieved on 20220218], DOI: 10.1002", "doi_clean"].str.replace(
+    tls214.loc[tls214[
+                   "npl_biblio"] == "B. RADERBAUER, A. WYSS: \'Tunnel excavation material as rescource for underground power plantes and concrete dam constructions\', GEOMECHANICS AND TUNNELLING, vol. 7, no. 5, 1 October 2014 (2014-10-01), Berlin, pages 451 - 460, XP002805733, ISSN: 1865-7362, Retrieved from the Internet <URL:https://onlinelibrary.wiley.com/doi/10.1002/geot.201400040> [retrieved on 20220218], DOI: 10.1002", "doi_clean"] = \
+    tls214.loc[tls214[
+                   "npl_biblio"] == "B. RADERBAUER, A. WYSS: \'Tunnel excavation material as rescource for underground power plantes and concrete dam constructions\', GEOMECHANICS AND TUNNELLING, vol. 7, no. 5, 1 October 2014 (2014-10-01), Berlin, pages 451 - 460, XP002805733, ISSN: 1865-7362, Retrieved from the Internet <URL:https://onlinelibrary.wiley.com/doi/10.1002/geot.201400040> [retrieved on 20220218], DOI: 10.1002", "doi_clean"].str.replace(
         "10.1002",
         "10.1002/geot.201400040",
         regex=False, case=False)
 
-    tls214["doi_clean"] = tls214.loc[tls214[
-                                         "npl_biblio"] == "KARAJIC ET AL.: \'Bottom-up Generation of Miniaturized Coaxial Double Electrodes with Tunable Porosity\', ADVANCED MATERIALS INTERFACES, vol. 2, no. 12, 6 July 2015 (2015-07-06), pages 1 - 5, XP002751090, DOI: 10.1002", "doi_clean"].str.replace(
+    tls214.loc[tls214[
+                   "npl_biblio"] == "KARAJIC ET AL.: \'Bottom-up Generation of Miniaturized Coaxial Double Electrodes with Tunable Porosity\', ADVANCED MATERIALS INTERFACES, vol. 2, no. 12, 6 July 2015 (2015-07-06), pages 1 - 5, XP002751090, DOI: 10.1002", "doi_clean"] = \
+    tls214.loc[tls214[
+                   "npl_biblio"] == "KARAJIC ET AL.: \'Bottom-up Generation of Miniaturized Coaxial Double Electrodes with Tunable Porosity\', ADVANCED MATERIALS INTERFACES, vol. 2, no. 12, 6 July 2015 (2015-07-06), pages 1 - 5, XP002751090, DOI: 10.1002", "doi_clean"].str.replace(
         "10.1002",
         "10.1002/admi.201500192",
         regex=False, case=False)
