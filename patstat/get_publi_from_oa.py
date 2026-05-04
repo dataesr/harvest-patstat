@@ -226,7 +226,7 @@ def get_info_publi():
     df_authors = fetch_openalex(dois_uniques, False)
 
     df_authors2 = pd.merge(publi[["key_appln_nr", "appln_id", "docdb_family_id", "pat_publn_id", "doi_clean", "doi"]],
-                     df_authors, on="doi", how="inner")
+                           df_authors, on="doi", how="inner")
     df_authors2 = df_authors2.drop_duplicates().reset_index(drop=True)
     df_authors2["publication_year"] = df_authors2["publication_year"].astype(str)
     data_missing = publi.loc[~publi["doi"].isin(df_authors2["doi"])]
@@ -266,6 +266,3 @@ def get_info_publi():
 
     oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'publi_oa.csv')
-
-
-
