@@ -21,10 +21,14 @@ def create_task_doi(args):
     get_patent_from_doi.get_patents_common_doi(liste)
 
 
-def create_task_publis():
+def create_task_publis(args):
     logger.debug("create_task_publis")
-    get_doi_from_patent.get_patents_common_doi()
-    requests_oa_from_doi.get_infos_from_oa()
+    if args.get("doi", True):
+        logger.debug("Get DOI from patents")
+        get_doi_from_patent.get_patents_common_doi()
+    if args.get("oa", True):
+        logger.debug("Get infos from OA")
+        requests_oa_from_doi.get_infos_from_oa()
     logger.debug("DOI publis")
 
 
