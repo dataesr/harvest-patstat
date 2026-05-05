@@ -57,9 +57,8 @@ def fetch_openalex(dois: list, reset_cache: False):
         json.dump(cache, f)
 
     authors = []
-    for doi in dois:
-        if doi in cache:
-            res = cache[doi]
+    for doi in cache:
+        res = cache[doi]
         for l in range(len(res["authorships"])):
             dic = res["authorships"][l]["author"]
             print("doi")
