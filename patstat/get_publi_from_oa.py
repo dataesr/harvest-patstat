@@ -116,6 +116,11 @@ def fetch_openalex(dois: list, reset_cache: False):
     df = pd.DataFrame(data=authors)
     df = df.drop_duplicates().reset_index(drop=True)
     df["ror"] = df["ror_ins"].str.replace("https://ror.org/", "", regex=False)
+    ror_oa = df.loc[df["ror"].notna()]
+    nb = len(ror_oa)
+    logger.info(f"1. : Il y a {nb} ROR disponibles dans la requête OpenAlex.")
+    liste_oa_ror = list(ror_oa["ror"].unique())
+    logger.info(f"2. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}")
 
     return df
 
@@ -209,6 +214,11 @@ def ids_paysage():
     df_res = df_res.loc[df_res["ror"] != ""]
     compte_id_paysage = df_res[["ror", "id_paysage"]].groupby("ror").nunique(dropna=False).reset_index()
     df_res = df_res.loc[df_res["ror"].isin(compte_id_paysage.loc[compte_id_paysage["id_paysage"] == 1, "ror"])]
+    ror_pays = df_res.loc[df_res["ror"].notna()]
+    nb = len(ror_pays)
+    logger.info(f"3. : Il y a {nb} ROR disponibles dans la requête Paysage.")
+    liste_pays_ror = list(ror_pays["ror"].unique())
+    logger.info(f"4. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_pays_ror[0:5]}")
 
     return df_res
 
@@ -261,6 +271,12 @@ def get_info_publi():
     df_paysage = ids_paysage()
 
     oa = pd.concat([df_authors2, data_missing], ignore_index=True)
+    oa_ror = oa.loc[oa["ror"].notna()]
+    nb = len(oa_ror)
+    logger.info(f"5. : Il y a {nb} ROR disponibles après la jointure df_authors2 et data_missing.")
+    liste_oa_ror = list(oa_ror["ror"].unique())
+    logger.info(f"6. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}")
+
     oa2 = pd.merge(oa, df_paysage, on="ror", how="left")
 
     oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
