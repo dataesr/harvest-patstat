@@ -6,7 +6,7 @@ from patstat import collectePatstatCompleteBDDS, dezippage, p01_family_scope, p0
     comp_version, ftp_inpi, p000_lib_cpc, p06b_collecteIdRef, files_dataesr, recreate_partfin_recuperation, p07c, \
     loading_mongo, get_doi_from_npl, get_patent_from_doi, p08, entity_fishing, \
     correction_type, p09_geoloc, p08b_outils_inpi_adress_api, p08b_familles_ri_file, get_doi_from_patent,\
-    requests_oa_from_doi
+    get_publi_from_oa
 # comp_version_y02y04s,
 from application.server.main.logger import get_logger
 
@@ -28,7 +28,7 @@ def create_task_publis(args):
         get_doi_from_patent.get_patents_common_doi()
     if args.get("oa", True):
         logger.debug("Get infos from OA")
-        requests_oa_from_doi.get_infos_from_oa()
+        get_publi_from_oa.get_info_publi()
     logger.debug("DOI publis")
 
 
