@@ -19,4 +19,5 @@ def fun1():
     # swift.download_object('patstat', 'part_p05_corrected.csv', f'{DATA_PATH}part_p05.csv')
     # swift.download_object('patstat', 'part_p08_corrected.csv', f'{DATA_PATH}part_p08.csv')
     # swift.download_object('patstat', 'model_xgb.json', f'{DATA_PATH}model_xgb.json')
-    swift.download_object('patstat', 'part_p08_dwnld2.csv', f'{DATA_PATH}part_p08.csv')
+    swift.download_object('patstat', 'spring2025_fam_final_json.jsonl',
+                          f'{DATA_PATH}spring2025_fam_final_json.jsonl')
