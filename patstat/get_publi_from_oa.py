@@ -28,7 +28,7 @@ def fetch_openalex(dois: list, reset_cache: False):
             cache = json.load(f)
 
     missing = [doi for doi in dois if doi not in cache]
-    print(missing)
+    # print(missing)
 
     for i in range(0, len(missing), 50):
         batch = missing[i:i + 50]
@@ -61,11 +61,11 @@ def fetch_openalex(dois: list, reset_cache: False):
         res = cache[doi]
         for l in range(len(res["authorships"])):
             dic = res["authorships"][l]["author"]
-            print("doi")
+            # print("doi")
             dic["doi"] = res["doi"]
-            print("display_name_title")
+            # print("display_name_title")
             dic["display_name_title"] = res["display_name"]
-            print("title")
+            # print("title")
             dic["title"] = res["title"]
             dic["id_pub"] = res["id"]
             dic["language"] = res["language"]
@@ -82,23 +82,23 @@ def fetch_openalex(dois: list, reset_cache: False):
             dic["raw_type"] = res["primary_location"]["raw_type"]
             dic["is_accepted"] = res["primary_location"]["is_accepted"]
             dic["is_published"] = res["primary_location"]["is_published"]
-            print("raw_source_name")
+            # print("raw_source_name")
             dic["raw_source_name"] = res["primary_location"]["raw_source_name"]
             if "source" in res["primary_location"]:
                 if isinstance(res["primary_location"]["source"], dict):
-                    print("id_source")
+                    # print("id_source")
                     dic["id_source"] = res["primary_location"]["source"]["id"]
-                    print("issn_l")
+                    # print("issn_l")
                     dic["issn_l"] = res["primary_location"]["source"]["issn_l"]
-                    print("host_organization_name")
+                    # print("host_organization_name")
                     dic["host_organization_name"] = res["primary_location"]["source"][
                         "host_organization_name"]
             else:
-                print("id_source None")
+                # print("id_source None")
                 dic["id_source"] = None
-                print("issn_l None")
+                # print("issn_l None")
                 dic["issn_l"] = None
-                print("id_source None")
+                # print("id_source None")
                 dic["host_organization_name"] = None
             keys_ins = []
             if len(res["authorships"][l]["institutions"]) > 0:
@@ -118,9 +118,9 @@ def fetch_openalex(dois: list, reset_cache: False):
     df["ror"] = df["ror_ins"].str.replace("https://ror.org/", "", regex=False)
     ror_oa = df.loc[df["ror"].notna()]
     nb = len(ror_oa)
-    logger.info(f"1. : Il y a {nb} ROR disponibles dans la requête OpenAlex.")
+    logger.debug(f"1. : Il y a {nb} ROR disponibles dans la requête OpenAlex.")
     liste_oa_ror = list(ror_oa["ror"].unique())
-    logger.info(f"2. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}")
+    logger.debug(f"2. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}")
 
     return df
 
@@ -216,9 +216,9 @@ def ids_paysage():
     df_res = df_res.loc[df_res["ror"].isin(compte_id_paysage.loc[compte_id_paysage["id_paysage"] == 1, "ror"])]
     ror_pays = df_res.loc[df_res["ror"].notna()]
     nb = len(ror_pays)
-    logger.info(f"3. : Il y a {nb} ROR disponibles dans la requête Paysage.")
+    logger.debug(f"3. : Il y a {nb} ROR disponibles dans la requête Paysage.")
     liste_pays_ror = list(ror_pays["ror"].unique())
-    logger.info(f"4. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_pays_ror[0:5]}")
+    logger.debug(f"4. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_pays_ror[0:5]}")
 
     return df_res
 
@@ -273,9 +273,9 @@ def get_info_publi():
     oa = pd.concat([df_authors2, data_missing], ignore_index=True)
     oa_ror = oa.loc[oa["ror"].notna()]
     nb = len(oa_ror)
-    logger.info(f"5. : Il y a {nb} ROR disponibles après la jointure df_authors2 et data_missing.")
+    logger.debug(f"5. : Il y a {nb} ROR disponibles après la jointure df_authors2 et data_missing.")
     liste_oa_ror = list(oa_ror["ror"].unique())
-    logger.info(f"6. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}")
+    logger.debug(f"6. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}")
 
     oa2 = pd.merge(oa, df_paysage, on="ror", how="left")
 
