@@ -1,14 +1,18 @@
 import pandas as pd
+import numpy as np
 import os
 import json
 from patstat import dtypes_patstat_declaration as types
-from application.server.main.logger import get_logger
 from utils import swift
 import requests
 from retry import retry
 from collections import Counter
 from pathlib import Path
 import time
+# import threading
+# import sys
+# import concurrent.futures
+# import logging
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 CACHE_FILE = "/data/openalex_cache.json"
@@ -16,7 +20,78 @@ PAYSAGE = os.getenv("PAYSAGE_API_DUMP")
 OPENALEX_API_KEY = os.getenv("OPENALEX_API_KEY")
 openalex_cache = {}
 
-# logger = get_logger(__name__)
+
+def get_year(x):
+    if isinstance(x, str):
+        return int(x[0:4])
+    return None
+
+
+# def get_logger(name):
+#     """
+#     This function helps to follow the execution of the parallel computation.
+#     """
+#     loggers = {}
+#     if name in loggers:
+#         return loggers[name]
+#     logger = logging.getLogger(name)
+#     logger.setLevel(logging.DEBUG)
+#     fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
+#     formatter = logging.Formatter(fmt)
+#
+#     ch = logging.StreamHandler(sys.stdout)
+#     ch.setFormatter(formatter)
+#     logger.addHandler(ch)
+#
+#     loggers[name] = logger
+#     return loggers[name]
+#
+#
+# def res_futures(dict_nb: dict, query) -> pd.DataFrame:
+#     """
+#     This function applies the query function on each subset of the original df in a parallel way
+#     It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
+#     It returns a df with the IdRef.
+#     """
+#     global jointure
+#     res = []
+#     with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
+#         # Start the load operations and mark each future with its URL
+#         future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
+#         for future in concurrent.futures.as_completed(future_to_req):
+#             req = future_to_req[future]
+#             try:
+#                 data = future.result()
+#                 res.append(data)
+#                 jointure = pd.concat(res)
+#             except Exception as exc:
+#                 print('%r generated an exception: %s' % (req, exc), flush=True)
+#
+#     return jointure
+#
+#
+# def subset_df(df: pd.DataFrame) -> dict:
+#     """
+#     This function divides the initial df into subsets which represent ca. 10 % of the original df.
+#     The subsets are put into a dictionary with 10-11 pairs key-value.
+#     Each key is the df subset name and each value is the df subset.
+#     """
+#     prct10 = int(round(len(df) * 10 / 100, 0))
+#     dict_nb = {}
+#     if prct10 > 0:
+#         df = df.reset_index().drop(columns="index")
+#         indices = list(df.index)
+#         listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
+#         i = 1
+#         for liste in listes_indices:
+#             min_ind = np.min(liste)
+#             max_ind = np.max(liste) + 1
+#             dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
+#             i = i + 1
+#     else:
+#         dict_nb["df1"] = df
+#
+#     return dict_nb
 
 
 @retry(tries=3, delay=5, backoff=5)
@@ -28,7 +103,7 @@ def fetch_openalex(dois: list, reset_cache: False):
             cache = json.load(f)
 
     missing = [doi for doi in dois if doi not in cache]
-    # print(missing)
+    print(missing)
 
     for i in range(0, len(missing), 50):
         batch = missing[i:i + 50]
@@ -36,7 +111,7 @@ def fetch_openalex(dois: list, reset_cache: False):
 
         for attempt in range(3):
             try:
-                # print(f"fetching 50 DOIs")
+                print(f"fetching 50 DOIs")
                 r = requests.get(
                     "https://api.openalex.org/works",
                     params={"filter": f"doi:{filter_str}", "per-page": 50, "api_key": OPENALEX_API_KEY},
@@ -48,7 +123,7 @@ def fetch_openalex(dois: list, reset_cache: False):
                     cache[doi] = work
                 break
             except Exception as e:
-                # print(f"Attempt {attempt + 1}/3 failed: {e}")
+                print(f"Attempt {attempt + 1}/3 failed: {e}")
                 time.sleep(2 ** attempt)  # backoff exponentiel : 1s, 2s, 4s
 
         time.sleep(0.1)
@@ -61,11 +136,8 @@ def fetch_openalex(dois: list, reset_cache: False):
         res = cache[doi]
         for l in range(len(res["authorships"])):
             dic = res["authorships"][l]["author"]
-            # print("doi")
             dic["doi"] = res["doi"]
-            # print("display_name_title")
             dic["display_name_title"] = res["display_name"]
-            # print("title")
             dic["title"] = res["title"]
             dic["id_pub"] = res["id"]
             dic["language"] = res["language"]
@@ -82,23 +154,16 @@ def fetch_openalex(dois: list, reset_cache: False):
             dic["raw_type"] = res["primary_location"]["raw_type"]
             dic["is_accepted"] = res["primary_location"]["is_accepted"]
             dic["is_published"] = res["primary_location"]["is_published"]
-            # print("raw_source_name")
             dic["raw_source_name"] = res["primary_location"]["raw_source_name"]
             if "source" in res["primary_location"]:
                 if isinstance(res["primary_location"]["source"], dict):
-                    # print("id_source")
                     dic["id_source"] = res["primary_location"]["source"]["id"]
-                    # print("issn_l")
                     dic["issn_l"] = res["primary_location"]["source"]["issn_l"]
-                    # print("host_organization_name")
                     dic["host_organization_name"] = res["primary_location"]["source"][
                         "host_organization_name"]
             else:
-                # print("id_source None")
                 dic["id_source"] = None
-                # print("issn_l None")
                 dic["issn_l"] = None
-                # print("id_source None")
                 dic["host_organization_name"] = None
             keys_ins = []
             if len(res["authorships"][l]["institutions"]) > 0:
@@ -151,9 +216,9 @@ def ids_paysage():
         dict_res["usualName"] = name
         if len(res_data) > 0:
             identifiers = etab.get("identifiers")
-            types = [item.get("type") for item in identifiers]
-            decompte = Counter(types)
-            if "siret" in types:
+            typs = [item.get("type") for item in identifiers]
+            decompte = Counter(typs)
+            if "siret" in typs:
                 if decompte["siret"] > 1:
                     for item in identifiers:
                         if pid == "9ZF2M":
@@ -177,7 +242,7 @@ def ids_paysage():
             else:
                 dict_res["siren"] = ""
                 dict_res["siret"] = ""
-            if "grid" in types:
+            if "grid" in typs:
                 if decompte["grid"] > 1:
                     for item in identifiers:
                         if item.get("type") == "grid":
@@ -191,14 +256,14 @@ def ids_paysage():
                             dict_res["grid"] = grid
             else:
                 dict_res["grid"] = ""
-            if "ror" in types:
+            if "ror" in typs:
                 for item in identifiers:
                     if item.get("type") == "ror":
                         ror = item.get("value")
                         dict_res["ror"] = ror
             else:
                 dict_res["ror"] = ""
-            if "idref" in types:
+            if "idref" in typs:
                 for item in identifiers:
                     if item.get("type") == "idref":
                         idref = item.get("value")
@@ -223,6 +288,62 @@ def ids_paysage():
     return df_res
 
 
+# @retry(tries=3, delay=5, backoff=5)
+# def req_scanr_person(df_perso: pd.DataFrame) -> pd.DataFrame:
+#     """
+#     Get SIREN and other ID from ScanR
+#     """
+#     # prod scanr
+#     url_structures = "https://scanr.enseignementsup-recherche.gouv.fr/api/scanr-persons/_search"
+#
+#     dict_res = {}
+#
+#     logger = get_logger(threading.current_thread().name)
+#     logger.info("start query scanr structures")
+#
+#     for _, r in df_perso.iterrows():
+#         query1 = {
+#             "query": {
+#                 "bool": {
+#                     "must": [
+#                         {
+#                             "query_string": {
+#                                 "query": r.orcid,
+#                                 "default_field": "orcid"
+#                             }
+#                         }
+#                     ]
+#                 }
+#             }
+#         }
+#
+#         res1 = requests.get(url_structures, json=query1, verify=False).json()
+#         if res1.get("status"):
+#             pass
+#         elif len(res1.get("hits").get("hits")) > 0:
+#             res2 = res1.get("hits").get("hits")
+#             if isinstance(res2, list):
+#                 dico_source = res2[0]
+#                 if isinstance(dico_source, dict):
+#                     keys = dico_source.keys()
+#                     if "_source" in keys:
+#                         dico_items = dico_source.get("_source")
+#                         if isinstance(dico_source, dict):
+#                             list_k_it = dico_items.keys()
+#                             if "externalIds" in list_k_it:
+#                                 extern = dico_items.get("externalIds")
+#                                 for item in extern:
+#                                     if item.get("type") != "orcid":
+#                                         dict_res["orcid"] = [r.orcid]
+#                                         dict_res[item.get("type")] = [item.get("id")]
+#
+#     df = pd.DataFrame(data=dict_res)
+#
+#     logger.info("end query scanr persons")
+#
+#     return df
+
+
 def get_info_publi():
     # set working directory
     os.chdir(DATA_PATH)
@@ -241,9 +362,9 @@ def get_info_publi():
     data_missing = publi.loc[~publi["doi"].isin(df_authors2["doi"])]
     data_missing = data_missing.drop_duplicates().reset_index(drop=True)
 
-    data_missing.loc[data_missing["npl_type"] == "b", "type"] = "book-citation"
-    data_missing.loc[data_missing["npl_type"] == "s", "type"] = "serial/journal/periodical citation"
-    data_missing.loc[data_missing["npl_type"] == "w", "type"] = "world wide web/internet search citation"
+    data_missing.loc[data_missing["npl_type"] == "b", "type"] = "book"
+    data_missing.loc[data_missing["npl_type"] == "s", "type"] = "journal-article"
+    data_missing.loc[data_missing["npl_type"] == "w", "type"] = "other"
     data_missing.loc[data_missing["npl_publn_date"] == "20880630", "npl_publn_date"] = "20080601"
     data_missing.loc[data_missing["npl_publn_date"] == "10160618", "npl_publn_date"] = "20160624"
     data_missing.loc[data_missing["npl_publn_date"].notna(), "publication_year"] = data_missing.loc[
@@ -278,6 +399,41 @@ def get_info_publi():
     print(f"6. : Exemples de ROR de la jointure df_authors2 et data_missing {liste_oa_ror[0:5]}", flush=True)
 
     oa2 = pd.merge(oa, df_paysage, on="ror", how="left")
+    oa2.loc[(oa["raw_type"].str.contains("master", case=False)) & (oa["type"] == "dissertation"), "type"] = "other"
+    oa2.loc[oa["type"] == "dissertation", "type"] = "these"
+    oa2.loc[oa2["type"] == 'article', "type"] = "journal-article"
+    oa2.loc[oa2["type"] == 'book-citation', "type"] = "book"
+    oa2.loc[oa2["type"] == 'editorial', "type"] = "other"
+    oa2.loc[oa2["type"] == 'erratum', "type"] = "other"
+    oa2.loc[oa2["type"] == 'letter', "type"] = "other"
+    oa2.loc[oa2["type"] == 'paratext', "type"] = "other"
+    oa2.loc[oa2["type"] == 'preprint', "type"] = "other"
+    oa2.loc[oa2["type"] == 'retraction', "type"] = "other"
+    oa2.loc[oa2["type"] == 'review', "type"] = "other"
+
+    typ_pub = ["book", "book-chapter", "book-part", "book-section", "book-track", "component", "dataset",
+             "journal-article",
+             "journal-issue", "lecture", "map", "mem", "monograph", "multimedia", "other", "patent", "peer-review",
+             "posted-content", "poster", "presconf", "proceedings", "proceedings-article", "proceedings-series",
+             "reference-book", "reference-entry", "report", "report-series", "software", "standard", "thesis", "these",
+             "video", "ongoing_thesis"]
+
+    oa2.loc[~oa2["type"].isin(typ_pub), "type"] = "other"
+
+    oa2.loc[oa2["publication_year"] != "", "year"] = oa2.loc[
+        oa2["publication_year"] != "", "publication_year"].apply(get_year)
+
+    oa2["year"] = oa2["year"].astype(pd.Int64Dtype())
+
+    # oa_orcid = oa2.loc[oa2["orcid"].notna()]
+    # oa_orcid["orcid2"] = oa_orcid["orcid"].str.replace("https://orcid.org/", "", regex=False)
+    # oa_orcid2 = pd.DataFrame(data={"orcid": list(oa_orcid["orcid2"].unique())})
+    #
+    # sub_persons = subset_df(oa_orcid2)
+    #
+    # futures_perso = res_futures(sub_persons, req_scanr_person)
+    # futures_perso = futures_perso.rename(columns={"orcid": "sorcid"})
+    # futures_perso["orcid"] = "https://orcid.org/" + futures_perso["sorcid"]
 
     oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'publi_oa.csv')
