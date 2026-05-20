@@ -80,6 +80,8 @@ def get_json():
          "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
          "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]].fillna("")
 
+    publi["year"] = publi["publication_year"].apply(get_year)
+
     publi_dict = {}
     for r in publi.itertuples():
         family_id = r.docdb_family_id
@@ -137,7 +139,7 @@ def get_json():
         auth_dict = {}
         if author != "":
             if author not in auth_dict:
-                auth_dict[author] = {"name": author}
+                auth_dict[author] = {"fullName": author}
                 if affil_dict != dict():
                     auth_dict[author]["affiliations"] = affil_dict
                 ids = []
@@ -167,8 +169,8 @@ def get_json():
         pub_dict = {}
         if doi != "":
             if doi not in pub_dict:
-                pub_dict[doi] = {"title": title, "language": language, "doi": doi, "type": type,
-                                 "publicationYear": year, "isOa": isoa, "pdfUrl": pdf, "hostOrganizationName": host}
+                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": doi, "type": type,
+                                 "year": year, "isOa": isoa, "pdfUrl": pdf, "hostOrganizationName": host}
                 if journal_dict != dict():
                     pub_dict[doi]["journals"] = []
                     if journal_dict not in pub_dict[doi]["journals"]:
@@ -182,8 +184,8 @@ def get_json():
             publi_dict[family_id] = {}
 
         if doi not in publi_dict[family_id]:
-            publi_dict[family_id][doi] = {"title": title, "language": language, "doi": doi, "type": type,
-                                          "publicationYear": year, "isOa": isoa, "pdfUrl": pdf,
+            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": doi, "type": type,
+                                          "year": year, "isOa": isoa, "pdfUrl": pdf,
                                           "hostOrganizationName": host}
 
         if journal_dict != dict():
