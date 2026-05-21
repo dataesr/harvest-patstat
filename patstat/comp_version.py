@@ -71,11 +71,11 @@ def get_json():
 
     publi = pd.read_csv("publi_oa.csv", sep="|", encoding="utf-8", engine="python", dtype=types.oa_types)
     publi[
-        ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "year",
+        ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
          "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
          "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
          "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]] = publi[
-        ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "year",
+        ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
          "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
          "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
          "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]].fillna("")
