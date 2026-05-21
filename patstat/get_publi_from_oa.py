@@ -17,12 +17,6 @@ OPENALEX_API_KEY = os.getenv("OPENALEX_API_KEY")
 openalex_cache = {}
 
 
-def get_year(x):
-    if isinstance(x, str):
-        return int(x[0:4])
-    return None
-
-
 @retry(tries=3, delay=5, backoff=5)
 def fetch_openalex(dois: list, reset_cache: False):
     cache = {}
@@ -293,10 +287,7 @@ def get_info_publi():
 
     oa2.loc[~oa2["type"].isin(typ_pub), "type"] = "other"
 
-    oa2.loc[oa2["publication_year"] != "", "year"] = oa2.loc[
-        oa2["publication_year"] != "", "publication_year"].apply(get_year)
-
-    oa2["year"] = oa2["year"].astype(pd.Int64Dtype())
+    oa2["year"] = oa2["publication_year"].astype(pd.Int64Dtype())
 
     oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'publi_oa.csv')
