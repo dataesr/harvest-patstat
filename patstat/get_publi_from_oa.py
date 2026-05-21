@@ -225,7 +225,7 @@ def get_info_publi():
     df_authors2 = pd.merge(publi[["key_appln_nr", "appln_id", "docdb_family_id", "pat_publn_id", "doi_clean", "doi"]],
                            df_authors, on="doi", how="inner")
     df_authors2 = df_authors2.drop_duplicates().reset_index(drop=True)
-    df_authors2["publication_year"] = df_authors2["publication_year"].astype(str)
+    df_authors2["publication_year"] = df_authors2["publication_year"].astype(pd.Int64Dtype())
     data_missing = publi.loc[~publi["doi"].isin(df_authors2["doi"])]
     data_missing = data_missing.drop_duplicates().reset_index(drop=True)
 
@@ -236,6 +236,7 @@ def get_info_publi():
     data_missing.loc[data_missing["npl_publn_date"] == "10160618", "npl_publn_date"] = "20160624"
     data_missing.loc[data_missing["npl_publn_date"].notna(), "publication_year"] = data_missing.loc[
         data_missing["npl_publn_date"].notna(), "npl_publn_date"].apply(lambda a: a[0:4])
+    data_missing["publication_year"] = data_missing["publication_year"].astype(pd.Int64Dtype())
     data_missing.loc[data_missing["npl_publn_date"].notna(), "len_date"] = data_missing.loc[
         data_missing["npl_publn_date"].notna(), "npl_publn_date"].apply(lambda a: len(a))
     data_missing.loc[data_missing["len_date"] == 8, "npl_publn_date"] = data_missing.loc[
