@@ -153,7 +153,7 @@ def get_json():
         journal_dict = {}
         if journal != "":
             if journal not in journal_dict:
-                journal_dict[journal] = {"name": journal}
+                journal_dict[journal] = {"source": {"volume": journal}}
                 ids = []
                 if oajournal != "":
                     idd = {"id": oajournal, "type": "oa"}
