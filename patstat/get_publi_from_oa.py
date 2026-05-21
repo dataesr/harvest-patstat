@@ -9,10 +9,6 @@ from retry import retry
 from collections import Counter
 from pathlib import Path
 import time
-# import threading
-# import sys
-# import concurrent.futures
-# import logging
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 CACHE_FILE = "/data/openalex_cache.json"
@@ -25,73 +21,6 @@ def get_year(x):
     if isinstance(x, str):
         return int(x[0:4])
     return None
-
-
-# def get_logger(name):
-#     """
-#     This function helps to follow the execution of the parallel computation.
-#     """
-#     loggers = {}
-#     if name in loggers:
-#         return loggers[name]
-#     logger = logging.getLogger(name)
-#     logger.setLevel(logging.DEBUG)
-#     fmt = '%(asctime)s - %(threadName)s - %(levelname)s - %(message)s'
-#     formatter = logging.Formatter(fmt)
-#
-#     ch = logging.StreamHandler(sys.stdout)
-#     ch.setFormatter(formatter)
-#     logger.addHandler(ch)
-#
-#     loggers[name] = logger
-#     return loggers[name]
-#
-#
-# def res_futures(dict_nb: dict, query) -> pd.DataFrame:
-#     """
-#     This function applies the query function on each subset of the original df in a parallel way
-#     It takes a dictionary with 10-11 pairs key-value. Each key is the df subset name and each value is the df subset
-#     It returns a df with the IdRef.
-#     """
-#     global jointure
-#     res = []
-#     with concurrent.futures.ThreadPoolExecutor(max_workers=11, thread_name_prefix="thread") as executor:
-#         # Start the load operations and mark each future with its URL
-#         future_to_req = {executor.submit(query, df): df for df in dict_nb.values()}
-#         for future in concurrent.futures.as_completed(future_to_req):
-#             req = future_to_req[future]
-#             try:
-#                 data = future.result()
-#                 res.append(data)
-#                 jointure = pd.concat(res)
-#             except Exception as exc:
-#                 print('%r generated an exception: %s' % (req, exc), flush=True)
-#
-#     return jointure
-#
-#
-# def subset_df(df: pd.DataFrame) -> dict:
-#     """
-#     This function divides the initial df into subsets which represent ca. 10 % of the original df.
-#     The subsets are put into a dictionary with 10-11 pairs key-value.
-#     Each key is the df subset name and each value is the df subset.
-#     """
-#     prct10 = int(round(len(df) * 10 / 100, 0))
-#     dict_nb = {}
-#     if prct10 > 0:
-#         df = df.reset_index().drop(columns="index")
-#         indices = list(df.index)
-#         listes_indices = [indices[i:i + prct10] for i in range(0, len(indices), prct10)]
-#         i = 1
-#         for liste in listes_indices:
-#             min_ind = np.min(liste)
-#             max_ind = np.max(liste) + 1
-#             dict_nb["df" + str(i)] = df.iloc[min_ind: max_ind, :]
-#             i = i + 1
-#     else:
-#         dict_nb["df1"] = df
-#
-#     return dict_nb
 
 
 @retry(tries=3, delay=5, backoff=5)
@@ -288,62 +217,6 @@ def ids_paysage():
     return df_res
 
 
-# @retry(tries=3, delay=5, backoff=5)
-# def req_scanr_person(df_perso: pd.DataFrame) -> pd.DataFrame:
-#     """
-#     Get SIREN and other ID from ScanR
-#     """
-#     # prod scanr
-#     url_structures = "https://scanr.enseignementsup-recherche.gouv.fr/api/scanr-persons/_search"
-#
-#     dict_res = {}
-#
-#     logger = get_logger(threading.current_thread().name)
-#     logger.info("start query scanr structures")
-#
-#     for _, r in df_perso.iterrows():
-#         query1 = {
-#             "query": {
-#                 "bool": {
-#                     "must": [
-#                         {
-#                             "query_string": {
-#                                 "query": r.orcid,
-#                                 "default_field": "orcid"
-#                             }
-#                         }
-#                     ]
-#                 }
-#             }
-#         }
-#
-#         res1 = requests.get(url_structures, json=query1, verify=False).json()
-#         if res1.get("status"):
-#             pass
-#         elif len(res1.get("hits").get("hits")) > 0:
-#             res2 = res1.get("hits").get("hits")
-#             if isinstance(res2, list):
-#                 dico_source = res2[0]
-#                 if isinstance(dico_source, dict):
-#                     keys = dico_source.keys()
-#                     if "_source" in keys:
-#                         dico_items = dico_source.get("_source")
-#                         if isinstance(dico_source, dict):
-#                             list_k_it = dico_items.keys()
-#                             if "externalIds" in list_k_it:
-#                                 extern = dico_items.get("externalIds")
-#                                 for item in extern:
-#                                     if item.get("type") != "orcid":
-#                                         dict_res["orcid"] = [r.orcid]
-#                                         dict_res[item.get("type")] = [item.get("id")]
-#
-#     df = pd.DataFrame(data=dict_res)
-#
-#     logger.info("end query scanr persons")
-#
-#     return df
-
-
 def get_info_publi():
     # set working directory
     os.chdir(DATA_PATH)
@@ -424,16 +297,6 @@ def get_info_publi():
         oa2["publication_year"] != "", "publication_year"].apply(get_year)
 
     oa2["year"] = oa2["year"].astype(pd.Int64Dtype())
-
-    # oa_orcid = oa2.loc[oa2["orcid"].notna()]
-    # oa_orcid["orcid2"] = oa_orcid["orcid"].str.replace("https://orcid.org/", "", regex=False)
-    # oa_orcid2 = pd.DataFrame(data={"orcid": list(oa_orcid["orcid2"].unique())})
-    #
-    # sub_persons = subset_df(oa_orcid2)
-    #
-    # futures_perso = res_futures(sub_persons, req_scanr_person)
-    # futures_perso = futures_perso.rename(columns={"orcid": "sorcid"})
-    # futures_perso["orcid"] = "https://orcid.org/" + futures_perso["sorcid"]
 
     oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'publi_oa.csv')
