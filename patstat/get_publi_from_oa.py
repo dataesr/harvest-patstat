@@ -313,7 +313,7 @@ def get_info_publi():
     oa_orcid = oa2.loc[oa2["orcid"].notna()]
     oa_orcid2 = list(oa_orcid["orcid"].unique())
     print(f"Exemples d'ORCID à trouver : {oa_orcid2[0:5]}", flush=True)
-    oa_orcid2 = [x.replace("https://orcid.org/") for x in oa_orcid2]
+    oa_orcid2 = [x.replace("https://orcid.org/", "") for x in oa_orcid2]
 
 
     print("Début du chargement du dump de scanr", flush=True)
