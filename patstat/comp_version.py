@@ -173,12 +173,11 @@ def get_json():
         pub_dict = {}
         if doi != "":
             if doi not in pub_dict:
-                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi, "type": type,
+                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi,
+                                 "type": type,
                                  "year": year, "isOa": isoa, "pdfUrl": pdf, "hostOrganizationName": host}
                 if journal_dict != dict():
-                    pub_dict[doi]["journals"] = []
-                    if journal_dict not in pub_dict[doi]["journals"]:
-                        pub_dict[doi]["journals"].append(journal_dict)
+                    pub_dict[doi]["journals"] = journal_dict
                 if auth_dict != dict():
                     pub_dict[doi]["authors"] = []
                     if auth_dict not in pub_dict[doi]["authors"]:
@@ -188,7 +187,8 @@ def get_json():
             publi_dict[family_id] = {}
 
         if doi not in publi_dict[family_id]:
-            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi, "type": type,
+            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi,
+                                          "doi": doi, "type": type,
                                           "year": year, "isOa": isoa, "pdfUrl": pdf,
                                           "hostOrganizationName": host}
 
@@ -209,10 +209,8 @@ def get_json():
 
         for item in publi_dict2[family_id]:
             if "journals" in item:
-                journal_list = []
                 for it in item["journals"]:
-                    journal_list.append(item["journals"][it])
-                item["journals"] = journal_list
+                    item["journals"] = item["journals"][it]
             if "authors" in item:
                 author_list = []
                 for it in item["authors"]:
