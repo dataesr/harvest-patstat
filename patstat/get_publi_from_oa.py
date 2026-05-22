@@ -312,6 +312,8 @@ def get_info_publi():
 
     oa_orcid = oa2.loc[oa2["orcid"].notna()]
     oa_orcid2 = list(oa_orcid["orcid"].unique())
+    oa_orcid2 = ["https://orcid.org/" + x for x in oa_orcid2]
+
 
     print("Début du chargement du dump de scanr", flush=True)
     get_person_scanr()
@@ -332,7 +334,7 @@ def get_info_publi():
                 df = pd.DataFrame(data=author)
             if "orcid" in df.columns:
                 if df["orcid"].values[0] in oa_orcid2:
-                    df["orcid"] = "https://orcid.org/" + df["orcid"]
+                    df["orcid"] = df["orcid"].str.replace("https://orcid.org/", "", regex=False)
                     scanr.append(df)
     print("Fin de la lecture du dump de scanr", flush=True)
     print(f"Taille liste scanr: {len(scanr)}", flush=True)
