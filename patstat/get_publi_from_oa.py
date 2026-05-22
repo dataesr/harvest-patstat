@@ -9,12 +9,32 @@ from retry import retry
 from collections import Counter
 from pathlib import Path
 import time
+import gzip
+import shutil
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 CACHE_FILE = "/data/openalex_cache.json"
 PAYSAGE = os.getenv("PAYSAGE_API_DUMP")
 OPENALEX_API_KEY = os.getenv("OPENALEX_API_KEY")
 openalex_cache = {}
+
+
+@retry(tries=3, delay=5, backoff=5)
+def get_person_scanr():
+    url = "https://scanr-data.s3.gra.io.cloud.ovh.net/production/persons_denormalized.jsonl.gz"
+    try:
+        r = requests.get(url, stream=True)
+        r.raise_for_status()
+        with open('persons_denormalized.jsonl.gz', "wb") as f:
+            for chunk in r.iter_content(chunk_size=1000):
+                if chunk:
+                    f.write(chunk)
+        with gzip.open("persons_denormalized.jsonl.gz", "rb") as f_in, open("persons_denormalized.jsonl",
+                                                                            "wb") as f_out:
+            shutil.copyfileobj(f_in, f_out)
+        os.remove("persons_denormalized.jsonl.gz")
+    except Exception as e:
+        print(f"Attempt loading dump persons scanr failed: {e}")
 
 
 @retry(tries=3, delay=5, backoff=5)
@@ -290,5 +310,34 @@ def get_info_publi():
 
     oa2["year"] = oa2["publication_year"].astype(pd.Int64Dtype())
 
-    oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
+    oa_orcid = oa2.loc[oa2["orcid"].notna()]
+    oa_orcid2 = list(oa_orcid["orcid"].unique())
+
+    get_person_scanr()
+
+    scanr = []
+    with open("persons_denormalized.jsonl", "r") as file:
+        for ligne in file:
+            author = {}
+            res = json.loads(ligne)
+            extern = res.get("externalIds")
+            for item in extern:
+                if item.get("type") == "idref":
+                    author["idref"] = ["idref" + item.get("id")]
+                else:
+                    author[item.get("type")] = item.get("id")
+                df = pd.DataFrame(data=author)
+            if "orcid" in df.columns:
+                if df["orcid"].values[0] in oa_orcid2:
+                    df["orcid"] = "https://orcid.org/" + df["orcid"]
+                    scanr.append(df)
+
+    idref_orcid = pd.concat(scanr)
+    idref_orcid = idref_orcid.loc[idref_orcid["orcid"].notna()]
+    idref_orcid = idref_orcid[["idref", "orcid"]]
+    idref_orcid = idref_orcid.drop_duplicates().reset_index(drop=True)
+
+    oa3 = pd.merge(oa2, idref_orcid, on="orcid", how="left")
+
+    oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
     swift.upload_object('patstat', 'publi_oa.csv')
