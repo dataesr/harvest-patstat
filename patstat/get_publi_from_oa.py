@@ -313,8 +313,11 @@ def get_info_publi():
     oa_orcid = oa2.loc[oa2["orcid"].notna()]
     oa_orcid2 = list(oa_orcid["orcid"].unique())
 
+    print("Début du chargement du dump de scanr", flush=True)
     get_person_scanr()
+    print("Fin du chargement du dump de scanr", flush=True)
 
+    print("Début de la lecture du dump de scanr", flush=True)
     scanr = []
     with open("persons_denormalized.jsonl", "r") as file:
         for ligne in file:
@@ -331,13 +334,20 @@ def get_info_publi():
                 if df["orcid"].values[0] in oa_orcid2:
                     df["orcid"] = "https://orcid.org/" + df["orcid"]
                     scanr.append(df)
+    print("Fin de la lecture du dump de scanr", flush=True)
+    print(f"Taille liste scanr: {len(scanr)}", flush=True)
 
-    idref_orcid = pd.concat(scanr)
-    idref_orcid = idref_orcid.loc[idref_orcid["orcid"].notna()]
-    idref_orcid = idref_orcid[["idref", "orcid"]]
-    idref_orcid = idref_orcid.drop_duplicates().reset_index(drop=True)
+    if len(scanr) > 0:
+        idref_orcid = pd.concat(scanr)
+        idref_orcid = idref_orcid.loc[idref_orcid["orcid"].notna()]
+        idref_orcid = idref_orcid[["idref", "orcid"]]
+        idref_orcid = idref_orcid.drop_duplicates().reset_index(drop=True)
+        print(f"{idref_orcid.head()}", flush=True)
 
-    oa3 = pd.merge(oa2, idref_orcid, on="orcid", how="left")
+        oa3 = pd.merge(oa2, idref_orcid, on="orcid", how="left")
 
-    oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
-    swift.upload_object('patstat', 'publi_oa.csv')
+        oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
+        swift.upload_object('patstat', 'publi_oa.csv')
+    else:
+        oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
+        swift.upload_object('patstat', 'publi_oa.csv')
