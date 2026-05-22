@@ -188,7 +188,7 @@ def get_json():
             publi_dict[family_id] = {}
 
         if doi not in publi_dict[family_id]:
-            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": doi, "type": type,
+            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi, "type": type,
                                           "year": year, "isOa": isoa, "pdfUrl": pdf,
                                           "hostOrganizationName": host}
 
