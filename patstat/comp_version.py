@@ -74,11 +74,11 @@ def get_json():
         ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
          "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
          "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
-         "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]] = publi[
+         "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret", "idref"]] = publi[
         ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
          "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
          "id_source", "issn_l", "host_organization_name", "id_ins", "display_name_ins", "ror_ins", "country_code_ins",
-         "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret"]].fillna("")
+         "type_ins", "id_paysage", "idref_ins", "grid", "siren", "siret", "idref"]].fillna("")
 
     publi_dict = {}
     for r in publi.itertuples():
@@ -103,7 +103,8 @@ def get_json():
         country = r.country_code_ins
         typeins = r.type_ins
         idpaysage = r.id_paysage
-        idref = r.idref_ins
+        idref_ins = r.idref_ins
+        idref = r.idref
         grid = r.grid
         siren = r.siren
         siret = r.siret
@@ -120,8 +121,8 @@ def get_json():
                 if idpaysage != "":
                     idd = {"id": idpaysage, "type": "id_paysage"}
                     ids.append(idd)
-                if idref != "":
-                    idd = {"id": idref, "type": "idref"}
+                if idref_ins != "":
+                    idd = {"id": idref_ins, "type": "idref"}
                     ids.append(idd)
                 if grid != "":
                     idd = {"id": grid, "type": "grid"}
@@ -141,6 +142,11 @@ def get_json():
                 if affil_dict != dict():
                     auth_dict[author]["affiliations"] = affil_dict
                 ids = []
+                if idref != "":
+                    auth_dict[author]["person"] = idref
+                    idref2 = idref.replace("idref", "")
+                    idd = {"id": idref2, "type": "idref"}
+                    ids.append(idd)
                 if authid != "":
                     idd = {"id": authid, "type": "oa"}
                     ids.append(idd)
@@ -167,7 +173,7 @@ def get_json():
         pub_dict = {}
         if doi != "":
             if doi not in pub_dict:
-                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": doi, "type": type,
+                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi, "type": type,
                                  "year": year, "isOa": isoa, "pdfUrl": pdf, "hostOrganizationName": host}
                 if journal_dict != dict():
                     pub_dict[doi]["journals"] = []
