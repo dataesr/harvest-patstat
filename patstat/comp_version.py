@@ -108,6 +108,8 @@ def get_json():
         grid = r.grid
         siren = r.siren
         siret = r.siret
+        volume = r.volume
+        issue = r.issue
 
         affil_dict = {}
         if idins != "":
@@ -170,15 +172,41 @@ def get_json():
                 if ids != []:
                     journal_dict[journal]["ids"] = ids
 
+        source_dict = {}
+        if journal != "":
+            if journal not in source_dict:
+                if journal != "":
+                    source_dict[journal] = {"title": journal}
+                if host != "":
+                    source_dict[journal] = {"publisher": host}
+                if volume != "":
+                    source_dict[journal] = {"volume": volume}
+                if issue != "":
+                    source_dict[journal] = {"issue": issue}
+                source_dict[journal]["year"] = year
+                source_dict[journal]["isOa"] = isoa
+                ids = []
+                if issn != "":
+                    idd = {"id": issn, "type": "issn"}
+                    ids.append(idd)
+                if ids != []:
+                    issns = {}
+                    for i in range(len(ids)):
+                        issns[i] = ids[i]["id"]
+                    source_dict[journal]["journalIssns"] = issns
+
         pub_dict = {}
         if doi != "":
             if doi not in pub_dict:
-                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi, "type": type,
+                pub_dict[doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi,
+                                 "type": type,
                                  "year": year, "isOa": isoa, "pdfUrl": pdf, "hostOrganizationName": host}
                 if journal_dict != dict():
                     pub_dict[doi]["journals"] = []
                     if journal_dict not in pub_dict[doi]["journals"]:
                         pub_dict[doi]["journals"].append(journal_dict)
+                if source_dict != dict():
+                    pub_dict[doi]["source"] = source_dict
                 if auth_dict != dict():
                     pub_dict[doi]["authors"] = []
                     if auth_dict not in pub_dict[doi]["authors"]:
@@ -188,12 +216,16 @@ def get_json():
             publi_dict[family_id] = {}
 
         if doi not in publi_dict[family_id]:
-            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi, "doi": doi, "type": type,
+            publi_dict[family_id][doi] = {"title": {"default": title}, "language": language, "id": "doi" + doi,
+                                          "doi": doi, "type": type,
                                           "year": year, "isOa": isoa, "pdfUrl": pdf,
                                           "hostOrganizationName": host}
 
         if journal_dict != dict():
             publi_dict[family_id][doi]["journals"] = journal_dict
+
+        if source_dict != dict():
+            publi_dict[family_id][doi]["source"] = source_dict
 
         if auth_dict != dict() and "authors" not in list(publi_dict[family_id][doi].keys()):
             publi_dict[family_id][doi]["authors"] = [auth_dict]
@@ -213,6 +245,9 @@ def get_json():
                 for it in item["journals"]:
                     journal_list.append(item["journals"][it])
                 item["journals"] = journal_list
+            if "source" in item:
+                for it in item["source"]:
+                    item["source"] = item["source"][it]
             if "authors" in item:
                 author_list = []
                 for it in item["authors"]:
