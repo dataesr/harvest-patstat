@@ -190,9 +190,9 @@ def get_json():
                     idd = {"id": issn, "type": "issn"}
                     ids.append(idd)
                 if ids != []:
-                    issns = {}
+                    issns = []
                     for i in range(len(ids)):
-                        issns[i] = ids[i]["id"]
+                        issns.append(ids[i]["id"])
                     source_dict[journal]["journalIssns"] = issns
 
         pub_dict = {}
