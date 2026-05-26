@@ -327,30 +327,29 @@ def get_info_publi():
             author = {}
             res = json.loads(ligne)
             extern = res.get("externalIds")
+            scanr.append(extern)
             for item in extern:
                 if item.get("type") == "idref":
                     author["idref"] = ["idref" + item.get("id")]
                 else:
                     author[item.get("type")] = item.get("id")
-                df = pd.DataFrame(data=author)
+            df = pd.DataFrame(data=author)
             if "orcid" in df.columns:
-                if df["orcid"].values[0] in oa_orcid2:
-                    # df["orcid"] = df["orcid"].str.replace("https://orcid.org/", "", regex=False)
-                    scanr.append(df)
+                scanr.append(df)
+
+    scanr2 = [item for item in scanr if not isinstance(item, list)]
+    idref_orcid = pd.concat(scanr2)
+    idref_orcid = idref_orcid.loc[idref_orcid["orcid"].notna()]
+    idref_orcid = idref_orcid[["idref", "orcid"]]
+    idref_orcid = idref_orcid.drop_duplicates().reset_index(drop=True)
+    idref_orcid2 = idref_orcid.loc[idref_orcid["orcid"].isin(oa_orcid2)]
+
+    oa2 = oa2.rename(columns={"orcid": "orcid_url"})
+    oa2["orcid"] = oa2["orcid_url"].str.replace("https://orcid.org/", "", regex=True)
+    oa3 = pd.merge(oa2, idref_orcid2, on="orcid", how="left")
+    oa3 = oa3.drop(columns="orcid").rename(columns={"orcid_url": "orcid"})
     print("Fin de la lecture du dump de scanr", flush=True)
     print(f"Taille liste scanr: {len(scanr)}", flush=True)
 
-    if len(scanr) > 0:
-        idref_orcid = pd.concat(scanr)
-        idref_orcid = idref_orcid.loc[idref_orcid["orcid"].notna()]
-        idref_orcid = idref_orcid[["idref", "orcid"]]
-        idref_orcid = idref_orcid.drop_duplicates().reset_index(drop=True)
-        print(f"{idref_orcid.head()}", flush=True)
-
-        oa3 = pd.merge(oa2, idref_orcid, on="orcid", how="left")
-
-        oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
-        swift.upload_object('patstat', 'publi_oa.csv')
-    else:
-        oa2.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
-        swift.upload_object('patstat', 'publi_oa.csv')
+    oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
+    swift.upload_object('patstat', 'publi_oa.csv')
