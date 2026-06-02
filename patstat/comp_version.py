@@ -248,6 +248,7 @@ def get_json():
             if "source" in item:
                 for it in item["source"]:
                     item["source"] = item["source"][it]
+                    item["source"]["title"] = it
             if "authors" in item:
                 author_list = []
                 for it in item["authors"]:
