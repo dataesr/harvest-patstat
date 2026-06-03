@@ -11,12 +11,24 @@ from pathlib import Path
 import time
 import gzip
 import shutil
+import html
+from urllib.parse import unquote
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 CACHE_FILE = "/data/openalex_cache.json"
 PAYSAGE = os.getenv("PAYSAGE_API_DUMP")
 OPENALEX_API_KEY = os.getenv("OPENALEX_API_KEY")
 openalex_cache = {}
+
+
+def clean_text(value):
+    if isinstance(value, str):
+        prev = None
+        while prev != value:
+            prev = value
+            value = html.unescape(value)
+        value = unquote(value)
+    return value
 
 
 @retry(tries=3, delay=5, backoff=5)
@@ -309,6 +321,14 @@ def get_info_publi():
     oa2.loc[~oa2["type"].isin(typ_pub), "type"] = "other"
 
     oa2["year"] = oa2["publication_year"].astype(pd.Int64Dtype())
+
+    colonnes = ["doi_clean", "id", "orcid", "pdf_url", "id_source", "id_ins", "ror_ins", "display_name",
+                "display_name_title", "language", "type", "volume", "issue", "raw_source_name", "issn_l",
+                "host_organization_name", "display_name_ins", "country_code_ins",
+                "type_ins", "idref_ins"]
+
+    for col in colonnes:
+        oa2.loc[oa2[col].notna(), col] = oa2.loc[oa2[col].notna(), col].apply(clean_text)
 
     oa_orcid = oa2.loc[oa2["orcid"].notna()]
     oa_orcid2 = list(oa_orcid["orcid"].unique())
