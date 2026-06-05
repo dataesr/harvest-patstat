@@ -1,16 +1,21 @@
-import pandas as pd
-import numpy as np
-import os
+import gzip
 import json
-from patstat import dtypes_patstat_declaration as types
-from utils import swift
-import requests
-from retry import retry
+import os
+import re
+import shutil
+import time
+import html
 from collections import Counter
 from pathlib import Path
-import time
-import gzip
-import shutil
+from urllib.parse import unquote
+
+import pandas as pd
+import numpy as np
+import requests
+from retry import retry
+
+from patstat import dtypes_patstat_declaration as types
+from utils import swift
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 CACHE_FILE = "/data/openalex_cache.json"
@@ -18,9 +23,117 @@ PAYSAGE = os.getenv("PAYSAGE_API_DUMP")
 OPENALEX_API_KEY = os.getenv("OPENALEX_API_KEY")
 openalex_cache = {}
 
+LATEX_SYMBOLS = {r"\alpha": "α", r"\beta": "β", r"\gamma": "γ", r"\delta": "δ", r"\epsilon": "ε", r"\theta": "θ",
+                 r"\lambda": "λ", r"\mu": "μ", r"\pi": "π", r"\sigma": "σ", r"\phi": "φ", r"\omega": "ω",
+                 r"\Delta": "Δ", r"\Sigma": "Σ", r"\int": "∫", r"\sum": "Σ", r"\sqrt": "√", r"\pm": "±"}
+
+SUPERSCRIPTS = {"0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹",
+                "+": "⁺", "-": "⁻", "=": "⁼", "(": "⁽", ")": "⁾", "n": "ⁿ", "i": "ⁱ"}
+
+SUBSCRIPTS = {"0": "₀", "1": "₁", "2": "₂", "3": "₃", "4": "₄", "5": "₅", "6": "₆", "7": "₇", "8": "₈", "9": "₉",
+              "+": "₊", "-": "₋", "=": "₌", "(": "₍", ")": "₎", "i": "ᵢ", "j": "ⱼ", "k": "ₖ", "n": "ₙ"}
+
+
+def parse_latex(expr):
+    # Recursive LaTeX parser to clean strings in publications variables
+    if not isinstance(expr, str):
+        return expr
+
+    expr = expr.strip()
+
+    # remove $...$
+    expr = re.sub(r"\$(.*?)\$", r"\1", expr)
+
+    # correction SigmaDelta
+    expr = re.sub(r"SigmaDelta", "ΣΔ", expr)
+
+    # symbols
+    for k, v in LATEX_SYMBOLS.items():
+        expr = expr.replace(k, v)
+
+    def replace_frac(text: str) -> str:
+        # fractions
+        pattern = r"\\frac\{([^{}]+)\}\{([^{}]+)\}"
+        while re.search(pattern, text):
+            text = re.sub(pattern, lambda m: f"{parse_latex(m.group(1))}/{parse_latex(m.group(2))}", text)
+
+        return text
+
+    expr = replace_frac(expr)
+
+    # squares
+    expr = re.sub(r"√\{([^{}]+)\}", lambda m: f"√({parse_latex(m.group(1))})", expr)
+
+    def sup_repl(match):
+        # subscript
+        content = parse_latex(match.group(1))
+
+        return "".join(SUPERSCRIPTS.get(c, f"^{c}") for c in content)
+
+    expr = re.sub(r"\^\{([^{}]+)\}", sup_repl, expr)
+    expr = re.sub(r"\^(\w+)", lambda m: "".join(SUPERSCRIPTS.get(c, c) for c in m.group(1)), expr)
+
+    def sub_repl(match):
+        # subscripts
+        content = parse_latex(match.group(1))
+
+        return "".join(SUBSCRIPTS.get(c, f"_{c}") for c in content)
+
+    expr = re.sub(r"_\{([^{}]+)\}", sub_repl, expr)
+    expr = re.sub(r"_(\w+)", lambda m: "".join(SUBSCRIPTS.get(c, c) for c in m.group(1)), expr)
+
+    # remove {}
+    expr = expr.replace("{", "").replace("}", "")
+
+    return expr
+
+
+def replace_tex_blocks(text: str) -> str:
+    # remove TeX blocks
+    def repl(match):
+        latex = match.group(1)
+        parsed = parse_latex(latex)
+
+        return f" {parsed} "  # keep spaces
+
+    return re.sub(r"<tex[^>]*>(.*?)</tex>", repl, text)
+
+
+def clean_text(value):
+    # cleaning function that applies all the other cleaning functions
+    if not isinstance(value, str):
+        return value
+
+    # HTML decode (multi-pass)
+    prev = None
+    while prev != value:
+        prev = value
+        value = html.unescape(value)
+
+    # URL decode
+    value = unquote(value)
+
+    # TeX blocks
+    value = replace_tex_blocks(value)
+
+    # parse LaTeX global
+    value = parse_latex(value)
+
+    # remove invisible characters
+    value = value.replace('\r', ' ')
+    value = value.replace('\n', ' ')
+    value = value.replace('\t', ' ')
+    value = re.sub(r'[\x00-\x1F\x7F]', '', value)
+
+    # remove multiple spaces
+    value = re.sub(r"\s+", " ", value)
+
+    return value.strip()
+
 
 @retry(tries=3, delay=5, backoff=5)
-def get_person_scanr():
+def get_person_scanr() -> pd.DataFrame:
+    # Query to get dump persons scanr
     url = "https://scanr-data.s3.gra.io.cloud.ovh.net/production/persons_denormalized.jsonl.gz"
     try:
         r = requests.get(url, stream=True)
@@ -38,7 +151,14 @@ def get_person_scanr():
 
 
 @retry(tries=3, delay=5, backoff=5)
-def fetch_openalex(dois: list, reset_cache: False):
+def fetch_openalex(dois: list, reset_cache: False) -> pd.DataFrame:
+    """
+    Query of OpenAlex to get info on publications and theirs authors based on DOIs
+    If reset_cache is set to False, re-use results from previous queries else queries for all the DOIs
+    Structure data from OpenAlex and create DataFrame
+
+    """
+    # get cached data from OpenAlex if reset_cache is set to False or cache file doesn't exist
     cache = {}
     dois = list(set(dois))
     if not reset_cache and Path(CACHE_FILE).exists():
@@ -48,6 +168,7 @@ def fetch_openalex(dois: list, reset_cache: False):
     missing = [doi for doi in dois if doi not in cache]
     print(missing)
 
+    # query only missing DOIs
     for i in range(0, len(missing), 50):
         batch = missing[i:i + 50]
         filter_str = "|".join(batch)
@@ -71,9 +192,11 @@ def fetch_openalex(dois: list, reset_cache: False):
 
         time.sleep(0.1)
 
+    # write results query as a json file -> cache file
     with open(CACHE_FILE, "w") as f:
         json.dump(cache, f)
 
+    # structuration data from OpenAlex
     authors = []
     for doi in cache:
         res = cache[doi]
@@ -134,7 +257,12 @@ def fetch_openalex(dois: list, reset_cache: False):
 
 
 @retry(tries=3, delay=5, backoff=5)
-def ids_paysage():
+def ids_paysage() -> pd.DataFrame:
+    """
+    Query to get extra IDs for affiliation institutions based on ROR
+    Get dump structures from Paysage
+    Structure data from Paysage and create DataFrame
+    """
     rres_data = []
 
     res = requests.get(
@@ -218,6 +346,8 @@ def ids_paysage():
 
     df_res = pd.DataFrame(rres_data)
     df_res = df_res.drop_duplicates().reset_index(drop=True)
+
+    # keep only structures with ROR
     df_res = df_res.loc[df_res["ror"].notna()]
     df_res = df_res.loc[df_res["ror"] != ""]
     compte_id_paysage = df_res[["ror", "id_paysage"]].groupby("ror").nunique(dropna=False).reset_index()
@@ -300,21 +430,28 @@ def get_info_publi():
     oa2.loc[oa2["type"] == 'review', "type"] = "other"
 
     typ_pub = ["book", "book-chapter", "book-part", "book-section", "book-track", "component", "dataset",
-             "journal-article",
-             "journal-issue", "lecture", "map", "mem", "monograph", "multimedia", "other", "patent", "peer-review",
-             "posted-content", "poster", "presconf", "proceedings", "proceedings-article", "proceedings-series",
-             "reference-book", "reference-entry", "report", "report-series", "software", "standard", "thesis", "these",
-             "video", "ongoing_thesis"]
+               "journal-article",
+               "journal-issue", "lecture", "map", "mem", "monograph", "multimedia", "other", "patent", "peer-review",
+               "posted-content", "poster", "presconf", "proceedings", "proceedings-article", "proceedings-series",
+               "reference-book", "reference-entry", "report", "report-series", "software", "standard", "thesis",
+               "these", "video", "ongoing_thesis"]
 
     oa2.loc[~oa2["type"].isin(typ_pub), "type"] = "other"
 
     oa2["year"] = oa2["publication_year"].astype(pd.Int64Dtype())
 
+    columns = ["doi_clean", "id", "orcid", "pdf_url", "id_source", "id_ins", "ror_ins", "display_name",
+                "display_name_title", "language", "type", "volume", "issue", "raw_source_name", "issn_l",
+                "host_organization_name", "display_name_ins", "country_code_ins",
+                "type_ins", "idref_ins"]
+
+    for col in columns:
+        oa2.loc[oa2[col].notna(), col] = oa2.loc[oa2[col].notna(), col].apply(clean_text)
+
     oa_orcid = oa2.loc[oa2["orcid"].notna()]
     oa_orcid2 = list(oa_orcid["orcid"].unique())
     print(f"Exemples d'ORCID à trouver : {oa_orcid2[0:5]}", flush=True)
     oa_orcid2 = [x.replace("https://orcid.org/", "") for x in oa_orcid2]
-
 
     print("Début du chargement du dump de scanr", flush=True)
     get_person_scanr()
