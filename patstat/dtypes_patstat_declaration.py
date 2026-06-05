@@ -144,7 +144,9 @@ oa_types = {"key_appln_nr": object,
             "ror_ins": str,
             "country_code_ins": str,
             "type_ins": str,
-            "year": pd.Int64Dtype()}
+            "year": pd.Int64Dtype(),
+            "siren": str,
+            "siret": str}
 
 patent_types = {"appln_id": pd.Int64Dtype(),
                 "appln_auth": object,
