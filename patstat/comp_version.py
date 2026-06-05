@@ -175,8 +175,7 @@ def get_json():
         source_dict = {}
         if journal != "":
             if journal not in source_dict:
-                if journal != "":
-                    source_dict[journal] = {"title": journal}
+                source_dict[journal] = {"title": journal}
                 if host != "":
                     source_dict[journal] = {"publisher": host}
                 if volume != "":
