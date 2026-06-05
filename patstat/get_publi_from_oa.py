@@ -200,49 +200,50 @@ def fetch_openalex(dois: list, reset_cache: False) -> pd.DataFrame:
     authors = []
     for doi in cache:
         res = cache[doi]
-        for l in range(len(res["authorships"])):
-            dic = res["authorships"][l]["author"]
-            dic["doi"] = res["doi"]
-            dic["display_name_title"] = res["display_name"]
-            dic["title"] = res["title"]
-            dic["id_pub"] = res["id"]
-            dic["language"] = res["language"]
-            dic["type"] = res["type"]
-            dic["is_retracted"] = res["is_retracted"]
-            dic["publication_year"] = res["publication_year"]
-            dic["publication_date"] = res["publication_date"]
-            dic["is_oa"] = res["open_access"]["is_oa"]
-            dic["volume"] = res["biblio"]["volume"]
-            dic["issue"] = res["biblio"]["issue"]
-            dic["first_page"] = res["biblio"]["first_page"]
-            dic["last_page"] = res["biblio"]["last_page"]
-            dic["pdf_url"] = res["primary_location"]["pdf_url"]
-            dic["raw_type"] = res["primary_location"]["raw_type"]
-            dic["is_accepted"] = res["primary_location"]["is_accepted"]
-            dic["is_published"] = res["primary_location"]["is_published"]
-            dic["raw_source_name"] = res["primary_location"]["raw_source_name"]
-            if "source" in res["primary_location"]:
-                if isinstance(res["primary_location"]["source"], dict):
-                    dic["id_source"] = res["primary_location"]["source"]["id"]
-                    dic["issn_l"] = res["primary_location"]["source"]["issn_l"]
-                    dic["host_organization_name"] = res["primary_location"]["source"][
-                        "host_organization_name"]
-            else:
-                dic["id_source"] = None
-                dic["issn_l"] = None
-                dic["host_organization_name"] = None
-            keys_ins = []
-            if len(res["authorships"][l]["institutions"]) > 0:
-                for li in range(len(res["authorships"][l]["institutions"])):
-                    for key in res["authorships"][l]["institutions"][li].keys():
-                        if key != "lineage":
-                            key2 = key + "_ins"
-                            keys_ins.append(key2)
-                            dic[key2] = res["authorships"][l]["institutions"][li][key]
-            for item in ["author", "institutions", "raw_affiliation_strings"]:
-                if item in dic.keys():
-                    del dic[item]
-            authors.append(dic)
+        if "10.1039/x0xx00000x" not in doi:
+            for l in range(len(res["authorships"])):
+                dic = res["authorships"][l]["author"]
+                dic["doi"] = res["doi"]
+                dic["display_name_title"] = res["display_name"]
+                dic["title"] = res["title"]
+                dic["id_pub"] = res["id"]
+                dic["language"] = res["language"]
+                dic["type"] = res["type"]
+                dic["is_retracted"] = res["is_retracted"]
+                dic["publication_year"] = res["publication_year"]
+                dic["publication_date"] = res["publication_date"]
+                dic["is_oa"] = res["open_access"]["is_oa"]
+                dic["volume"] = res["biblio"]["volume"]
+                dic["issue"] = res["biblio"]["issue"]
+                dic["first_page"] = res["biblio"]["first_page"]
+                dic["last_page"] = res["biblio"]["last_page"]
+                dic["pdf_url"] = res["primary_location"]["pdf_url"]
+                dic["raw_type"] = res["primary_location"]["raw_type"]
+                dic["is_accepted"] = res["primary_location"]["is_accepted"]
+                dic["is_published"] = res["primary_location"]["is_published"]
+                dic["raw_source_name"] = res["primary_location"]["raw_source_name"]
+                if "source" in res["primary_location"]:
+                    if isinstance(res["primary_location"]["source"], dict):
+                        dic["id_source"] = res["primary_location"]["source"]["id"]
+                        dic["issn_l"] = res["primary_location"]["source"]["issn_l"]
+                        dic["host_organization_name"] = res["primary_location"]["source"][
+                            "host_organization_name"]
+                else:
+                    dic["id_source"] = None
+                    dic["issn_l"] = None
+                    dic["host_organization_name"] = None
+                keys_ins = []
+                if len(res["authorships"][l]["institutions"]) > 0:
+                    for li in range(len(res["authorships"][l]["institutions"])):
+                        for key in res["authorships"][l]["institutions"][li].keys():
+                            if key != "lineage":
+                                key2 = key + "_ins"
+                                keys_ins.append(key2)
+                                dic[key2] = res["authorships"][l]["institutions"][li][key]
+                for item in ["author", "institutions", "raw_affiliation_strings"]:
+                    if item in dic.keys():
+                        del dic[item]
+                authors.append(dic)
 
     df = pd.DataFrame(data=authors)
     df = df.drop_duplicates().reset_index(drop=True)
