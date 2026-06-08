@@ -69,7 +69,9 @@ def get_json():
     for f_date in ["appln_filing_date", "appln_publn_date", "grant_publn_date"]:
         patent[f_date] = patent[f_date].apply(to_date_str)
 
-    publi = pd.read_csv("publi_oa.csv", sep="|", encoding="utf-8", engine="python", dtype=types.oa_types)
+    # publi = pd.read_csv("publi_oa.csv", sep="|", encoding="utf-8", engine="python", dtype=types.oa_types)
+    publi = pd.read_csv("publi_oa.csv", sep="|", encoding="utf-8", engine="openpyxl",
+                        dtype=types.oa_types)
     publi[
         ["id", "display_name", "orcid", "display_name_title", "title", "id_pub", "language", "type", "publication_year",
          "publication_date", "volume", "issue", "first_page", "last_page", "pdf_url", "raw_type", "raw_source_name",
