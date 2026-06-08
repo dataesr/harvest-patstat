@@ -385,5 +385,8 @@ def get_info_publi():
     print("Fin de la lecture du dump de scanr", flush=True)
     print(f"Taille liste scanr: {len(scanr)}", flush=True)
 
-    oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
-    swift.upload_object('patstat', 'publi_oa.csv')
+    # oa3.to_csv("publi_oa.csv", sep="|", encoding="utf-8", index=False)
+    # swift.upload_object('patstat', 'publi_oa.csv')
+
+    oa3.to_excel("publi_oa.xlsx", encoding="utf-8", index=False, engine="openpyxl")
+    swift.upload_object('patstat', 'publi_oa.xlsx')
