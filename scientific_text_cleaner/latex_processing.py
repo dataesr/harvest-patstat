@@ -13,6 +13,11 @@ def parse_latex(expr):
 
     # ΣΔ
     expr = expr.replace("SigmaDelta", r"\Sigma\Delta")
+    expr = expr.replace("Delta Sigma", r"\Delta\Sigma")
+    expr = expr.replace(",times,", r"\times")
+    expr = expr.replace("rm HT_rm c", r"HT<sub>c</sub>")
+    expr = expr.replace("f_tau", r"f<sub>\tau</sub>")
+    expr = expr.replace("f_max≫268", r"f<sub>max></sub>\gg268")
 
     try:
         return latex_converter.latex_to_text(expr)
