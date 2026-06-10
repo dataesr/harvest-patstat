@@ -1,4 +1,4 @@
-from bs4 import BeautifulSoup
+from bs4 import BeautifulSoup, NavigableString
 
 from .latex_processing import parse_latex
 
@@ -20,6 +20,26 @@ from .latex_processing import parse_latex
 
 def parse_html(text: str) -> str:
     soup = BeautifulSoup(text, "html.parser")
+
+    for tag in soup.find_all("i"):
+        italic = tag.get_text()
+        tag.replace_with("<i>" + italic + "</i>")
+
+    for tag in soup.find_all("sup"):
+        sup = tag.get_text()
+        tag.replace_with("<sup>" + sup + "</sup>")
+
+    for tag in soup.find_all("sub"):
+        sub = tag.get_text()
+        tag.replace_with("<sub>" + sub + "</sub>")
+
+    for tag in soup.find_all("u"):
+        tu = tag.get_text()
+        tag.replace_with("<u>" + tu + "</u>")
+
+    for tag in soup.find_all("b"):
+        tb = tag.get_text()
+        tag.replace_with("<b>" + tb + "</b>")
 
     # for tag in soup.find_all("i"):
     #     tag.replace_with(to_italic(tag.get_text()))
