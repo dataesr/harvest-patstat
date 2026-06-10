@@ -18,6 +18,9 @@ def clean_text(value):
         logger.debug("end cleaning not str")
         return value
 
+    value = value.replace("{Sn[Zn<sub>4</sub>Sn<sub>4</sub>S<sub>17</sub>]}<sup>6−</sup>",
+                          "Sn[Zn<sub>4</sub>Sn<sub>4</sub>S<sub>17</sub>]<sup>6−</sup>")
+
     # HTML decode
     # logger.debug("decode HTML")
     prev = None
