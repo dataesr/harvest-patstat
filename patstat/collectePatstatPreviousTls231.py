@@ -137,4 +137,4 @@ def harvest_patstat():
 
     # # téléchargement et écriture des fichiers zip
     # download and write zipped files
-    download_write(edition, list_files)cd 
+    download_write(edition, list_files)cd
