@@ -7,7 +7,7 @@ import redis
 from flask import Blueprint, current_app, jsonify, render_template, request
 from rq import Connection, Queue
 from application.server.main.tasks import create_task_all, create_task_clean, create_task_doi, create_task_ef, \
-    create_task_models, create_task_publis
+    create_task_models, create_task_publis, create_task_tls231
 
 from application.server.main.logger import get_logger
 
@@ -66,6 +66,17 @@ def modelling():
         logger.debug("Connect Redis")
         q = Queue(name='patents', default_timeout=default_timeout, result_ttl=default_timeout)
         task = q.enqueue(create_task_models)
+    logger.debug("End task")
+    response_object = {'status': 'success', 'data': {'task_id': task.get_id()}}
+    return jsonify(response_object), 202
+
+
+@main_blueprint.route('/tls231', methods=['POST'])
+def tls231():
+    with Connection(redis.from_url(current_app.config['REDIS_URL'])):
+        logger.debug("Connect Redis")
+        q = Queue(name='patents', default_timeout=default_timeout, result_ttl=default_timeout)
+        task = q.enqueue(create_task_tls231)
     logger.debug("End task")
     response_object = {'status': 'success', 'data': {'task_id': task.get_id()}}
     return jsonify(response_object), 202
