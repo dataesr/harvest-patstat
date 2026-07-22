@@ -1,0 +1,9 @@
+
+[project]
+name = "scientific-text-cleaner"
+version = "0.2.0"
+dependencies = [
+    "beautifulsoup4",
+    "pandas",
+    "openpyxl"
+]

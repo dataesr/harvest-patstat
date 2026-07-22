@@ -2,18 +2,18 @@ import joblib
 import pandas as pd
 from sklearn.ensemble import IsolationForest
 
-from .features import extract_features
+from scientific_text_cleaner.scientific_text_cleaner.features import extract_features
 
 
-def prepare_features(df):
+def prepare_features(df, ori, clea):
 
     rows = []
 
     for _, row in df.iterrows():
 
         feats = extract_features(
-            row["display_name_title"],
-            row["display_name_title2"]
+            row[ori],
+            row[clea]
         )
 
         rows.append(feats)
@@ -22,9 +22,9 @@ def prepare_features(df):
 
 
 # ✅ ENTRAÎNEMENT
-def train_model(df):
+def train_model(df, ori, clea):
 
-    X = prepare_features(df)
+    X = prepare_features(df, ori, clea)
 
     model = IsolationForest(
         n_estimators=100,
@@ -38,9 +38,9 @@ def train_model(df):
 
 
 # ✅ PRÉDICTION
-def predict_anomalies(model, df):
+def predict_anomalies(model, df, ori, clea):
 
-    X = prepare_features(df)
+    X = prepare_features(df, ori, clea)
 
     scores = model.decision_function(X)
     anomalies = model.predict(X)  # -1 = anomalie

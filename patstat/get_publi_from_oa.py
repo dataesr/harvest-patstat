@@ -8,7 +8,6 @@ from pathlib import Path
 from urllib.parse import unquote
 
 import pandas as pd
-import numpy as np
 import requests
 from retry import retry
 

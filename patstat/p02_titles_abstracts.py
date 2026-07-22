@@ -8,8 +8,11 @@ import numpy as np
 import os
 import pandas as pd
 
+from scientific_text_cleaner import clean_text
+
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = "/run/media/julia/DATA/fall2025/"
 
 # dictionary with pd.read_csv parameters
 DICT = {"sep": ",", "chunksize": 5000000, "dtype": {"appln_id": np.int64}}
@@ -42,6 +45,17 @@ def tit_abst():
     os.chdir(DATA_PATH)
     patent_scope = pd.read_csv("patent_scope.csv", sep="|", dtype=types.tls201_types)
     titles = get_titles_abstracts_from_appln_id("tls202", "titles", patent_scope, "appln_id", DICT)
-    titles.to_csv("titles.csv", sep="|", index=False)
+    ttag = titles.loc[(titles["appln_title"].notna()) & (titles["appln_title"].str.contains(r"\<.+\>"))]
+    ttag.loc[(ttag["appln_title"].notna()), "t2"] = ttag.loc[
+        (ttag["appln_title"].notna()), "appln_title"].apply(clean_text)
+    ttag.to_csv("ttag.csv", sep="|", index=False)
+    # titles.to_csv("titles.csv", sep="|", index=False)
     abstracts = get_titles_abstracts_from_appln_id("tls203", "abstracts", patent_scope, "appln_id", DICT)
-    abstracts.to_csv("abstracts.csv", sep="|", index=False)
+    atag = abstracts.loc[(abstracts["appln_abstract"].notna()) & (abstracts["appln_abstract"].str.contains(r"\<.+\>"))]
+    atex = abstracts.loc[(abstracts["appln_abstract"].notna()) & (abstracts["appln_abstract"].str.contains(r"\$.*?\$"))]
+    atex = pd.concat([atex, atag], ignore_index=True)
+    atex = atex.drop_duplicates().reset_index(drop=True)
+    atex.loc[(atex["appln_abstract"].notna()), "ab2"] = atex.loc[
+        (atex["appln_abstract"].notna()), "appln_abstract"].apply(clean_text)
+    atex.to_csv("atex.csv", sep="|", index=False)
+    # abstracts.to_csv("abstracts.csv", sep="|", index=False)

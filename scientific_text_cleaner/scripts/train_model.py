@@ -1,11 +1,11 @@
 import pandas as pd
 
-from scientific_text_cleaner import train_model, save_model
+from scientific_text_cleaner.scientific_text_cleaner.ml_model import save_model, train_model
 
-df = pd.read_excel("/run/media/julia/DATA/fall2025/cleaned_text.xlsx", engine="openpyxl")
-df = df.loc[(df["display_name_title"].notna()) & (df["display_name_title2"].notna())]
+df = pd.read_excel("cleaned_text.xlsx", engine="openpyxl")
+df2 = df.loc[(df["display_name_title"]!="") & (df["display_name_title2"]!="")]
 
-model = train_model(df)
+model = train_model(df2)
 
 save_model(model)
 

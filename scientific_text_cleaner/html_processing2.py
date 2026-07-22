@@ -2,7 +2,7 @@ import re
 
 from bs4 import BeautifulSoup
 
-from scientific_text_cleaner.latex_processing import parse_latex
+from scientific_text_cleaner import parse_latex
 
 
 # SUB_MAP = str.maketrans("0123456789+-=()", "₀₁₂₃₄₅₆₇₈₉₊₋₌₍₎")

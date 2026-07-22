@@ -17,7 +17,8 @@ import shutil
 import zipfile
 
 # directory where the folders are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = "/run/media/julia/DATA/spring2026/"
 
 
 # VERSION = "2021_Autumn/"
@@ -54,7 +55,7 @@ def delete_files(pth, reg):
 def unzip():
     path = DATA_PATH
     # selects the zipped folders to unzip
-    zipped_folders = select_files(path, r"tls(204|211|201|206|207|209|225|224|203|202|212|214)_")
+    zipped_folders = select_files(path, r"tls(204|211|201|206|207|209|225|224|203|202|212|214|229|231|902)_")
     # unzips the folders
     unzip_folders(path, zipped_folders)
 

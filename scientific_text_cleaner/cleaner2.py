@@ -4,11 +4,11 @@ import unicodedata
 from urllib.parse import unquote
 
 from application.server.main.logger import get_logger
-from scientific_text_cleaner.html_processing import parse_html, clean_patent_text, reconstruct_chemical, \
+from scientific_text_cleaner import parse_html, clean_patent_text, reconstruct_chemical, \
     contextual_chemical_fix, \
     to_chemical_unicode
-from scientific_text_cleaner.latex_processing import parse_latex
-from scientific_text_cleaner.typography import normalize_typo
+from scientific_text_cleaner import parse_latex
+from scientific_text_cleaner import normalize_typo
 
 logger = get_logger(__name__)
 

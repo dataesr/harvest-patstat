@@ -13,7 +13,8 @@ from retry import retry
 
 import requests
 
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = "/run/media/julia/DATA/spring2026/"
 
 URL_PATSTAT = "https://publication-bdds.apps.epo.org/bdds/bdds-bff-service/prod/api/"
 URL_FILES = "external/subscribedProducts/17"
@@ -45,11 +46,18 @@ def connexion_api():
     function to authenticate on PATSTAT API
     Output: token which is needed to query the API - max duration = 1hr
     """
-    res = requests.post(URL_BDDS, headers={'Authorization': os.getenv("AUTHORIZATION"),
-                                          'Content-Type': 'application/x-www-form-urlencoded'},
-                        data={'grant_type': 'password', 'username': os.getenv("USERNAME"),
-                              "password": os.getenv("PASSWORD"),
+    # res = requests.post(URL_BDDS, headers={'Authorization': os.getenv("AUTHORIZATION"),
+    #                                       'Content-Type': 'application/x-www-form-urlencoded'},
+    #                     data={'grant_type': 'password', 'username': os.getenv("USERNAME"),
+    #                           "password": os.getenv("PASSWORD"),
+    #                           "scope": "openid"})
+
+    res = requests.post(URL_BDDS, headers={'Authorization': "Basic MG9hM3VwZG43YW41cE1JOE80MTc=",
+                                           'Content-Type': 'application/x-www-form-urlencoded'},
+                        data={'grant_type': 'password', 'username': "julia.grandhay@enseignementsup.gouv.fr",
+                              "password": "9bSYD4Br-zGb",
                               "scope": "openid"})
+
     status = res.status_code
     if status != 200:
         raise ConnectionError("Failed while trying to authenticate")

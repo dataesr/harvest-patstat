@@ -10,7 +10,8 @@ import requests
 from bs4 import BeautifulSoup
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = "/run/media/julia/DATA/spring2026/"
 
 CPC = "https://www.cooperativepatentclassification.org/"
 
@@ -93,7 +94,7 @@ def lib_cpc():
 
     # /!\ CPC Scheme XML file changes often. Check the current file and URL /!\
 
-    url_scheme = f"{CPC}sites/default/files/cpc/bulk/CPCSchemeXML202508.zip"
+    url_scheme = f"{CPC}sites/default/files/cpc/bulk/CPCSchemeXML202605.zip"
     zf_scheme = request(url_scheme)
 
     # gets all the filenames in the zipped folder
