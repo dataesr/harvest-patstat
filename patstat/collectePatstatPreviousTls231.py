@@ -163,17 +163,17 @@ def get_events_from_appln_id(directory: str, action: str, pat_sc: pd.DataFrame, 
 
 def harvest_tls231():
     # get edition number and the file id numbers and names
-    logger.debug("Beginning loading tls231")
-    edition, list_files = ed_number(URL_PATSTAT + URL_FILES)
-    list_files = [_zip for _zip in list_files if
-                  re.match(r"tls231_", _zip["itemName"])]
-
-    # set working directory
-    os.chdir(DATA_PATH)
-
-    # # téléchargement et écriture des fichiers zip
-    # download and write zipped files
-    download_write(edition, list_files)
+    # logger.debug("Beginning loading tls231")
+    # edition, list_files = ed_number(URL_PATSTAT + URL_FILES)
+    # list_files = [_zip for _zip in list_files if
+    #               re.match(r"tls231_", _zip["itemName"])]
+    #
+    # # set working directory
+    # os.chdir(DATA_PATH)
+    #
+    # # # téléchargement et écriture des fichiers zip
+    # # download and write zipped files
+    # download_write(edition, list_files)
 
     logger.debug("End loading tls231\nBeginning unzipping tls231")
 
