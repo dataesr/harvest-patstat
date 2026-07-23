@@ -44,7 +44,7 @@ def create_task_models():
 
 def create_task_tls231():
     logger.debug("create_task_tls231")
-    collectePatstatPreviousTls231.harvest_patstat()
+    collectePatstatPreviousTls231.harvest_tls231()
 
 
 def create_task_clean(args):
