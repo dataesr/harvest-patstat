@@ -44,6 +44,7 @@ def get_url(url: str, tkn: str, strm: bool):
     response = requests.get(url, headers={"Authorization": tkn}, stream=strm)
     status = response.status_code
     if status != 200:
+        logger.debug(f"Error code {status}")
         raise ConnectionError("Failed while trying to access the URL")
     else:
         print("URL successfully accessed", flush=True)
