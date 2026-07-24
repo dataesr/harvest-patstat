@@ -20,9 +20,11 @@ def multi_csv_files_querying(files_directory: str, chunk_query, dict_param_load_
 def csv_file_querying(csv_file: str, chunk_query, dict_param_load_csv: dict) -> pd.DataFrame:
     df_chunk = pd.read_csv(csv_file, sep=dict_param_load_csv.get('sep'), chunksize=dict_param_load_csv.get('chunksize'),
                            usecols=dict_param_load_csv.get('usecols'), dtype=dict_param_load_csv.get('dtype'))
-    logger.debug(f"query beginning {csv_file}: ", dt.now())
+    tps = str(dt.now())
+    logger.debug(f"query beginning {csv_file}: ", tps)
     chunk_result_list = list(map(lambda chunk: chunk_query(chunk), df_chunk))
-    logger.debug(f"end of query {csv_file} at : ", dt.now())
+    tps2 = str(dt.now())
+    logger.debug(f"end of query {csv_file} at : ", tps2)
     dataframe_result = pd.concat(chunk_result_list)
 
     return dataframe_result
