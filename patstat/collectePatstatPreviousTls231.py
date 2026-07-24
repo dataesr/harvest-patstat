@@ -14,10 +14,9 @@ import pandas as pd
 import requests
 from retry import retry
 
+from application.server.main.logger import get_logger
 from patstat import csv_files_querying as cfq
 from patstat import dtypes_patstat_declaration as types
-from application.server.main.logger import get_logger
-
 from utils import swift
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -153,10 +152,11 @@ def get_events_from_appln_id(directory: str, action: str, pat_sc: pd.DataFrame, 
     :param dict_param_load: dictionary with loading parameters
     :return: df with filtered data
     """
-
-    print(f"Start get {action} from application ID")
+    logger.debug(f"Start get {action} from application ID")
+    # print(f"Start get {action} from application ID")
     _lic = cfq.filtering(directory, pat_sc, colfilter, dict_param_load)
-    print(f"End get {action} from application ID")
+    logger.debug(f"End get {action} from application ID")
+    # print(f"End get {action} from application ID")
 
     return _lic
 
@@ -175,40 +175,84 @@ def harvest_tls231():
     # # download and write zipped files
     # download_write(edition, list_files)
 
-    logger.debug("End loading tls231\nBeginning unzipping tls231")
-
-    path = DATA_PATH
-    # selects the zipped folders to unzip
-    zipped_folders = select_files(path, r"tls231_")
-    # unzips the folders
-    unzip_folders(path, zipped_folders)
-
-    # lists all the CSV files and rename them (model tls\d{3}_part\d{2}
-    list_csv = glob.glob(path + r"*.csv")
-    list_csv = [_zip for _zip in list_csv if re.match(path + r"tls\d{3}.+\.csv", _zip)]
-    for csv in list_csv:
-        new_name = csv.split("_")[0] + "_" + csv.split("_")[-1]
-        os.rename(csv, new_name)
-
-    # removes the end of the folders to get table names from PATSTAT Global database
-    table_names = list(map(lambda a: re.sub(r"_.+_?.+?_part\d+.zip", "", a), zipped_folders))
-
-    # creates a dataframe to connect each file to its folder and table
-    file_names = pd.DataFrame({"subfolders": zipped_folders, "table_names": table_names})
-    file_names["file_names"] = file_names["subfolders"].apply(lambda a: a.split("_")[0] + "_" + a.split("_")[-1])
-    file_names["file_names"] = file_names["file_names"].str.replace("zip", "csv", regex=False)
-
-    # moves each file into a folder corresponding to its table in PATSTAT Global database
-    for _, r in file_names.iterrows():
-        os.makedirs(r["table_names"], exist_ok=True)
-        shutil.move(r["file_names"], r["table_names"])
-
-    delete_files(DATA_PATH, r"*.zip")
+    # logger.debug("End loading tls231\nBeginning unzipping tls231")
+    # 
+    # path = DATA_PATH
+    # # selects the zipped folders to unzip
+    # zipped_folders = select_files(path, r"tls231_")
+    # # unzips the folders
+    # unzip_folders(path, zipped_folders)
+    # 
+    # # lists all the CSV files and rename them (model tls\d{3}_part\d{2}
+    # list_csv = glob.glob(path + r"*.csv")
+    # list_csv = [_zip for _zip in list_csv if re.match(path + r"tls\d{3}.+\.csv", _zip)]
+    # for csv in list_csv:
+    #     new_name = csv.split("_")[0] + "_" + csv.split("_")[-1]
+    #     os.rename(csv, new_name)
+    # 
+    # # removes the end of the folders to get table names from PATSTAT Global database
+    # table_names = list(map(lambda a: re.sub(r"_.+_?.+?_part\d+.zip", "", a), zipped_folders))
+    # 
+    # # creates a dataframe to connect each file to its folder and table
+    # file_names = pd.DataFrame({"subfolders": zipped_folders, "table_names": table_names})
+    # file_names["file_names"] = file_names["subfolders"].apply(lambda a: a.split("_")[0] + "_" + a.split("_")[-1])
+    # file_names["file_names"] = file_names["file_names"].str.replace("zip", "csv", regex=False)
+    # 
+    # # moves each file into a folder corresponding to its table in PATSTAT Global database
+    # for _, r in file_names.iterrows():
+    #     os.makedirs(r["table_names"], exist_ok=True)
+    #     shutil.move(r["file_names"], r["table_names"])
+    # 
+    # delete_files(DATA_PATH, r"*.zip")
 
     logger.debug("End unzipping tls231\nBeginning get licensing events")
 
     patents = pd.read_csv("patent.csv", sep="|", encoding="utf-8", dtype=types.patent_types,
                           engine="python")
+
+    part = pd.read_csv("part_p08.csv", sep="|", encoding="utf-8", engine="python",
+                       dtype=types.partfin_types)
+
+    part["earliest_filing_date"] = part["earliest_filing_date"].apply(pd.to_datetime)
+    part["year"] = part["earliest_filing_date"].apply(lambda a: a.year)
+    part = part.loc[part["year"] >= 2010]
+
+    type_part = part[["docdb_family_id", "esri"]].drop_duplicates()
+
+    pat_dict = {}
+    for row in type_part.itertuples():
+        family_id = row.docdb_family_id
+        tpe = row.esri
+        if family_id not in pat_dict:
+            pat_dict[family_id] = {"esri": []}
+
+        if tpe not in pat_dict[family_id]["esri"]:
+            pat_dict[family_id]["esri"].append(tpe)
+
+    res = []
+    for family_id in pat_dict:
+        liste = pat_dict[family_id]["esri"]
+        typepart = ""
+        esri = ""
+        if len(liste) > 1:
+            typepart = "Participants à la fois issus de l'ESR et hors ESR"
+            esri = "ESRI"
+        else:
+            if liste[0] == "ESRI":
+                typepart = "Participants uniquement issus de l'ESR"
+                esri = "ESRI"
+            else:
+                typepart = "Participants uniquement hors ESR"
+                esri = "AUTRE"
+
+        new_elt = {'docdb_family_id': family_id,
+                   'type_part': typepart,
+                   "esri": esri}
+        res.append(new_elt)
+
+    df_fam = pd.DataFrame(res)
+
+    patents = pd.merge(patents, df_fam, on="docdb_family_id", how="left")
 
     res = requests.get("https://link.epo.org/web/coverage/weekly/EN-Legal-event-codes.xlsx")
 
@@ -238,7 +282,9 @@ def harvest_tls231():
     lic2 = lic.loc[~lic["event_id"].isin(licensee["event_id"])]
     lic3 = lic2.loc[lic2["auth_type"].isin(codes2["auth_type"])]
     licenses = pd.concat([lic3, licensee], ignore_index=True)
-    licenses = pd.merge(licenses, patents[["appln_id", "key_appln_nr", "docdb_family_id"]], on="appln_id", how="inner")
+    licenses = pd.merge(licenses, patents[
+        ["appln_id", "key_appln_nr", "docdb_family_id", "inpadoc_family_id", "appln_auth", "appln_publn_number",
+         "type_part", "esri"]], on="appln_id", how="inner")
     licenses.to_excel("licenses.xlsx", engine="openpyxl", index=False)
     swift.upload_object('patstat', 'licenses.xlsx')
 
