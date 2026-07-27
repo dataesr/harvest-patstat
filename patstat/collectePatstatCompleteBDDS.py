@@ -37,6 +37,7 @@ def get_url(url: str, tkn: str, strm: bool):
     status = response.status_code
     if status != 200:
         logger.debug(f"Error code get_url: {status}")
+        logger.debug(f"Body: {res.text}")
         raise ConnectionError("Failed while trying to access the URL")
     else:
         print("URL successfully accessed", flush=True)
@@ -58,11 +59,13 @@ def connexion_api():
     status = res.status_code
     if status != 200:
         logger.debug(f"Error code get_url: {status}")
+        logger.debug(f"Body: {res.text}")
         raise ConnectionError("Failed while trying to authenticate")
     else:
         print("Successfully authenticated", flush=True)
     res_json = res.json()
     tkn = f"{res_json.get('token_type')} {res_json.get('access_token')}"
+    logger.debug(tkn)
     return tkn
 
 @retry(tries=3, delay=60, backoff=5)
