@@ -33,7 +33,7 @@ def get_url(url: str, tkn: str, strm: bool):
     tkn: token, get it with authentication function
     strm: boolean, stream data from the API or not
     """
-    response = requests.get(url, headers={"Authorization": tkn}, stream=strm)
+    response = requests.get(url, headers={"Authorization": "Bearer " + tkn}, stream=strm)
     status = response.status_code
     if status != 200:
         logger.debug(f"Error code get_url: {status}")
