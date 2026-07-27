@@ -77,7 +77,7 @@ def ed_number(url_17: str):
     return edit, fils
 
 
-@retry(tries=3, delay=5, backoff=5)
+@retry(tries=3, delay=300, backoff=5)
 def download_write(ed: int, liste: list):
     """
     # fonction pour télécharger les fichiers zip et les enregistrer en local
@@ -92,11 +92,14 @@ def download_write(ed: int, liste: list):
         url = f"{URL_PATSTAT}{URL_LOADING}/delivery/{ed}/file/{nb}/download"
         print(url)
         name = item.get("itemName")
-        print(name)
-        tkn = connexion_api()
-        req = get_url(url, tkn, True)
-        with open(name, "wb") as code:
-            shutil.copyfileobj(req.raw, code)
+        if name in os.listdir(DATA_PATH):
+            pass
+        else:
+            print(name)
+            tkn = connexion_api()
+            req = get_url(url, tkn, True)
+            with open(name, "wb") as code:
+                shutil.copyfileobj(req.raw, code)
     print("All the files have been successfully loaded.", flush=True)
 
 
