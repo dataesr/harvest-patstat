@@ -11,6 +11,8 @@ import glob
 
 from retry import retry
 
+from application.server.main.logger import get_logger
+
 import requests
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
@@ -19,6 +21,8 @@ URL_PATSTAT = "https://publication-bdds.apps.epo.org/bdds/bdds-bff-service/prod/
 URL_FILES = "external/subscribedProducts/17"
 URL_LOADING = "products/17"
 URL_BDDS = "https://login.epo.org/oauth2/aus3up3nz0N133c0V417/v1/token"
+
+logger = get_logger(__name__)
 
 
 def get_url(url: str, tkn: str, strm: bool):
@@ -32,6 +36,7 @@ def get_url(url: str, tkn: str, strm: bool):
     response = requests.get(url, headers={"Authorization": tkn}, stream=strm)
     status = response.status_code
     if status != 200:
+        logger.debug(f"Error code get_url: {status}")
         raise ConnectionError("Failed while trying to access the URL")
     else:
         print("URL successfully accessed", flush=True)
@@ -52,6 +57,7 @@ def connexion_api():
                               "scope": "openid"})
     status = res.status_code
     if status != 200:
+        logger.debug(f"Error code get_url: {status}")
         raise ConnectionError("Failed while trying to authenticate")
     else:
         print("Successfully authenticated", flush=True)
