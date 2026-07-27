@@ -65,7 +65,7 @@ def connexion_api():
     tkn = f"{res_json.get('token_type')} {res_json.get('access_token')}"
     return tkn
 
-
+@retry(tries=3, delay=60, backoff=5)
 def ed_number(url_17: str):
     """
     Authenticate, get edition number and infos on the files
