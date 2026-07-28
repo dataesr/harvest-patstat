@@ -33,11 +33,12 @@ def get_url(url: str, tkn: str, strm: bool):
     tkn: token, get it with authentication function
     strm: boolean, stream data from the API or not
     """
-    response = requests.get(url, headers={"Authorization": "Bearer " + tkn}, stream=strm)
+    response = requests.get(url, headers={"Authorization": tkn}, stream=strm)
+    logger.debug(f"Token get_url: {tkn}")
     status = response.status_code
     if status != 200:
         logger.debug(f"Error code get_url: {status}")
-        logger.debug(f"Body: {res.text}")
+        logger.debug(f"Body: {response.text}")
         raise ConnectionError("Failed while trying to access the URL")
     else:
         print("URL successfully accessed", flush=True)
@@ -51,14 +52,16 @@ def connexion_api():
     function to authenticate on PATSTAT API
     Output: token which is needed to query the API - max duration = 1hr
     """
+    logger.debug(f"url BDDS: {URL_BDDS}")
     res = requests.post(URL_BDDS, headers={'Authorization': os.getenv("AUTHORIZATION"),
                                           'Content-Type': 'application/x-www-form-urlencoded'},
                         data={'grant_type': 'password', 'username': os.getenv("USERNAME"),
                               "password": os.getenv("PASSWORD"),
                               "scope": "openid"})
+    logger.debug(f"connexion_api authorization {os.getenv('AUTHORIZATION')}, username {os.getenv('USERNAME')}, password {os.getenv('PASSWORD')}")
     status = res.status_code
     if status != 200:
-        logger.debug(f"Error code get_url: {status}")
+        logger.debug(f"Error code connexion_api: {status}")
         logger.debug(f"Body: {res.text}")
         raise ConnectionError("Failed while trying to authenticate")
     else:
@@ -99,13 +102,15 @@ def download_write(ed: int, liste: list):
         print(ed)
         nb = item.get("itemId")
         url = f"{URL_PATSTAT}{URL_LOADING}/delivery/{ed}/file/{nb}/download"
+        logger.debug(f"url download_write: {url}")
         print(url)
         name = item.get("itemName")
         if name in os.listdir(DATA_PATH):
             pass
         else:
-            print(name)
+            print(name, flush=True)
             tkn = connexion_api()
+            logger.debug(f"token download_write: {tkn}")
             req = get_url(url, tkn, True)
             with open(name, "wb") as code:
                 shutil.copyfileobj(req.raw, code)
@@ -139,6 +144,7 @@ def delete_files(pth, reg):
 
 def harvest_patstat():
     # get edition number and the file id numbers and names
+    logger.debug(f"url ed_number: {URL_PATSTAT + URL_FILES}")
     edition, list_files = ed_number(URL_PATSTAT + URL_FILES)
     list_files = [_zip for _zip in list_files if
                   re.match(r"tls(204|211|201|206|207|209|225|224|203|202|212|214)_", _zip["itemName"])]
