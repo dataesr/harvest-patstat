@@ -4,16 +4,15 @@
 # Ce programme permet de requêter l'API de Patstat et de télécharger les fichiers zippés.
 # This script collects PATSTAT Global data from EPO's API, download and write zipped folders
 
+import glob
 import os
 import re
 import shutil
-import glob
 
+import requests
 from retry import retry
 
 from application.server.main.logger import get_logger
-
-import requests
 
 DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
@@ -45,7 +44,6 @@ def get_url(url: str, tkn: str, strm: bool):
     return response
 
 
-
 def connexion_api():
     """
     fonction pour s'authentifier sur l'API Patstat
@@ -54,11 +52,12 @@ def connexion_api():
     """
     logger.debug(f"url BDDS: {URL_BDDS}")
     res = requests.post(URL_BDDS, headers={'Authorization': os.getenv("AUTHORIZATION"),
-                                          'Content-Type': 'application/x-www-form-urlencoded'},
+                                           'Content-Type': 'application/x-www-form-urlencoded'},
                         data={'grant_type': 'password', 'username': os.getenv("USERNAME"),
                               "password": os.getenv("PASSWORD"),
                               "scope": "openid"})
-    logger.debug(f"connexion_api authorization {os.getenv('AUTHORIZATION')}, username {os.getenv('USERNAME')}, password {os.getenv('PASSWORD')}")
+    logger.debug(
+        f"connexion_api authorization {os.getenv('AUTHORIZATION')}, username {os.getenv('USERNAME')}, password {os.getenv('PASSWORD')}")
     status = res.status_code
     if status != 200:
         logger.debug(f"Error code connexion_api: {status}")
@@ -70,6 +69,7 @@ def connexion_api():
     tkn = f"{res_json.get('token_type')} {res_json.get('access_token')}"
     logger.debug(tkn)
     return tkn
+
 
 @retry(tries=3, delay=60, backoff=5)
 def ed_number(url_17: str):
@@ -147,11 +147,11 @@ def harvest_patstat():
     logger.debug(f"url ed_number: {URL_PATSTAT + URL_FILES}")
     edition, list_files = ed_number(URL_PATSTAT + URL_FILES)
     list_files = [_zip for _zip in list_files if
-                  re.match(r"tls(204|211|201|206|207|209|225|224|203|202|212|214)_", _zip["itemName"])]
+                  re.match(r"tls(204|211|201|206|207|209|225|224|203|202|212|214|229|231|902)_",
+                           _zip["itemName"])]
 
     # set working directory
     os.chdir(DATA_PATH)
-
 
     # remove folders and files previous run
     delete_folders(DATA_PATH, r"tls*", r"\/data\/tls\d{3}$")
