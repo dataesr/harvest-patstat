@@ -43,10 +43,13 @@ def fun1():
            "tls231_part08.csv", "tls231_part07.csv", "tls231_part06.csv", "tls231_part05.csv", "tls231_part04.csv",
            "tls231_part03.csv", "tls231_part02.csv", "tls231_part01.csv", "tls229_part01.csv"]
 
-    for csv in list_csv:
+    files = os.listdir(DATA_PATH)
+
+    list_csv2 = list(set(list_csv) - set(files))
+    list_csv2.sort()
+
+    for csv in list_csv2:
         swift.download_object('patstat', csv, f'{DATA_PATH}{csv}')
-        new_name = csv.split("_")[0] + "_" + csv.split("_")[-1]
-        os.rename(csv, new_name)
 
     # removes the end of the folders to get table names from PATSTAT Global database
     table_names = list(map(lambda a: re.sub(r"_.+_?.+?_part\d+.csv", "", a), list_csv))
@@ -54,6 +57,7 @@ def fun1():
     # creates a dataframe to connect each file to its folder and table
     file_names = pd.DataFrame({"subfolders": list_csv, "table_names": table_names})
     file_names["file_names"] = file_names["subfolders"].apply(lambda a: a.split("_")[0] + "_" + a.split("_")[-1])
+    print(file_names.head(), flush=True)
     # moves each file into a folder corresponding to its table in PATSTAT Global database
     for _, r in file_names.iterrows():
         os.makedirs(r["table_names"], exist_ok=True)
