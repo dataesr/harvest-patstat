@@ -9,7 +9,8 @@ import shutil
 from utils import swift
 
 # directory where the files are
-DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
+DATA_PATH = "/run/media/julia/DATA/spring2026/"
 
 
 def fun1():
@@ -52,7 +53,7 @@ def fun1():
         swift.download_object('patstat', csv, f'{DATA_PATH}{csv}')
 
     # removes the end of the folders to get table names from PATSTAT Global database
-    table_names = list(map(lambda a: re.sub(r"_.+_?.+?_part\d+.csv", "", a), list_csv))
+    table_names = list(map(lambda a: re.sub(r"_part\d+.csv", "", a), list_csv))
 
     # creates a dataframe to connect each file to its folder and table
     file_names = pd.DataFrame({"subfolders": list_csv, "table_names": table_names})
