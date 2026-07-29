@@ -9,8 +9,7 @@ import shutil
 from utils import swift
 
 # directory where the files are
-# DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
-DATA_PATH = "/run/media/julia/DATA/spring2026/"
+DATA_PATH = os.getenv('MOUNTED_VOLUME_TEST')
 
 
 def fun1():
